@@ -44,3 +44,12 @@ desktop.ini
 
 # Node (혹시 나중에)
 node_modules/
+
+# Claude Code 설정
+.claude/
+
+# 이미지/기타
+api-status.png
+*.png
+*.jpg
+*.jpeg
