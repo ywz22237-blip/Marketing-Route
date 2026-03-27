@@ -1,8 +1,1 @@
-{
-  "version": 2,
-  "outputDirectory": "frontend",
-  "routes": [
-    { "src": "^/$", "dest": "/intro.html" },
-    { "src": "/(.*)", "dest": "/$1" }
-  ]
-}
+{}
