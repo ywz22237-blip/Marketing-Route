@@ -2399,17 +2399,16 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
     </div>
 
     <!-- SEO 연동 배너 -->
-    <div style="margin-bottom:16px;padding:14px 18px;background:rgba(31,111,235,0.08);border:1px solid #1f6feb40;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
+    <div id="tsns-seo-banner" style="display:none;margin-bottom:16px;padding:14px 18px;background:rgba(31,111,235,0.08);border:1px solid #1f6feb40;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:18px;">🔍</span>
         <div>
           <div style="font-size:12px;font-weight:700;color:#60a5fa;">SEO 기획 연동됨</div>
-          <div style="font-size:11px;color:#8b949e;margin-top:1px;">블로그에서 파생 · 주제 자동 입력</div>
+          <div id="tsns-seo-topic-preview" style="font-size:11px;color:#8b949e;margin-top:1px;">블로그에서 파생 · 주제 자동 입력</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" style="font-size:11px;">다시 불러오기</button>
-        <button class="btn btn-ghost" style="font-size:11px;color:#f87171;border-color:#f8717140;">연동 해제</button>
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="loadSEOBrief('tsns')">다시 불러오기</button>
       </div>
     </div>
 
@@ -2720,17 +2719,16 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
     </div>
 
     <!-- SEO 연동 배너 -->
-    <div style="margin-bottom:16px;padding:14px 18px;background:rgba(31,111,235,0.08);border:1px solid #1f6feb40;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
+    <div id="isns-seo-banner" style="display:none;margin-bottom:16px;padding:14px 18px;background:rgba(225,48,108,0.08);border:1px solid #e1306c40;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:18px;">🔍</span>
         <div>
-          <div style="font-size:12px;font-weight:700;color:#60a5fa;">SEO 기획 연동됨</div>
-          <div style="font-size:11px;color:#8b949e;margin-top:1px;">블로그에서 파생 · 이미지 컨셉 자동 입력</div>
+          <div style="font-size:12px;font-weight:700;color:#f472b6;">SEO 기획 연동됨</div>
+          <div id="isns-seo-topic-preview" style="font-size:11px;color:#8b949e;margin-top:1px;">블로그에서 파생 · 이미지 컨셉 자동 입력</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" style="font-size:11px;">다시 불러오기</button>
-        <button class="btn btn-ghost" style="font-size:11px;color:#f87171;border-color:#f8717140;">연동 해제</button>
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="loadSEOBrief('isns')">다시 불러오기</button>
       </div>
     </div>
 
@@ -6681,13 +6679,15 @@ function renderSEOBriefs(briefs) {
 }
 
 function updateSEOBanners(data) {
-  const platforms = ['blog', 'linkedin', 'instagram', 'threads', 'cardnews'];
+  const platforms = ['blog', 'linkedin', 'instagram', 'threads', 'cardnews', 'tsns', 'isns'];
   const briefMap = {
-    blog: data.content_briefs?.blog,
-    linkedin: data.content_briefs?.linkedin,
+    blog:      data.content_briefs?.blog,
+    linkedin:  data.content_briefs?.linkedin,
     instagram: data.content_briefs?.instagram,
-    threads: data.content_briefs?.threads,
-    cardnews: data.content_briefs?.card_news,
+    threads:   data.content_briefs?.threads,
+    cardnews:  data.content_briefs?.card_news,
+    tsns:      data.content_briefs?.linkedin || data.content_briefs?.threads,
+    isns:      data.content_briefs?.instagram || data.content_briefs?.card_news,
   };
   platforms.forEach(p => {
     const banner = document.getElementById(`${p}-seo-banner`);
@@ -6728,6 +6728,24 @@ function loadSEOBrief(platform) {
         document.getElementById('card-count-display').textContent = slider.value + '장';
       }
     }
+  } else if (platform === 'tsns') {
+    // 텍스트형SNS: linkedin 브리프 우선, 없으면 threads
+    const b = data.content_briefs?.linkedin || data.content_briefs?.threads;
+    if (b?.topic) {
+      const el = document.getElementById('tsns-topic');
+      if (el) el.value = b.topic;
+    }
+    if (b?.summary) {
+      const el = document.getElementById('tsns-message');
+      if (el) el.value = b.summary;
+    }
+  } else if (platform === 'isns') {
+    // 이미지형SNS: instagram 브리프 우선, 없으면 card_news
+    const b = data.content_briefs?.instagram || data.content_briefs?.card_news;
+    if (b?.topic) {
+      const el = document.getElementById('isns-topic');
+      if (el) el.value = b.topic;
+    }
   }
   toast(`SEO 기획 데이터를 불러왔습니다.`, 'green');
 }
@@ -6739,14 +6757,27 @@ function useTopic(topic) {
   goto('blog');
 }
 
-// 블로그 제목을 SNS 주제로 자동 복사
+// 블로그 제목을 SNS 주제로 자동 복사 + SEO 기획 연동
 function _syncBlogTopicToSNS() {
   const title = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '';
-  if (!title) return;
   const tsns = document.getElementById('tsns-topic');
   const isns = document.getElementById('isns-topic');
-  if (tsns && !tsns.value) tsns.value = title;
-  if (isns && !isns.value) isns.value = title;
+
+  // 1순위: 블로그 제목
+  if (title) {
+    if (tsns && !tsns.value) tsns.value = title;
+    if (isns && !isns.value) isns.value = title;
+  }
+
+  // SEO 데이터 있으면 배너 표시 + 빈 필드 보완
+  const seo = _lastSEOResult || (() => { try { return JSON.parse(localStorage.getItem('osmu_seo_result') || 'null'); } catch { return null; } })();
+  if (seo) {
+    updateSEOBanners(seo);
+    const tsnsB = seo.content_briefs?.linkedin || seo.content_briefs?.threads;
+    const isnsB = seo.content_briefs?.instagram || seo.content_briefs?.card_news;
+    if (tsns && !tsns.value && tsnsB?.topic) tsns.value = tsnsB.topic;
+    if (isns && !isns.value && isnsB?.topic) isns.value = isnsB.topic;
+  }
 }
 
 // ── 블로그 생성 (새 /blog/generate API 사용) ──────────────────
