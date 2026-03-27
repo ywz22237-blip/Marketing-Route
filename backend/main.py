@@ -2465,7 +2465,7 @@ async def generate_image(body: dict):
     if not hf_token:
         raise HTTPException(status_code=400, detail="HuggingFace API 토큰이 없습니다. API 설정에서 HF Token을 입력해주세요.")
 
-    model_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+    model_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
 
     try:
         async with httpx.AsyncClient(timeout=60) as client:
