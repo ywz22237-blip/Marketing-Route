@@ -103,6 +103,26 @@ async def seo_plan(req: SEOPlanRequest):
     profile = req.agency_profile or _agency_profile
     gemini_key = (req.api_keys or {}).get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
 
+    # 보이스 DNA 섹션 (중첩 f-string 방지)
+    if profile.brand_voice_dna:
+        dna = profile.brand_voice_dna
+        voice_dna_section = (
+            "보이스 DNA:\n"
+            "- 문장 스타일: " + dna.get('sentence_style', '') + "\n"
+            "- 제목 패턴: " + dna.get('title_pattern', '') + "\n"
+            "- 자주 쓰는 표현: " + ', '.join(dna.get('tone_keywords', [])) + "\n"
+            "- 피해야 할 표현: " + ', '.join(dna.get('avoid', [])) + "\n"
+            "- 한 줄 요약: " + dna.get('summary', '')
+        )
+    else:
+        voice_dna_section = ""
+
+    if profile.brand_voice_samples:
+        sample_lines = "\n".join(f"- {s}" for s in profile.brand_voice_samples[:3])
+        voice_sample_section = "보이스 샘플:\n" + sample_lines
+    else:
+        voice_sample_section = ""
+
     prompt = f"""당신은 B2B 멀티플랫폼 콘텐츠 기획 전문가입니다.
 하나의 키워드/주제로 블로그·링크드인·인스타그램·쓰레드·카드뉴스·유튜브에 배포할 콘텐츠를 기획하세요.
 같은 핵심 메시지를 각 플랫폼에 맞는 형식으로 재구성하는 OSMU 전략입니다.
@@ -113,13 +133,8 @@ async def seo_plan(req: SEOPlanRequest):
 타겟: {profile.target_audience}
 톤앤매너: {profile.tone_and_manner}
 콘텐츠 기둥: {', '.join(profile.content_pillars)}
-{f"""보이스 DNA:
-- 문장 스타일: {profile.brand_voice_dna.get('sentence_style','')}
-- 제목 패턴: {profile.brand_voice_dna.get('title_pattern','')}
-- 자주 쓰는 표현: {', '.join(profile.brand_voice_dna.get('tone_keywords',[]))}
-- 피해야 할 표현: {', '.join(profile.brand_voice_dna.get('avoid',[]))}
-- 한 줄 요약: {profile.brand_voice_dna.get('summary','')}""" if profile.brand_voice_dna else ""}
-{("보이스 샘플:\n" + chr(10).join(f"- {s}" for s in profile.brand_voice_samples[:3])) if profile.brand_voice_samples else ""}
+{voice_dna_section}
+{voice_sample_section}
 
 JSON 형식으로만 반환 (다른 텍스트 없이):
 {{
