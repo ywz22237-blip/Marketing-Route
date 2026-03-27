@@ -2268,14 +2268,20 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
 
         <!-- 최종 체크리스트 -->
         <div class="card" style="padding:14px;">
-          <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:10px;">최종 체크리스트</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:11px;color:#8b949e;font-weight:700;">최종 체크리스트</div>
+            <div id="blog-cl-progress" style="font-size:10px;color:#4ade80;font-weight:600;">0/6</div>
+          </div>
+          <div style="background:#21262d;border-radius:4px;height:4px;margin-bottom:12px;overflow:hidden;">
+            <div id="blog-cl-bar" style="height:100%;background:#1f6feb;border-radius:4px;width:0%;transition:width .3s;"></div>
+          </div>
           <div style="display:flex;flex-direction:column;gap:7px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">제목 확인</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">키워드 포함 여부</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">이미지 삽입</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#8b949e;">태그 정리</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#8b949e;">카테고리 설정</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#8b949e;">발행 시간 설정</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-title"    style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-title-lbl"    style="color:#8b949e;">제목 확인</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-keyword"  style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-keyword-lbl"  style="color:#8b949e;">키워드 포함 여부</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-image"    style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-image-lbl"    style="color:#8b949e;">이미지 삽입</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-tags"     style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-tags-lbl"     style="color:#8b949e;">태그 정리</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-category" style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-category-lbl" style="color:#8b949e;">카테고리 설정</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-schedule" style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-schedule-lbl" style="color:#8b949e;">발행 시간 설정</span></label>
           </div>
         </div>
 
@@ -2881,9 +2887,12 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:12px;">카드뉴스 설정</div>
-          <label class="field-label">슬라이드 수</label>
-          <select class="field-input" style="margin-bottom:10px;">
-            <option>4장</option><option>6장</option><option>8장</option><option>10장</option>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <label class="field-label" style="margin:0;">슬라이드 수</label>
+            <button onclick="_autoCardSlides()" style="background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:10px;padding:2px 8px;cursor:pointer;font-family:inherit;">✨ 자동</button>
+          </div>
+          <select id="isns-card-slide-count" class="field-input" style="margin-bottom:10px;">
+            <option value="4">4장</option><option value="6" selected>6장</option><option value="8">8장</option><option value="10">10장</option>
           </select>
           <label class="field-label">카드 비율</label>
           <select class="field-input" style="margin-bottom:10px;">
@@ -4081,11 +4090,13 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
   <!-- ── Tab 1: 배포 대기열 ── -->
   <div id="dppanel-queue">
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;" id="dp-channel-filter">
-      <button class="dp-filter-btn active" onclick="filterDeployQueue('all')"      data-ch="all">전체</button>
-      <button class="dp-filter-btn"        onclick="filterDeployQueue('blog')"     data-ch="blog">📝 블로그</button>
-      <button class="dp-filter-btn"        onclick="filterDeployQueue('linkedin')" data-ch="linkedin">💼 LinkedIn</button>
-      <button class="dp-filter-btn"        onclick="filterDeployQueue('sns')"      data-ch="sns">💬 SNS</button>
-      <button class="dp-filter-btn"        onclick="filterDeployQueue('video')"    data-ch="video">🎬 영상</button>
+      <button class="dp-filter-btn active" onclick="filterDeployQueue('all')"       data-ch="all">전체</button>
+      <button class="dp-filter-btn"        onclick="filterDeployQueue('blog')"      data-ch="blog">📝 블로그</button>
+      <button class="dp-filter-btn"        onclick="filterDeployQueue('linkedin')"  data-ch="linkedin">💼 LinkedIn</button>
+      <button class="dp-filter-btn"        onclick="filterDeployQueue('threads')"   data-ch="threads">🧵 Threads</button>
+      <button class="dp-filter-btn"        onclick="filterDeployQueue('instagram')" data-ch="instagram">📷 Instagram</button>
+      <button class="dp-filter-btn"        onclick="filterDeployQueue('youtube')"   data-ch="youtube">▶️ YouTube</button>
+      <button class="dp-filter-btn"        onclick="filterDeployQueue('tiktok')"    data-ch="tiktok">🎵 TikTok</button>
     </div>
     <div id="dp-queue-list" style="display:flex;flex-direction:column;gap:10px;"></div>
     <div id="dp-queue-empty" style="display:none;text-align:center;padding:60px 20px;">
@@ -7222,6 +7233,78 @@ function renderBlogReview() {
       `<span style="padding:4px 10px;background:#f1f3f5;border-radius:20px;font-size:11px;color:#555;">#${k}</span>`
     ).join('');
   }
+
+  // 체크리스트 자동 갱신
+  _refreshBlogChecklist();
+}
+
+// ── 블로그 검수 체크리스트 ────────────────────────
+function _refreshBlogChecklist() {
+  const title   = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '';
+  const body    = document.getElementById('blog-body')?.value  || '';
+  const topic   = document.getElementById('blog-topic')?.value || '';
+  const thumbEl = document.getElementById('blog-thumbnail-preview')?.querySelector('img');
+  const hasThumbnail = !!(thumbEl?.src && !thumbEl.src.endsWith('#'));
+  const hasSectionImg = Object.keys(window._sectionImages || {}).length > 0;
+  const tagsEl  = document.getElementById('blog-preview-tags');
+  const hasTags = !!(tagsEl?.children?.length);
+  const keywordInBody = topic.length > 1 && body.toLowerCase().includes(topic.slice(0,4).toLowerCase());
+
+  const checks = {
+    title:    !!title && title !== '(제목 없음)',
+    keyword:  keywordInBody,
+    image:    hasThumbnail || hasSectionImg,
+    tags:     hasTags,
+    category: !!document.getElementById('blog-cl-category')?.checked,
+    schedule: !!document.getElementById('blog-cl-schedule')?.checked,
+  };
+
+  const ids = ['title','keyword','image','tags','category','schedule'];
+  ids.forEach(k => {
+    const cb  = document.getElementById(`blog-cl-${k}`);
+    const lbl = document.getElementById(`blog-cl-${k}-lbl`);
+    if (!cb) return;
+    // auto-checked items (not manual ones)
+    if (k !== 'category' && k !== 'schedule') cb.checked = checks[k];
+    const done = cb.checked;
+    if (lbl) lbl.style.color = done ? '#e6edf3' : '#8b949e';
+  });
+
+  _updateBlogClBar();
+}
+
+function _onBlogCl() { _updateBlogClBar(); }
+
+function _updateBlogClBar() {
+  const ids = ['title','keyword','image','tags','category','schedule'];
+  const done = ids.filter(k => document.getElementById(`blog-cl-${k}`)?.checked).length;
+  const total = ids.length;
+  const pct = Math.round(done / total * 100);
+  const barEl  = document.getElementById('blog-cl-bar');
+  const progEl = document.getElementById('blog-cl-progress');
+  if (barEl) {
+    barEl.style.width = pct + '%';
+    barEl.style.background = pct === 100 ? '#4ade80' : pct >= 60 ? '#f59e0b' : '#1f6feb';
+  }
+  if (progEl) {
+    progEl.textContent = `${done}/${total}`;
+    progEl.style.color = pct === 100 ? '#4ade80' : '#8b949e';
+  }
+}
+
+// ── 카드뉴스 슬라이드 수 자동 계산 ───────────────
+function _autoCardSlides() {
+  const body = document.getElementById('blog-body')?.value || document.getElementById('isns-topic')?.value || '';
+  const h2Count = (body.match(/^## .+/gm) || []).length;
+  // 표지 + H2섹션 + CTA 마무리, 최소4 최대10
+  const count = Math.min(10, Math.max(4, h2Count > 0 ? h2Count + 2 : 6));
+  // 짝수로 맞추기 (4,6,8,10)
+  const snapped = [4,6,8,10].reduce((prev,cur) => Math.abs(cur-count) < Math.abs(prev-count) ? cur : prev);
+  const sel = document.getElementById('isns-card-slide-count');
+  if (sel) {
+    sel.value = String(snapped);
+    toast(`슬라이드 수 자동 설정: ${snapped}장${h2Count>0?' (본문 H2 '+h2Count+'개 기준)':''}`, '#4ade80');
+  }
 }
 
 function switchBlogReviewPlat(plat) {
@@ -9546,13 +9629,9 @@ const _DP_META = {
   tiktok:    { icon:'🎵', label:'TikTok',       tip:'15~60초 숏폼 영상 기준 · 설명 150자 이내',              member:'팀원4' },
 };
 
-// 채널 필터용 그룹 분류
+// 채널 필터용 그룹 분류 (플랫폼별 1:1 매핑)
 function _dpFilterGroup(type) {
-  const g = _dpGroup(type);
-  if (g === 'blog')     return 'blog';
-  if (g === 'linkedin' || g === 'threads' || g === 'instagram') return g === 'linkedin' ? 'linkedin' : 'sns';
-  if (g === 'youtube' || g === 'tiktok')  return 'video';
-  return 'blog';
+  return _dpGroup(type);
 }
 
 // ── 탭 전환 ──────────────────────────────────────
@@ -12431,7 +12510,7 @@ function regenerateISNS() {
 async function generateCardNewsISNS() {
   const topic = document.getElementById('isns-topic')?.value.trim();
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
-  const slideEl = document.querySelector('#isns-panel-cardnews select');
+  const slideEl = document.getElementById('isns-card-slide-count');
   const slideCount = parseInt(slideEl?.value) || 6;
   const tocEl     = document.getElementById('isns-card-toc');
   const previewEl = document.getElementById('isns-card-preview');
