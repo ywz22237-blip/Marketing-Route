@@ -1,7 +1,5 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "^/$", "dest": "/intro.html" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "rewrites": [
+    { "source": "/", "destination": "/intro.html" }
   ]
 }
