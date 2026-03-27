@@ -6913,6 +6913,9 @@ function _pollinationsImg(url, container, { small = false, onDone } = {}) {
   img.src = url;
 }
 
+// 섹션 이미지 저장소: { 0: 'https://...', 1: 'data:image/...' }
+window._sectionImages = window._sectionImages || {};
+
 async function generateSectionImage(idx, prompt) {
   const thumbEl = document.getElementById(`blog-sec-thumb-${idx}`);
   if (thumbEl) thumbEl.innerHTML = '⏳';
@@ -6925,6 +6928,8 @@ async function generateSectionImage(idx, prompt) {
     const data = await res.json();
     const imgSrc = data.image_url || `data:${data.mime};base64,${data.image_b64}`;
     if (thumbEl) thumbEl.innerHTML = `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />`;
+    // 검수 미리보기용 저장
+    window._sectionImages[idx] = imgSrc;
     const msg = data.source === 'picsum' ? '플레이스홀더 이미지 삽입 (HF 토큰 권한 추가 시 AI 생성)' : '섹션 이미지 생성 완료';
     toast(msg, data.source === 'picsum' ? 'orange' : '#4ade80');
   } catch(e) {
@@ -7165,23 +7170,37 @@ function renderBlogReview() {
       : '<span style="color:#999;font-size:12px;">썸네일 이미지 (이미지 탭에서 생성)</span>';
   }
 
-  // 본문 마크다운 → HTML 변환
+  // 본문 마크다운 → HTML 변환 (섹션 이미지 포함)
   const bodyEl = document.getElementById('blog-preview-body');
   if (bodyEl) {
     if (!body) {
       bodyEl.innerHTML = '<p style="color:#999;text-align:center;">본문을 생성하면 여기에 표시됩니다.</p>';
     } else {
-      const html = body
-        .replace(/^### (.+)$/gm, '<h3 style="font-size:15px;font-weight:700;color:#1a1a1a;margin:16px 0 8px;">$1</h3>')
-        .replace(/^## (.+)$/gm,  '<h2 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:20px 0 10px;">$1</h2>')
-        .replace(/^# (.+)$/gm,   '<h1 style="font-size:22px;font-weight:800;color:#1a1a1a;margin:24px 0 12px;">$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g,     '<em>$1</em>')
-        .replace(/^- (.+)$/gm,    '<li style="margin:4px 0;">$1</li>')
-        .replace(/(<li.*<\/li>\n?)+/g, m => `<ul style="padding-left:20px;margin:10px 0;">${m}</ul>`)
-        .replace(/\n{2,}/g, '</p><p style="margin:10px 0;">')
-        .replace(/\n/g, '<br>');
-      bodyEl.innerHTML = `<p style="margin:10px 0;">${html}</p>`;
+      const secImgs = window._sectionImages || {};
+      let h2Count = 0;
+      const htmlParts = [];
+      for (const line of body.split('\n')) {
+        if (/^## .+/.test(line)) {
+          const txt = line.replace(/^## /, '');
+          htmlParts.push(`<h2 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:20px 0 10px;">${txt}</h2>`);
+          if (secImgs[h2Count]) {
+            htmlParts.push(`<div style="margin:12px 0 16px;border-radius:8px;overflow:hidden;"><img src="${secImgs[h2Count]}" style="width:100%;max-height:220px;object-fit:cover;" /></div>`);
+          }
+          h2Count++;
+        } else if (/^### .+/.test(line)) {
+          htmlParts.push(`<h3 style="font-size:15px;font-weight:700;color:#1a1a1a;margin:16px 0 8px;">${line.replace(/^### /, '')}</h3>`);
+        } else if (/^# .+/.test(line)) {
+          htmlParts.push(`<h1 style="font-size:22px;font-weight:800;color:#1a1a1a;margin:24px 0 12px;">${line.replace(/^# /, '')}</h1>`);
+        } else if (/^- .+/.test(line)) {
+          htmlParts.push(`<li style="margin:4px 0;padding-left:4px;">${line.slice(2).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</li>`);
+        } else if (line.trim() === '') {
+          htmlParts.push('<br>');
+        } else {
+          const fmt = line.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
+          htmlParts.push(`<p style="margin:6px 0;">${fmt}</p>`);
+        }
+      }
+      bodyEl.innerHTML = htmlParts.join('');
     }
   }
 
