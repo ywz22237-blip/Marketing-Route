@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# 환경변수 (API 키 절대 커밋 금지)
+.env
+.env.local
+.env.production
+*.env
+
+# 로그
+*.log
+uvicorn.log
+
+# 개인 문서
+*.docx
+*.xlsx
+*.pdf
+
+# 출력 파일
+outputs/
+
+# Vercel
+.vercel/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (혹시 나중에)
+node_modules/

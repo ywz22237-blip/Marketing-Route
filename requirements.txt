@@ -1,0 +1,28 @@
+# ============================
+# OSMU SNS 자동화 플랫폼 패키지
+# ============================
+
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.12
+
+# LLM
+google-generativeai==0.8.3
+groq==0.11.0
+
+# HTTP / 크롤링
+httpx==0.27.2
+requests==2.32.3
+beautifulsoup4==4.12.3
+
+# 파일 처리
+python-dotenv==1.0.1
+aiofiles==24.1.0
+Pillow==10.4.0
+
+# 데이터 모델
+pydantic==2.9.2
+
+# 유틸
+python-slugify==8.0.4

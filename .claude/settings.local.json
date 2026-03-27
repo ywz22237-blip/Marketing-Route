@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python -c \"from backend.agency import run_lead_review, FilterResult, LeadCrossReview; print\\(''OK''\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(cp \"D:/icons8-youtube.svg\" \"C:/Users/ywz22/Desktop/sns ag/frontend/assets/icons/youtube.svg\")",
+      "Bash(cp \"D:/icons8-스레드.svg\" \"C:/Users/ywz22/Desktop/sns ag/frontend/assets/icons/threads.svg\")",
+      "Bash(cp \"D:/icons8-인스-타-그램.svg\" \"C:/Users/ywz22/Desktop/sns ag/frontend/assets/icons/instagram.svg\")",
+      "Bash(cp \"D:/icons8-워드-프레스.svg\" \"C:/Users/ywz22/Desktop/sns ag/frontend/assets/icons/wordpress.svg\")",
+      "Bash(cp \"D:/icons8-링크드-인.svg\" \"C:/Users/ywz22/Desktop/sns ag/frontend/assets/icons/linkedin.svg\")",
+      "Bash(cp \"D:/tiktok.svg\" \"C:/Users/ywz22/Desktop/sns ag/frontend/assets/icons/tiktok.svg\")",
+      "Bash(cp \"D:/Threads_Logo_2023.svg\" \"C:/Users/ywz22/Desktop/sns ag/frontend/assets/icons/threads.svg\")",
+      "Bash(rm \"D:/tiktok.svg\")",
+      "Bash(rm \"D:/Threads_Logo_2023.svg\")",
+      "Bash(python3 -:*)",
+      "Bash(python3 /tmp/change6.py)",
+      "Bash(python /tmp/change6.py)",
+      "Bash(echo $TEMP)",
+      "Read(//c/Users/ywz22/Desktop/sns ag/**)",
+      "Bash(/c/Users/ywz22/AppData/Local/Python/pythoncore-3.14-64/python.exe \"C:\\\\Users\\\\ywz22\\\\Desktop\\\\sns ag\\\\change6.py\")",
+      "Bash(/c/Users/ywz22/AppData/Local/Python/pythoncore-3.14-64/python.exe \"C:\\\\Users\\\\ywz22\\\\Desktop\\\\sns ag\\\\append_backend.py\")",
+      "Bash(python -c \"import backend.main; print\\(''''OK''''\\)\")"
+    ]
+  }
+}
