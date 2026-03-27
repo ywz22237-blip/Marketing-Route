@@ -12516,6 +12516,7 @@ function switchTsnsPlatform(platform) {
 }
 
 function switchTsnsReviewPlatform(platform) {
+  // 버튼 스타일 전환
   ['linkedin','threads'].forEach(p => {
     const btn = document.getElementById(`tsns-rtab-${p}`);
     if (btn) {
@@ -12523,6 +12524,11 @@ function switchTsnsReviewPlatform(platform) {
       btn.style.color      = p===platform ? '#fff'    : '#8b949e';
     }
   });
+  // 해당 플랫폼 본문을 검수 textarea에 로드
+  const bodyId = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+  const body = document.getElementById(bodyId)?.value || '';
+  const reviewEl = document.getElementById('tsns-review-body');
+  if (reviewEl) reviewEl.value = body || `(${platform === 'linkedin' ? '링크드인' : '쓰레드'} 본문을 먼저 생성하세요)`;
 }
 
 // ── 이미지형 SNS 탭 전환 ──────────────────────────────────
