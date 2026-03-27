@@ -2902,7 +2902,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         </div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:8px;">슬라이드 목차</div>
-          <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#8b949e;">
+          <div id="isns-card-toc" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#8b949e;">
             <div style="padding:6px 8px;border-radius:6px;background:#21262d;color:#e6edf3;">1. 표지 — 제목</div>
             <div style="padding:6px 8px;border-radius:6px;background:#21262d;">2. 문제 제기</div>
             <div style="padding:6px 8px;border-radius:6px;background:#21262d;">3. 핵심 포인트 1</div>
@@ -2915,7 +2915,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
       <!-- 오른쪽: 카드 미리보기 -->
       <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
         <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:14px;">카드 미리보기</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div id="isns-card-preview" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
           <!-- 카드 샘플들 -->
           <div style="aspect-ratio:1;background:#21262d;border-radius:10px;border:2px solid #1f6feb;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;">
             <div style="font-size:10px;color:#60a5fa;font-weight:700;">COVER</div>
@@ -5534,6 +5534,8 @@ function goto(name) {
   if (name === 'agency')    { _loadAgencyFields(agencyProfile || {}); renderAgencyProgress(); _restorePersonaUI(); _updateAgencyProjBadge(); _renderLearnedDataList(); _updateSamplePicker(); }
   if (name === 'seo')       { _renderPlanAgencyHint(); _renderPlanHistory(); }
   if (name === 'blog')      { const ok = blogDraftRestore(); if (ok) toast('이전 작업을 복원했습니다', '#4ade80'); }
+  if (name === 'sns')       _syncBlogTopicToSNS();
+  if (name === 'isns')      _syncBlogTopicToSNS();
 }
 
 // ── SNS 페이지 탭 전환 ───────────────────────────────────────
@@ -6720,13 +6722,20 @@ function loadSEOBrief(platform) {
 }
 
 function useTopic(topic) {
-  document.getElementById('blog-topic').value = topic;
-  document.getElementById('linkedin-topic').value = topic;
-  document.getElementById('instagram-topic').value = topic;
-  document.getElementById('threads-topic').value = topic;
-  document.getElementById('card-topic').value = topic;
+  const ids = ['blog-topic','linkedin-topic','instagram-topic','threads-topic','card-topic','tsns-topic','isns-topic'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = topic; });
   toast(`"${topic}" → 전체 콘텐츠 페이지에 적용됨`, 'green');
   goto('blog');
+}
+
+// 블로그 제목을 SNS 주제로 자동 복사
+function _syncBlogTopicToSNS() {
+  const title = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '';
+  if (!title) return;
+  const tsns = document.getElementById('tsns-topic');
+  const isns = document.getElementById('isns-topic');
+  if (tsns && !tsns.value) tsns.value = title;
+  if (isns && !isns.value) isns.value = title;
 }
 
 // ── 블로그 생성 (새 /blog/generate API 사용) ──────────────────
@@ -12371,7 +12380,7 @@ let _isnsActivePlatform = 'instagram';
 async function generateISNS(platform) {
   _isnsActivePlatform = platform;
   const topic   = document.getElementById('isns-topic')?.value.trim();
-  const summary = document.getElementById('isns-message')?.value.trim();
+  const summary = '';
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
 
   const apiPlatform = platform === 'insta' ? 'instagram' : platform;
@@ -12424,7 +12433,10 @@ async function generateCardNewsISNS() {
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
   const slideEl = document.querySelector('#isns-panel-cardnews select');
   const slideCount = parseInt(slideEl?.value) || 6;
-  toast('카드뉴스 생성 중...', '#60a5fa');
+  const tocEl     = document.getElementById('isns-card-toc');
+  const previewEl = document.getElementById('isns-card-preview');
+  if (tocEl) tocEl.innerHTML = '<div style="color:#8b949e;font-size:11px;padding:8px;">⏳ 생성 중...</div>';
+  if (previewEl) previewEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#8b949e;font-size:12px;">⏳ AI가 카드뉴스를 생성 중입니다...</div>';
   try {
     const res = await fetch(`${API}/cardnews/generate`, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -12436,19 +12448,37 @@ async function generateCardNewsISNS() {
     const data = await res.json();
     const slides = data.slides || [];
     // 목차 업데이트
-    const outline = document.querySelector('#isns-panel-cardnews .card, #isns-panel-cardnews div[style*="flex-direction:column"] div:last-child');
-    const tocEl = document.querySelector('#isns-panel-cardnews div[style*="gap:4px"]');
     if (tocEl && slides.length) {
-      tocEl.innerHTML = slides.map((s,i) => `<div style="padding:6px 8px;border-radius:6px;background:#21262d;${i===0?'color:#e6edf3':'color:#8b949e'};">${s.index}. ${s.title}</div>`).join('');
+      tocEl.innerHTML = slides.map((s,i) =>
+        `<div style="padding:6px 8px;border-radius:6px;background:#21262d;color:${i===0?'#e6edf3':'#8b949e'};">${s.index}. ${s.title}</div>`
+      ).join('');
+    }
+    // 카드 미리보기 그리드 업데이트
+    if (previewEl && slides.length) {
+      previewEl.innerHTML = slides.map((s,i) => `
+        <div style="aspect-ratio:1;background:#21262d;border-radius:10px;border:${i===0?'2px solid #1f6feb':'1px solid #30363d'};display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;padding:8px;overflow:hidden;">
+          <div style="font-size:9px;color:${i===0?'#60a5fa':'#8b949e'};font-weight:700;">${String(s.index).padStart(2,'0')}</div>
+          <div style="font-size:10px;color:${i===0?'#e6edf3':'#8b949e'};text-align:center;line-height:1.3;word-break:keep-all;">${s.title}</div>
+          ${s.body ? `<div style="font-size:9px;color:#484f58;text-align:center;line-height:1.3;overflow:hidden;max-height:36px;">${s.body.slice(0,40)}...</div>` : ''}
+        </div>`).join('');
     }
     toast('카드뉴스 생성 완료!', '#4ade80');
   } catch(e) {
+    if (tocEl) tocEl.innerHTML = '<div style="color:#f87171;font-size:11px;padding:8px;">❌ 생성 실패</div>';
     toast('카드뉴스 생성 실패: ' + e.message, 'red');
   }
 }
 
 // ── 텍스트형 SNS 탭 전환 ──────────────────────────────────
 function switchTsnsTab(tab) {
+  if (tab === 'review') {
+    // 현재 활성 플랫폼 본문을 검수 탭으로 복사
+    const plat = window._tsnsActivePlatform || 'linkedin';
+    const bodyId = plat === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+    const body = document.getElementById(bodyId)?.value || '';
+    const reviewEl = document.getElementById('tsns-review-body');
+    if (reviewEl && body) reviewEl.value = body;
+  }
   const tabs = ['basic','content','review'];
   const nums  = {basic:1, content:2, review:3};
   tabs.forEach(t => {
@@ -12497,6 +12527,17 @@ function switchTsnsReviewPlatform(platform) {
 
 // ── 이미지형 SNS 탭 전환 ──────────────────────────────────
 function switchIsnsTab(tab) {
+  if (tab === 'review') {
+    const plat = window._isnsActivePlatform || 'insta';
+    const captionId = (plat === 'insta' || plat === 'instagram') ? 'isns-insta-caption' : 'isns-fb-body';
+    const tagsId    = (plat === 'insta' || plat === 'instagram') ? 'isns-insta-tags'    : null;
+    const caption = document.getElementById(captionId)?.value || '';
+    const tags    = tagsId ? (document.getElementById(tagsId)?.value || '') : '';
+    const rc = document.getElementById('isns-review-caption');
+    const rt = document.getElementById('isns-review-tags');
+    if (rc && caption) rc.value = caption;
+    if (rt && tags)    rt.value = tags;
+  }
   const tabs = ['basic','content','cardnews','review'];
   const nums  = {basic:1, content:2, cardnews:3, review:4};
   tabs.forEach(t => {
