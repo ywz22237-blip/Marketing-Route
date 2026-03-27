@@ -8,7 +8,7 @@ uvicorn[standard]==0.30.6
 python-multipart==0.0.12
 
 # LLM
-google-generativeai==0.8.3
+google-genai
 groq==0.11.0
 
 # HTTP / 크롤링
