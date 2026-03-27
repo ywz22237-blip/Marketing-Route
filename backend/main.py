@@ -1442,6 +1442,10 @@ async def generate_blog(req: BlogRequest):
         if match:
             try:
                 d = json.loads(match.group())
+                # 에러 응답 감지
+                if "error" in d and not d.get("title") and not d.get("body"):
+                    err_msg = d.get("error", "알 수 없는 오류")
+                    return BlogPost(platform=platform, title="[생성 오류]", body=f"❌ {err_msg}", word_count=0)
                 body = d.get("body", "")
                 return BlogPost(
                     platform=platform,
