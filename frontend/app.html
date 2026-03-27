@@ -2108,22 +2108,22 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <div style="font-size:13px;font-weight:700;color:#e6edf3;">썸네일</div>
             <div style="font-size:11px;color:#8b949e;margin-top:2px;">포스팅 대표 이미지</div>
           </div>
-          <button class="btn btn-primary" style="font-size:11px;">✨ 생성</button>
+          <button class="btn btn-primary" style="font-size:11px;" onclick="generateBlogThumbnail()">✨ 생성</button>
         </div>
         <!-- 설정 -->
         <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
           <div>
             <div style="font-size:10px;color:#484f58;margin-bottom:5px;">스타일</div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;">
-              <button style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #1f6feb;background:#1f6feb20;color:#60a5fa;cursor:pointer;">미니멀</button>
-              <button style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;">사진형</button>
-              <button style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;">인포그래픽</button>
-              <button style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;">일러스트</button>
+              <button id="img-style-minimal" onclick="selectImgStyle(this,'minimal')" style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #1f6feb;background:#1f6feb20;color:#60a5fa;cursor:pointer;">미니멀</button>
+              <button id="img-style-photo" onclick="selectImgStyle(this,'photo')" style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;">사진형</button>
+              <button id="img-style-infographic" onclick="selectImgStyle(this,'infographic')" style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;">인포그래픽</button>
+              <button id="img-style-illustration" onclick="selectImgStyle(this,'illustration')" style="padding:4px 10px;border-radius:16px;font-size:11px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;">일러스트</button>
             </div>
           </div>
           <div>
-            <div style="font-size:10px;color:#484f58;margin-bottom:5px;">텍스트 오버레이</div>
-            <input type="text" class="field-input" value="B2B 콘텐츠 마케팅 완벽 가이드" style="font-size:12px;" />
+            <div style="font-size:10px;color:#484f58;margin-bottom:5px;">이미지 주제 (프롬프트)</div>
+            <input type="text" id="blog-img-prompt" class="field-input" placeholder="예: modern office, data visualization, teamwork" style="font-size:12px;" />
           </div>
           <div>
             <div style="font-size:10px;color:#484f58;margin-bottom:5px;">비율</div>
@@ -2135,7 +2135,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           </div>
         </div>
         <!-- 미리보기 -->
-        <div style="border-radius:10px;background:#21262d;aspect-ratio:3/2;display:flex;align-items:center;justify-content:center;border:1px dashed #30363d;">
+        <div id="blog-thumbnail-preview" style="border-radius:10px;background:#21262d;aspect-ratio:3/2;display:flex;align-items:center;justify-content:center;border:1px dashed #30363d;overflow:hidden;">
           <div style="text-align:center;color:#484f58;">
             <div style="font-size:28px;margin-bottom:6px;">🖼️</div>
             <div style="font-size:11px;">생성 버튼을 눌러주세요</div>
@@ -6838,6 +6838,40 @@ function loadBlogPost(idx) {
     btn.style.background  = i === idx ? '#1f6feb20' : 'transparent';
     btn.style.color       = i === idx ? '#60a5fa' : '#8b949e';
   });
+}
+
+let _imgStyle = 'minimal';
+function selectImgStyle(el, style) {
+  _imgStyle = style;
+  el.closest('div').querySelectorAll('button').forEach(b => {
+    b.style.borderColor = '#30363d'; b.style.background = 'transparent'; b.style.color = '#8b949e';
+  });
+  el.style.borderColor = '#1f6feb'; el.style.background = '#1f6feb20'; el.style.color = '#60a5fa';
+}
+
+async function generateBlogThumbnail() {
+  const title  = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '';
+  const custom = document.getElementById('blog-img-prompt')?.value.trim();
+  const styleMap = { minimal:'minimalist flat design', photo:'realistic photo', infographic:'infographic style', illustration:'digital illustration' };
+  const prompt = custom || `${styleMap[_imgStyle] || 'minimalist'}, ${title}, professional marketing blog thumbnail, high quality`;
+
+  const preview = document.getElementById('blog-thumbnail-preview');
+  if (preview) preview.innerHTML = '<div style="text-align:center;color:#8b949e;"><div style="font-size:24px;margin-bottom:8px;">⏳</div><div style="font-size:12px;">이미지 생성 중...</div></div>';
+
+  try {
+    const res = await fetch(`${API}/image/generate`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt, api_keys: getKeys() })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '생성 실패'); }
+    const data = await res.json();
+    if (preview) preview.innerHTML = `<img src="data:${data.mime};base64,${data.image_b64}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" /><a download="thumbnail.jpg" href="data:${data.mime};base64,${data.image_b64}" style="position:absolute;bottom:8px;right:8px;background:#1f6feb;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;text-decoration:none;">다운로드</a>`;
+    if (preview) preview.style.position = 'relative';
+    toast('썸네일 생성 완료!', '#4ade80');
+  } catch(e) {
+    if (preview) preview.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px;"><div style="font-size:13px;">❌ ${e.message}</div></div>`;
+    toast('이미지 생성 실패: ' + e.message, 'red');
+  }
 }
 
 function switchBlogTab(tab) {
