@@ -1249,6 +1249,46 @@
       </div>
     </div>
 
+    <!-- 플랫폼 링크 카드 -->
+    <div class="card" style="grid-column:1/-1;">
+      <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">🔗 내 플랫폼 링크</h3>
+      <p style="font-size:11px;color:#8b949e;margin:0 0 14px;">저장된 링크는 콘텐츠 하단 CTA에 자동 삽입할 수 있습니다.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label class="field-label">블로그</label>
+          <div style="display:flex;gap:6px;">
+            <select id="ag-blog-platform" class="field-input" style="width:90px;font-size:11px;padding:5px 6px;">
+              <option value="티스토리">티스토리</option>
+              <option value="네이버">네이버</option>
+              <option value="워드프레스">워드프레스</option>
+              <option value="자체">자체블로그</option>
+            </select>
+            <input type="url" id="ag-blog-url" class="field-input" placeholder="https://..." style="flex:1;font-size:11px;" />
+          </div>
+        </div>
+        <div>
+          <label class="field-label">링크드인</label>
+          <input type="url" id="ag-linkedin-url" class="field-input" placeholder="https://linkedin.com/in/..." style="font-size:11px;" />
+        </div>
+        <div>
+          <label class="field-label">쓰레드</label>
+          <input type="url" id="ag-threads-url" class="field-input" placeholder="https://threads.net/@..." style="font-size:11px;" />
+        </div>
+        <div>
+          <label class="field-label">인스타그램</label>
+          <input type="url" id="ag-instagram-url" class="field-input" placeholder="https://instagram.com/..." style="font-size:11px;" />
+        </div>
+        <div>
+          <label class="field-label">유튜브</label>
+          <input type="url" id="ag-youtube-url" class="field-input" placeholder="https://youtube.com/@..." style="font-size:11px;" />
+        </div>
+        <div>
+          <label class="field-label">틱톡</label>
+          <input type="url" id="ag-tiktok-url" class="field-input" placeholder="https://tiktok.com/@..." style="font-size:11px;" />
+        </div>
+      </div>
+    </div>
+
     <div class="card" style="grid-column:1/-1;">
       <!-- 헤더 -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -1406,7 +1446,12 @@
       <div class="plan-step-line" id="pstep-line-3"></div>
       <div class="plan-step-item">
         <div class="plan-step-circle" id="pstep-circle-4">4</div>
-        <span class="plan-step-label" id="pstep-label-4">콘텐츠 브리프</span>
+        <span class="plan-step-label" id="pstep-label-4">소스 문서</span>
+      </div>
+      <div class="plan-step-line" id="pstep-line-4"></div>
+      <div class="plan-step-item">
+        <div class="plan-step-circle" id="pstep-circle-5">5</div>
+        <span class="plan-step-label" id="pstep-label-5">브리프 · 생성</span>
       </div>
     </div>
 
@@ -1505,7 +1550,7 @@
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="planStep2()">← 키워드 수정</button>
           <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="planStep2Next()">재생성</button>
-          <button class="btn btn-primary" style="font-size:11px;padding:5px 16px;" onclick="planStep3Next()" id="plan-step3-next-btn" disabled>선택 → 브리프 생성</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 16px;" onclick="planStep3Next()" id="plan-step3-next-btn" disabled>선택 → 소스 문서</button>
         </div>
       </div>
 
@@ -1528,8 +1573,103 @@
       </div>
     </div>
 
-    <!-- STEP 4: 콘텐츠 브리프 -->
+    <!-- STEP 4: 소스 문서 -->
     <div class="plan-panel" id="plan-panel-4">
+      <!-- 헤더 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <span style="font-size:13px;font-weight:700;color:#f0f6fc;">📄 소스 문서</span>
+          <span id="plan-src-topic-label" style="font-size:11px;color:#60a5fa;margin-left:8px;"></span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="planStep3()">← 주제 수정</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 16px;" onclick="planStep4Next()" id="plan-step4-next-btn">소스 문서 완료 → 브리프</button>
+        </div>
+      </div>
+
+      <!-- 자료조사 + 소스 문서 생성 -->
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#f0f6fc;">🔍 자료조사 → 소스 문서 생성</div>
+            <div style="font-size:11px;color:#8b949e;margin-top:2px;">선택한 주제·키워드 기반으로 AI가 2,500~3,500자 리서치 문서를 작성합니다.</div>
+          </div>
+          <button class="btn btn-primary" onclick="runSeoResearch()" id="plan-research-btn" style="white-space:nowrap;">✨ 자료조사 시작</button>
+        </div>
+        <div id="plan-research-loading" style="display:none;text-align:center;padding:20px;">
+          <div style="width:22px;height:22px;border:2px solid #388bfd;border-top-color:transparent;border-radius:50%;display:inline-block;" class="spin"></div>
+          <span style="font-size:11px;color:#8b949e;margin-left:10px;">자료조사 및 소스 문서 생성 중...</span>
+        </div>
+      </div>
+
+      <!-- 소스 문서 편집기 -->
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start;">
+
+        <!-- 좌: 소스 문서 textarea -->
+        <div class="card" style="padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:700;color:#8b949e;">소스 문서</span>
+            <span id="plan-src-char-count" style="font-size:10px;color:#484f58;">0자</span>
+          </div>
+          <textarea id="plan-source-doc" class="field-input" rows="22"
+            placeholder="자료조사 버튼을 누르면 여기에 소스 문서가 생성됩니다.&#10;직접 작성하거나 생성 후 편집할 수 있습니다."
+            oninput="_updateSrcCharCount()"
+            style="font-size:12px;line-height:1.7;resize:vertical;"></textarea>
+        </div>
+
+        <!-- 우: 섹션 추가 + 대화형 편집 -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+          <!-- 섹션 추가 -->
+          <div class="card" style="padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#c9d1d9;margin-bottom:10px;">➕ 섹션 추가</div>
+            <div style="font-size:11px;color:#8b949e;margin-bottom:8px;">헤딩과 제목을 입력하면 AI가 해당 내용만 조사해서 문서에 추가합니다.</div>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+              <select id="plan-sec-heading" class="field-input" style="width:70px;font-size:11px;padding:5px 6px;">
+                <option value="H2">H2</option>
+                <option value="H3">H3</option>
+                <option value="H1">H1</option>
+              </select>
+              <input type="text" id="plan-sec-title" class="field-input" placeholder="섹션 제목 입력..." style="flex:1;font-size:11px;" />
+            </div>
+            <div style="font-size:10px;color:#484f58;margin-bottom:8px;">예: 실제 투자 사례 / IR 작성 시 금지 표현 / 2024 최신 통계</div>
+            <button class="btn btn-ghost" style="font-size:11px;width:100%;" onclick="addSourceSection()" id="plan-add-sec-btn">🔍 조사 후 추가</button>
+            <div id="plan-add-sec-loading" style="display:none;text-align:center;padding:8px;font-size:11px;color:#8b949e;">조사 중...</div>
+          </div>
+
+          <!-- 대화형 편집 -->
+          <div class="card" style="padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#c9d1d9;margin-bottom:10px;">💬 대화형 편집</div>
+            <div style="font-size:11px;color:#8b949e;margin-bottom:8px;">소스 문서 수정 지시를 내리면 AI가 전체 문서를 개선합니다.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;" id="plan-edit-chips">
+              <button onclick="_srcChip(this)" class="tag" style="cursor:pointer;font-size:10px;">2024년 통계로 업데이트</button>
+              <button onclick="_srcChip(this)" class="tag" style="cursor:pointer;font-size:10px;">도입부 더 강렬하게</button>
+              <button onclick="_srcChip(this)" class="tag" style="cursor:pointer;font-size:10px;">사례 더 추가</button>
+              <button onclick="_srcChip(this)" class="tag" style="cursor:pointer;font-size:10px;">길이 20% 늘려줘</button>
+              <button onclick="_srcChip(this)" class="tag" style="cursor:pointer;font-size:10px;">전문 용어 쉽게 풀어줘</button>
+            </div>
+            <textarea id="plan-edit-instruction" class="field-input" rows="3"
+              placeholder="예: 2024년 최신 통계로 업데이트해줘&#10;IR 작성 실패 사례를 더 구체적으로..."
+              style="font-size:11px;margin-bottom:8px;"></textarea>
+            <button class="btn btn-primary" style="font-size:11px;width:100%;" onclick="editSourceDoc()" id="plan-edit-src-btn">✨ 적용</button>
+            <div id="plan-edit-src-loading" style="display:none;text-align:center;padding:8px;font-size:11px;color:#8b949e;">수정 중...</div>
+          </div>
+
+          <!-- 안내 카드 -->
+          <div class="card" style="padding:14px;background:rgba(31,111,235,0.05);border-color:#1f6feb25;">
+            <div style="font-size:11px;color:#60a5fa;font-weight:600;margin-bottom:6px;">💡 소스 문서란?</div>
+            <div style="font-size:11px;color:#8b949e;line-height:1.7;">
+              자료조사 기반의 핵심 리서치 문서입니다.<br>
+              이 문서 하나로 블로그·링크드인·인스타그램을 동시에 생성합니다.<br><br>
+              <strong style="color:#c9d1d9;">섹션 추가로 원하는 내용을 보완하면 콘텐츠 품질이 올라갑니다.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: 콘텐츠 브리프 + 3개 동시 생성 -->
+    <div class="plan-panel" id="plan-panel-5">
       <div id="plan-brief-loading" style="display:none;text-align:center;padding:60px;">
         <div style="width:28px;height:28px;border:2px solid #388bfd;border-top-color:transparent;border-radius:50%;display:inline-block;" class="spin"></div>
         <p style="color:#8b949e;font-size:12px;margin-top:12px;">플랫폼별 콘텐츠 브리프 생성 중...</p>
@@ -1537,16 +1677,31 @@
 
       <div id="plan-brief-result" style="display:none;">
         <!-- 기획 요약 배너 -->
-        <div style="background:rgba(35,134,54,0.08);border:1px solid #23863640;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="background:rgba(35,134,54,0.08);border:1px solid #23863640;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div>
             <div style="font-size:12px;color:#4ade80;font-weight:700;margin-bottom:2px;">✅ 기획 완료</div>
             <div id="plan-brief-topic-label" style="font-size:14px;font-weight:600;color:#f0f6fc;"></div>
             <div id="plan-brief-kw-label" style="font-size:11px;color:#8b949e;margin-top:2px;"></div>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="planStep3()">← 주제 수정</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="_gotoStep(4)">← 소스 문서 수정</button>
             <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="planReset()">처음부터</button>
           </div>
+        </div>
+
+        <!-- 3개 동시 생성 버튼 -->
+        <div style="background:linear-gradient(135deg,rgba(31,111,235,0.1),rgba(35,134,54,0.1));border:1px solid #1f6feb30;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#f0f6fc;margin-bottom:3px;">✨ 3개 플랫폼 동시 생성</div>
+            <div style="font-size:11px;color:#8b949e;">소스 문서를 기반으로 블로그 · 텍스트형 SNS · 이미지형 SNS를 한 번에 생성합니다.</div>
+          </div>
+          <button class="btn btn-success" onclick="generateAll3Platforms()" id="plan-gen-all-btn" style="white-space:nowrap;font-size:13px;padding:10px 20px;">
+            🚀 3개 동시 생성
+          </button>
+        </div>
+        <div id="plan-gen-all-loading" style="display:none;text-align:center;padding:16px;background:#161b22;border:1px solid #30363d;border-radius:10px;margin-bottom:16px;">
+          <div style="width:24px;height:24px;border:2px solid #238636;border-top-color:transparent;border-radius:50%;display:inline-block;" class="spin"></div>
+          <div style="font-size:12px;color:#8b949e;margin-top:8px;" id="plan-gen-all-status">블로그 · 링크드인 · 인스타그램 동시 생성 중...</div>
         </div>
 
         <!-- 플랫폼별 브리프 카드 그리드 -->
@@ -1930,8 +2085,12 @@
       </div>
     </div>
 
-    <!-- 다음 버튼 -->
-    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+    <!-- 다음 버튼 + 링크 삽입 토글 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:10px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#8b949e;" title="저장된 플랫폼 링크를 본문 하단에 자동 추가합니다">
+        <input type="checkbox" id="blog-link-toggle" style="accent-color:#238636;" onchange="_updateLinkToggleLabel('blog')" />
+        <span id="blog-link-toggle-label">🔗 플랫폼 링크 하단 삽입</span>
+      </label>
       <button class="btn btn-primary" onclick="generateBlog()" style="gap:8px;">
         ✨ AI 본문 생성하기 →
       </button>
@@ -2491,7 +2650,12 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">💼 링크드인 본문</div>
-            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateTSNS('linkedin')">AI 생성</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#484f58;" title="플랫폼 링크 하단 삽입">
+                <input type="checkbox" id="tsns-link-toggle" style="accent-color:#238636;" />🔗
+              </label>
+              <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateTSNS('linkedin')">AI 생성</button>
+            </div>
           </div>
           <textarea class="field-input" id="tsns-linkedin-body" rows="16" placeholder="AI 생성 버튼을 누르거나 직접 작성하세요&#10;&#10;링크드인은 최대 3,000자&#10;Hook(첫줄) → 본문 → CTA 구조 권장" style="resize:vertical;font-size:13px;line-height:1.7;"></textarea>
           <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#484f58;">
@@ -2818,7 +2982,12 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">📷 인스타그램 캡션</div>
-            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateISNS('instagram')">AI 생성</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#484f58;" title="플랫폼 링크 하단 삽입">
+                <input type="checkbox" id="isns-link-toggle" style="accent-color:#238636;" />🔗
+              </label>
+              <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateISNS('instagram')">AI 생성</button>
+            </div>
           </div>
           <textarea class="field-input" id="isns-insta-caption" rows="8" placeholder="감성적이고 공감 가는 캡션을 작성하세요&#10;이모지 활용 권장" style="resize:vertical;margin-bottom:10px;"></textarea>
           <label class="field-label">해시태그</label>
@@ -6218,6 +6387,15 @@ function _collectAgencyFields() {
     blog_platforms:  [...document.querySelectorAll('.ag-blog:checked')].map(c=>c.value),
     sns_platforms:   [...document.querySelectorAll('.ag-sns:checked')].map(c=>c.value),
     video_platforms: [...document.querySelectorAll('.ag-video:checked')].map(c=>c.value),
+    platform_links: {
+      blog_platform: document.getElementById('ag-blog-platform')?.value || '티스토리',
+      blog:      document.getElementById('ag-blog-url')?.value || '',
+      linkedin:  document.getElementById('ag-linkedin-url')?.value || '',
+      threads:   document.getElementById('ag-threads-url')?.value || '',
+      instagram: document.getElementById('ag-instagram-url')?.value || '',
+      youtube:   document.getElementById('ag-youtube-url')?.value || '',
+      tiktok:    document.getElementById('ag-tiktok-url')?.value || '',
+    },
   };
 }
 
@@ -6230,6 +6408,12 @@ function _loadAgencyFields(saved) {
   f('ag-pillars',  (saved.content_pillars||[]).join(', '));
   f('ag-frequency', saved.posting_frequency);
   f('ag-competitors', saved.competitors);
+  // 플랫폼 링크 로드
+  const pl = saved.platform_links || {};
+  f('ag-blog-platform', pl.blog_platform);
+  f('ag-blog-url', pl.blog); f('ag-linkedin-url', pl.linkedin);
+  f('ag-threads-url', pl.threads); f('ag-instagram-url', pl.instagram);
+  f('ag-youtube-url', pl.youtube); f('ag-tiktok-url', pl.tiktok);
   // 보이스 카드 로드 (신규 구조 우선, 구버전 호환)
   if (saved.brand_voice_cards?.length) {
     _voiceCards = saved.brand_voice_cards;
@@ -6848,7 +7032,11 @@ function renderBlogResult(posts) {
 
   const p = posts[0]; // 첫 번째 포스트를 에디터에 표시
   if (titleEl) titleEl.value = p.title || '';
-  if (bodyEl)  bodyEl.value  = p.body  || '';
+  let blogBody = p.body || '';
+  if (document.getElementById('blog-link-toggle')?.checked) {
+    blogBody += _buildLinkCTA('blog');
+  }
+  if (bodyEl) bodyEl.value = blogBody;
 
   if (emptyEl)  emptyEl.style.display  = 'none';
   if (editorEl) editorEl.style.display = '';
@@ -11585,7 +11773,7 @@ async function runLeadBriefing() {
 // ── 스텝 이동 ────────────────────────────────────────
 function _gotoStep(n) {
   _planState.step = n;
-  [1, 2, 3, 4].forEach(i => {
+  [1, 2, 3, 4, 5].forEach(i => {
     const panel   = document.getElementById(`plan-panel-${i}`);
     const circle  = document.getElementById(`pstep-circle-${i}`);
     const label   = document.getElementById(`pstep-label-${i}`);
@@ -11619,10 +11807,12 @@ function planStep1() {
 }
 
 function planReset() {
-  _planState = { step:1, idea:'', context:'', seoData:null, allKeywords:[], selectedKeywords:[], topics:[], selectedTopic:'', briefs:null };
+  _planState = { step:1, idea:'', context:'', seoData:null, allKeywords:[], selectedKeywords:[], topics:[], selectedTopic:'', briefs:null, sourceDocument:'' };
   document.getElementById('plan-idea').value = '';
   document.getElementById('plan-context').value = '';
   document.getElementById('plan-done-status').style.display = 'none';
+  const sd = document.getElementById('plan-source-doc');
+  if (sd) { sd.value = ''; _updateSrcCharCount(); }
   planStep1();
 }
 
@@ -11908,10 +12098,21 @@ async function planStep3Next() {
   if (!topic) { toast('주제를 선택하거나 입력해주세요.', '#f59e0b'); return; }
   _planState.selectedTopic = topic;
 
+  // Step 4: 소스 문서
   _gotoStep(4);
+  const srcLabel = document.getElementById('plan-src-topic-label');
+  if (srcLabel) srcLabel.textContent = topic;
+}
+
+async function planStep4Next() {
+  const srcDoc = document.getElementById('plan-source-doc')?.value.trim();
+  _planState.sourceDocument = srcDoc || '';
+
+  _gotoStep(5);
   document.getElementById('plan-brief-loading').style.display = '';
   document.getElementById('plan-brief-result').style.display = 'none';
 
+  const topic = _planState.selectedTopic;
   try {
     const kws = _planState.selectedKeywords.join(', ');
     const briefRes = await fetch(`${API}/seo/analyze`, {
@@ -11931,10 +12132,8 @@ async function planStep3Next() {
       })
     });
     const bd = await briefRes.json();
-
     _planState.briefs = _buildBriefs(topic, kws, bd);
   } catch (e) {
-    // fallback: offline briefs
     _planState.briefs = _buildBriefs(topic, _planState.selectedKeywords.join(', '), null);
   } finally {
     document.getElementById('plan-brief-loading').style.display = 'none';
@@ -11943,6 +12142,228 @@ async function planStep3Next() {
   _renderPlanBriefs(_planState.briefs, topic);
   document.getElementById('plan-brief-result').style.display = '';
   document.getElementById('plan-done-status').style.display = 'flex';
+}
+
+// ── 소스 문서 함수들 ──────────────────────────────────────────
+
+function _updateSrcCharCount() {
+  const ta = document.getElementById('plan-source-doc');
+  const el = document.getElementById('plan-src-char-count');
+  if (ta && el) el.textContent = `${ta.value.length.toLocaleString()}자`;
+}
+
+function _srcChip(btn) {
+  const ta = document.getElementById('plan-edit-instruction');
+  if (ta) { ta.value = btn.textContent.trim(); ta.focus(); }
+}
+
+async function runSeoResearch() {
+  const ta = document.getElementById('plan-source-doc');
+  const loadEl = document.getElementById('plan-research-loading');
+  const btn = document.getElementById('plan-research-btn');
+  const topic = _planState.selectedTopic || document.getElementById('plan-topic-custom')?.value.trim() || '';
+  if (!topic) { toast('주제를 먼저 선택해주세요.', '#f59e0b'); return; }
+
+  if (loadEl) loadEl.style.display = '';
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/seo/research`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        keywords: _planState.selectedKeywords || [],
+        api_keys: getKeys(),
+        agency_profile: agencyProfile,
+      })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '생성 실패'); }
+    const data = await res.json();
+    if (ta) { ta.value = data.source_document || ''; _updateSrcCharCount(); }
+    toast('소스 문서 생성 완료 ✅', 'green');
+  } catch (e) {
+    toast('소스 문서 생성 실패: ' + e.message, '#f87171');
+  } finally {
+    if (loadEl) loadEl.style.display = 'none';
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function addSourceSection() {
+  const ta = document.getElementById('plan-source-doc');
+  const titleEl = document.getElementById('plan-sec-title');
+  const headingEl = document.getElementById('plan-sec-heading');
+  const loadEl = document.getElementById('plan-add-sec-loading');
+  const btn = document.getElementById('plan-add-sec-btn');
+
+  const sectionTitle = titleEl?.value.trim();
+  if (!sectionTitle) { toast('섹션 제목을 입력해주세요.', '#f59e0b'); return; }
+
+  if (loadEl) loadEl.style.display = '';
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/seo/add-section`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_document: ta?.value || '',
+        heading_type: headingEl?.value || 'H2',
+        section_title: sectionTitle,
+        topic: _planState.selectedTopic || '',
+        api_keys: getKeys(),
+      })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '생성 실패'); }
+    const data = await res.json();
+    if (ta) { ta.value += data.section_content; _updateSrcCharCount(); }
+    if (titleEl) titleEl.value = '';
+    toast(`"${sectionTitle}" 섹션 추가 완료 ✅`, 'green');
+  } catch (e) {
+    toast('섹션 추가 실패: ' + e.message, '#f87171');
+  } finally {
+    if (loadEl) loadEl.style.display = 'none';
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function editSourceDoc() {
+  const ta = document.getElementById('plan-source-doc');
+  const instrEl = document.getElementById('plan-edit-instruction');
+  const loadEl = document.getElementById('plan-edit-src-loading');
+  const btn = document.getElementById('plan-edit-src-btn');
+
+  const instruction = instrEl?.value.trim();
+  if (!instruction) { toast('수정 지시를 입력해주세요.', '#f59e0b'); return; }
+  if (!ta?.value.trim()) { toast('소스 문서가 비어있습니다.', '#f59e0b'); return; }
+
+  if (loadEl) loadEl.style.display = '';
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/seo/edit-source`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_document: ta.value,
+        instruction,
+        api_keys: getKeys(),
+      })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '수정 실패'); }
+    const data = await res.json();
+    ta.value = data.source_document || ta.value;
+    _updateSrcCharCount();
+    if (instrEl) instrEl.value = '';
+    toast('소스 문서 수정 완료 ✅', 'green');
+  } catch (e) {
+    toast('소스 문서 수정 실패: ' + e.message, '#f87171');
+  } finally {
+    if (loadEl) loadEl.style.display = 'none';
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── 플랫폼 링크 CTA 함수들 ───────────────────────────────────
+
+function _getPlatformLinks() {
+  const proj = getActiveProject();
+  return proj?.agency?.platform_links || agencyProfile?.platform_links || {};
+}
+
+function _buildLinkCTA(forPlatform) {
+  const pl = _getPlatformLinks();
+  const lines = [];
+  const icons = { blog: '📝', linkedin: '💼', threads: '🧵', instagram: '📷', youtube: '▶️', tiktok: '🎵' };
+  const labels = {
+    blog: pl.blog_platform || '블로그',
+    linkedin: '링크드인', threads: '쓰레드',
+    instagram: '인스타그램', youtube: '유튜브', tiktok: '틱톡'
+  };
+  // 다른 플랫폼 링크만 표시 (현재 플랫폼 제외)
+  const normFor = forPlatform === 'insta' ? 'instagram' : forPlatform;
+  Object.entries(pl).forEach(([k, v]) => {
+    if (!v || k === 'blog_platform' || k === normFor) return;
+    lines.push(`${icons[k] || '🔗'} ${labels[k]}: ${v}`);
+  });
+  if (!lines.length) return '';
+  return '\n\n---\n' + lines.join('\n');
+}
+
+function _updateLinkToggleLabel(type) {
+  const cb = document.getElementById(`${type}-link-toggle`);
+  const pl = _getPlatformLinks();
+  const count = Object.entries(pl).filter(([k,v]) => k !== 'blog_platform' && v).length;
+  if (cb?.checked && count === 0) {
+    toast('에이전시 설정에서 플랫폼 링크를 먼저 저장해주세요.', '#f59e0b');
+    cb.checked = false;
+  }
+}
+
+// ── 3개 동시 생성 ─────────────────────────────────────────────
+
+async function generateAll3Platforms() {
+  const srcDoc = document.getElementById('plan-source-doc')?.value.trim()
+               || _planState.sourceDocument || '';
+  if (!srcDoc) { toast('소스 문서가 없습니다. Step 4에서 자료조사를 먼저 해주세요.', '#f59e0b'); return; }
+
+  const topic = _planState.selectedTopic || '';
+  const btn = document.getElementById('plan-gen-all-btn');
+  const loadEl = document.getElementById('plan-gen-all-loading');
+  const statusEl = document.getElementById('plan-gen-all-status');
+
+  if (btn) btn.disabled = true;
+  if (loadEl) loadEl.style.display = '';
+
+  try {
+    const res = await fetch(`${API}/content/generate-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_document: srcDoc,
+        topic,
+        keywords: _planState.selectedKeywords || [],
+        api_keys: getKeys(),
+        agency_profile: agencyProfile,
+      })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '생성 실패'); }
+    const data = await res.json();
+
+    // 블로그 탭에 결과 설정
+    if (data.blog) {
+      const bodyEl = document.getElementById('blog-body');
+      if (bodyEl) bodyEl.value = data.blog;
+      const topicEl = document.getElementById('blog-topic');
+      if (topicEl && !topicEl.value) topicEl.value = topic;
+    }
+    // 텍스트형 SNS — 링크드인 + 쓰레드
+    if (data.linkedin) {
+      const el = document.getElementById('tsns-linkedin-body');
+      if (el) el.value = data.linkedin;
+    }
+    if (data.threads) {
+      const el = document.getElementById('tsns-threads-body');
+      if (el) el.value = data.threads;
+    }
+    // 이미지형 SNS — 인스타그램
+    if (data.instagram) {
+      const el = document.getElementById('isns-insta-caption');
+      if (el) el.value = data.instagram;
+    }
+    // 텍스트형/이미지형 주제 필드 채우기
+    const tsnsTopicEl = document.getElementById('tsns-topic');
+    if (tsnsTopicEl && !tsnsTopicEl.value) tsnsTopicEl.value = topic;
+    const isnsTopicEl = document.getElementById('isns-topic');
+    if (isnsTopicEl && !isnsTopicEl.value) isnsTopicEl.value = topic;
+
+    if (statusEl) statusEl.textContent = '✅ 생성 완료! 각 탭에서 확인하세요.';
+    toast('블로그 · 텍스트형 · 이미지형 동시 생성 완료 🎉', 'green');
+  } catch (e) {
+    toast('생성 실패: ' + e.message, '#f87171');
+    if (statusEl) statusEl.textContent = '❌ 생성 실패: ' + e.message;
+  } finally {
+    if (btn) btn.disabled = false;
+    setTimeout(() => { if (loadEl) loadEl.style.display = 'none'; }, 3000);
+  }
 }
 
 function _buildBriefs(topic, kws, seoData) {
@@ -12671,7 +13092,11 @@ async function generateTSNS(platform) {
     const post = data.post || {};
     const body = post.body || '';
     if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. 잠시 후 다시 시도해주세요.', 'orange'); return; }
-    if (bodyEl) bodyEl.value = body;
+    let tsnsBody = body;
+    if (document.getElementById('tsns-link-toggle')?.checked) {
+      tsnsBody += _buildLinkCTA(platform);
+    }
+    if (bodyEl) bodyEl.value = tsnsBody;
     const previewId = platform === 'linkedin' ? 'tsns-li-preview' : 'tsns-th-preview';
     const preview = document.getElementById(previewId);
     if (preview) preview.textContent = body;
@@ -12731,7 +13156,11 @@ async function generateISNS(platform) {
     const body = post.body || '';
     const tags = (post.hashtags || []).join(' ');
     if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. 잠시 후 다시 시도해주세요.', 'orange'); return; }
-    if (bodyEl) bodyEl.value = body;
+    let isnsBody = body;
+    if (document.getElementById('isns-link-toggle')?.checked) {
+      isnsBody += _buildLinkCTA(platform);
+    }
+    if (bodyEl) bodyEl.value = isnsBody;
     if (tagsId) { const t = document.getElementById(tagsId); if (t) t.value = tags; }
     const previewId = isInsta ? 'isns-insta-preview' : 'isns-fb-preview';
     const preview = document.getElementById(previewId);

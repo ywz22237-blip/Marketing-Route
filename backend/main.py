@@ -1421,6 +1421,247 @@ async def generate_sns(req: SNSRequest):
     )
 
 
+# ── 소스 문서 파이프라인 ────────────────────────────────────────
+
+@app.post("/seo/research")
+async def seo_research(req: dict):
+    """주제 기반 자료조사 → 소스 문서 초안 생성"""
+    topic    = req.get("topic", "").strip()
+    keywords = req.get("keywords", [])
+    api_keys = req.get("api_keys") or {}
+    agency   = req.get("agency_profile") or {}
+
+    if not topic:
+        raise HTTPException(status_code=400, detail="topic이 비어있습니다.")
+
+    ag_name = agency.get("agency_name", "") if isinstance(agency, dict) else getattr(agency, "agency_name", "")
+    industry = agency.get("industry", "") if isinstance(agency, dict) else getattr(agency, "industry", "")
+    tone     = agency.get("tone_and_manner", "전문적이고 신뢰감 있는") if isinstance(agency, dict) else getattr(agency, "tone_and_manner", "전문적이고 신뢰감 있는")
+    kw_str   = ', '.join(keywords) if keywords else topic
+
+    prompt = f"""당신은 콘텐츠 마케팅 전문 리서처입니다.
+아래 주제에 대해 블로그·SNS 콘텐츠 제작에 활용할 수 있는 깊이 있는 리서치 문서를 작성하세요.
+이 문서는 나중에 블로그(SEO), 링크드인, 인스타그램 등 여러 플랫폼용 콘텐츠로 변환됩니다.
+
+주제: {topic}
+핵심 키워드: {kw_str}
+에이전시/브랜드: {ag_name} / {industry}
+톤앤매너: {tone}
+
+작성 지침:
+- 2,500~3,500자 분량의 심층 리서치 문서 작성
+- 구성: 주제 개요 → 핵심 현황·트렌드 → 실제 사례/데이터 → 전문가 인사이트 → 실전 적용 방법 → 결론
+- H2(##) 소제목으로 섹션 구분
+- 구체적인 수치, 사례, 트렌드 포함
+- 한국 시장/독자 맥락에 맞게 작성
+- 콘텐츠 제작자가 바로 활용할 수 있도록 사실·인사이트 중심
+
+[소스 문서]"""
+
+    raw, err = await _gemini_text(prompt, api_keys)
+    if err:
+        raise HTTPException(status_code=500, detail=err)
+    return {"source_document": raw.strip()}
+
+
+@app.post("/seo/add-section")
+async def seo_add_section(req: dict):
+    """소스 문서에 특정 섹션 추가 — 해당 주제만 조사해서 반환"""
+    source_doc    = req.get("source_document", "")
+    heading_type  = req.get("heading_type", "H2")  # H1/H2/H3
+    section_title = req.get("section_title", "").strip()
+    topic         = req.get("topic", "").strip()
+    api_keys      = req.get("api_keys") or {}
+
+    if not section_title:
+        raise HTTPException(status_code=400, detail="section_title이 비어있습니다.")
+
+    heading_marker = {"H1": "#", "H2": "##", "H3": "###"}.get(heading_type, "##")
+
+    prompt = f"""당신은 콘텐츠 리서처입니다.
+기존 소스 문서에 추가할 새 섹션을 작성하세요.
+
+[기존 소스 문서 요약]
+주제: {topic}
+{source_doc[:800] if source_doc else '(없음)'}
+
+[추가할 섹션]
+헤딩: {heading_type} — {section_title}
+
+작성 규칙:
+- "{heading_marker} {section_title}" 헤딩으로 시작
+- 400~800자 분량의 상세 내용
+- 구체적인 사례, 수치, 인사이트 포함
+- 기존 문서와 중복되지 않는 새로운 내용
+- 섹션 내용만 출력 (헤딩 포함)
+
+[섹션 내용]"""
+
+    raw, err = await _gemini_text(prompt, api_keys)
+    if err:
+        raise HTTPException(status_code=500, detail=err)
+    return {"section_content": f"\n\n{heading_marker} {section_title}\n{raw.strip()}"}
+
+
+@app.post("/seo/edit-source")
+async def seo_edit_source(req: dict):
+    """소스 문서 대화형 편집 — 지시에 따라 AI가 수정"""
+    source_doc  = req.get("source_document", "").strip()
+    instruction = req.get("instruction", "").strip()
+    api_keys    = req.get("api_keys") or {}
+
+    if not source_doc:
+        raise HTTPException(status_code=400, detail="source_document가 비어있습니다.")
+    if not instruction:
+        raise HTTPException(status_code=400, detail="instruction이 비어있습니다.")
+
+    prompt = f"""당신은 콘텐츠 편집 전문가입니다.
+아래 소스 문서를 지시에 따라 수정·개선하세요.
+
+[소스 문서]
+{source_doc}
+
+[수정 지시]
+{instruction}
+
+규칙:
+- 수정 지시를 정확히 반영
+- 문서 전체 구조(H2 섹션)는 유지하면서 내용 개선
+- 수정된 전체 소스 문서만 출력 (설명·주석 없이)
+
+[수정된 소스 문서]"""
+
+    raw, err = await _gemini_text(prompt, api_keys)
+    if err:
+        raise HTTPException(status_code=500, detail=err)
+    return {"source_document": raw.strip()}
+
+
+@app.post("/content/generate-all")
+async def generate_all_platforms(req: dict):
+    """소스 문서 기반 블로그·링크드인·쓰레드·인스타그램 동시 생성"""
+    import asyncio
+    source_doc = req.get("source_document", "").strip()
+    topic      = req.get("topic", "").strip()
+    keywords   = req.get("keywords", [])
+    api_keys   = req.get("api_keys") or {}
+    agency     = req.get("agency_profile") or {}
+
+    if not source_doc:
+        raise HTTPException(status_code=400, detail="source_document가 비어있습니다.")
+
+    ag_name  = agency.get("agency_name", "") if isinstance(agency, dict) else getattr(agency, "agency_name", "")
+    industry = agency.get("industry", "") if isinstance(agency, dict) else getattr(agency, "industry", "")
+    tone     = agency.get("tone_and_manner", "전문적이고 신뢰감 있는") if isinstance(agency, dict) else getattr(agency, "tone_and_manner", "전문적이고 신뢰감 있는")
+    target   = agency.get("target_audience", "기업 의사결정자") if isinstance(agency, dict) else getattr(agency, "target_audience", "기업 의사결정자")
+    kw_str   = ', '.join(keywords) if keywords else topic
+    ag_str   = f"{ag_name} / {industry}".strip(" /")
+
+    async def gen_blog():
+        p = f"""당신은 SEO 블로그 전문 작가입니다.
+아래 소스 문서를 바탕으로 SEO 최적화 블로그 글을 작성하세요.
+블로그 요약이 아닌, 소스 문서의 모든 정보를 활용해 독자가 충분한 가치를 얻는 완성도 높은 글로 재편성하세요.
+
+[소스 문서]
+{source_doc}
+
+주제: {topic}
+키워드: {kw_str}
+에이전시: {ag_str}
+톤앤매너: {tone}
+타겟: {target}
+
+작성 규칙:
+- ## H2 소제목으로 구조화 (3~5개 섹션)
+- 키워드를 자연스럽게 배치
+- 1,500자 이상
+- 마지막 문단에 CTA 포함
+- 블로그 본문만 출력 (제목 포함, 설명 없이)
+
+[블로그 본문]"""
+        raw, _ = await _gemini_text(p, api_keys)
+        return raw.strip()
+
+    async def gen_linkedin():
+        p = f"""당신은 LinkedIn B2B 콘텐츠 전문가입니다.
+아래 소스 문서에서 전문가에게 가장 임팩트 있는 인사이트 1~2개를 선별해 LinkedIn 포스트를 작성하세요.
+단순 요약이 아닌, LinkedIn 독자가 저장·공유하고 싶은 전문가 관점 포스트여야 합니다.
+
+[소스 문서]
+{source_doc}
+
+주제: {topic}
+에이전시: {ag_str}
+톤앤매너: {tone}
+타겟: {target}
+
+작성 규칙:
+- 첫 줄: 스크롤을 멈추게 하는 강력한 Hook
+- 구조: Hook → 핵심 인사이트 → 데이터/사례 → CTA
+- 해시태그 3~5개 마지막에 포함
+- 3,000자 이내
+- LinkedIn 포스트 본문만 출력 (설명 없이)
+
+[LinkedIn 포스트]"""
+        raw, _ = await _gemini_text(p, api_keys)
+        return raw.strip()
+
+    async def gen_threads():
+        p = f"""당신은 Threads SNS 콘텐츠 전문가입니다.
+아래 소스 문서에서 가장 충격적이거나 의외인 사실 1개를 선택해 Threads 시리즈 포스트를 작성하세요.
+
+[소스 문서]
+{source_doc}
+
+주제: {topic}
+에이전시: {ag_str}
+
+작성 규칙:
+- 첫 파트: 호기심을 자극하는 짧은 Hook (100자 이내)
+- 이후 파트: 핵심 내용을 짧게 나눠 연결 (각 150자 이내)
+- 각 파트는 "---"로 구분
+- 마지막 파트: 대화 유도 질문 또는 CTA
+- 해시태그 3~5개 마지막에만
+- Threads 포스트만 출력 (설명 없이)
+
+[Threads 포스트]"""
+        raw, _ = await _gemini_text(p, api_keys)
+        return raw.strip()
+
+    async def gen_instagram():
+        p = f"""당신은 Instagram 콘텐츠 전문가입니다.
+아래 소스 문서의 핵심 메시지를 Instagram 캡션으로 압축하세요.
+블로그 요약이 아닌, Instagram에서 저장·공유될 감성적인 캡션이어야 합니다.
+
+[소스 문서]
+{source_doc}
+
+주제: {topic}
+에이전시: {ag_str}
+
+작성 규칙:
+- 첫 줄: 스크롤을 멈추게 하는 감성적 후킹 문장 (이모지 활용)
+- 핵심 내용 3~5줄 (이모지 + 짧은 문장)
+- 마지막: CTA 문장
+- 해시태그 15~20개 (본문과 분리)
+- Instagram 캡션만 출력 (설명 없이)
+
+[Instagram 캡션]"""
+        raw, _ = await _gemini_text(p, api_keys)
+        return raw.strip()
+
+    blog, linkedin, threads, instagram = await asyncio.gather(
+        gen_blog(), gen_linkedin(), gen_threads(), gen_instagram()
+    )
+
+    return {
+        "blog": blog,
+        "linkedin": linkedin,
+        "threads": threads,
+        "instagram": instagram,
+    }
+
+
 @app.post("/content/revise")
 async def revise_content(req: dict):
     """콘텐츠 수정 지시 적용 — 블로그/링크드인/쓰레드/인스타그램/페이스북"""
