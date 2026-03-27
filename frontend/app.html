@@ -6935,14 +6935,9 @@ async function generateSectionImage(idx, prompt) {
     if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '실패'); }
     const data = await res.json();
     const imgSrc = data.image_url || `data:${data.mime};base64,${data.image_b64}`;
-    if (thumbEl) {
-      if (data.image_url) {
-        _pollinationsImg(imgSrc, thumbEl, { small: true, onDone: () => toast('섹션 이미지 생성 완료', '#4ade80') });
-      } else {
-        thumbEl.innerHTML = `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />`;
-        toast('섹션 이미지 생성 완료', '#4ade80');
-      }
-    }
+    if (thumbEl) thumbEl.innerHTML = `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" />`;
+    const msg = data.source === 'picsum' ? '플레이스홀더 이미지 삽입 (HF 토큰 권한 추가 시 AI 생성)' : '섹션 이미지 생성 완료';
+    toast(msg, data.source === 'picsum' ? 'orange' : '#4ade80');
   } catch(e) {
     if (thumbEl) thumbEl.innerHTML = '❌';
     toast('생성 실패: ' + e.message, 'red');
@@ -6977,15 +6972,13 @@ async function generateBlogThumbnail() {
     const data = await res.json();
     const imgSrc2 = data.image_url || `data:${data.mime};base64,${data.image_b64}`;
     if (preview) {
-      if (data.image_url) {
-        _pollinationsImg(imgSrc2, preview, { small: false, onDone: () => { toast('썸네일 생성 완료!', '#4ade80'); blogAutoSave(); } });
-      } else {
-        preview.style.position = 'relative';
-        preview.innerHTML = `<img src="${imgSrc2}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />`;
-        toast('썸네일 생성 완료!', '#4ade80');
-        blogAutoSave();
-      }
+      preview.style.position = 'relative';
+      preview.innerHTML = `<img src="${imgSrc2}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />`
+        + (data.image_url ? `<a href="${imgSrc2}" target="_blank" style="position:absolute;bottom:8px;right:8px;background:#1f6feb;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;text-decoration:none;">열기</a>` : '');
     }
+    const thumbMsg = data.source === 'picsum' ? '플레이스홀더 이미지 삽입 (HF 토큰 Inference 권한 필요)' : '썸네일 생성 완료!';
+    toast(thumbMsg, data.source === 'picsum' ? 'orange' : '#4ade80');
+    blogAutoSave();
   } catch(e) {
     if (preview) preview.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px;"><div style="font-size:13px;">❌ ${e.message}</div></div>`;
     toast('이미지 생성 실패: ' + e.message, 'red');
