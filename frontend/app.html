@@ -11377,8 +11377,19 @@ function applyBriefToBlog() {
   const b = _planState.briefs.blog;
   const el = document.getElementById('blog-topic');
   if (el) el.value = b.seo_title + '\n\n구조: ' + b.structure + '\n훅: ' + b.hook;
+  // 에디터 초기화 (이전 생성 내용 제거)
+  const titleEl = document.getElementById('blog-title');
+  const bodyEl  = document.getElementById('blog-body');
+  if (titleEl) titleEl.value = b.seo_title || '';
+  if (bodyEl)  bodyEl.value  = '';
+  // 빈 상태로 리셋
+  const emptyEl  = document.getElementById('blog-content-empty');
+  const editorEl = document.getElementById('blog-content-editor');
+  if (emptyEl)  { emptyEl.innerHTML = '<div style="text-align:center;padding:60px 20px;border:1px dashed #30363d;border-radius:8px;"><div style="font-size:32px;margin-bottom:10px;">✍️</div><div style="font-size:13px;color:#8b949e;margin-bottom:6px;">AI가 기본 설정 기반으로 본문을 생성합니다</div><div style="font-size:11px;color:#484f58;margin-bottom:16px;">SEO 최적화 구조 · H2/H3 태그 · 핵심 키워드 자연 배치</div><button class="btn btn-primary" onclick="generateBlog()">✨ 본문 생성하기</button></div>'; emptyEl.style.display = ''; }
+  if (editorEl) editorEl.style.display = 'none';
   goto('blog');
-  toast('블로그 주제가 적용되었습니다.', '#4ade80');
+  switchBlogTab('basic');
+  toast('블로그 주제가 적용되었습니다. 기본 설정을 확인 후 생성하세요.', '#4ade80');
 }
 function applyBriefToLinkedin() {
   if (!_planState.briefs?.linkedin) return;
