@@ -763,8 +763,8 @@
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
 
         <!-- 네이버 블로그 -->
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="card" style="opacity:.7;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="font-size:20px;">🟢</span>
               <div>
@@ -772,21 +772,16 @@
                 <div style="font-size:10px;color:#8b949e;">배포 · 분석</div>
               </div>
             </div>
-            <span id="plt-status-naver" class="plt-status-badge">미연결</span>
+            <span id="plt-status-naver" style="font-size:9px;padding:2px 8px;border-radius:10px;background:#f8717115;color:#f87171;border:1px solid #f8717140;font-weight:600;">서비스 종료</span>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
-            <div><label class="field-label">Client ID</label><input type="password" class="key-input" id="plt-naver-client-id" placeholder="..." oninput="onPlatformKeyChange('naver','client_id',this.value)" /></div>
-            <div><label class="field-label">Client Secret</label><input type="password" class="key-input" id="plt-naver-client-secret" placeholder="..." oninput="onPlatformKeyChange('naver','client_secret',this.value)" /></div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button class="api-test-btn" style="flex:1;" onclick="testPlatform('naver')">연결 테스트</button>
-            <a href="https://developers.naver.com/apps/#/list" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;white-space:nowrap;">발급 →</a>
+          <div style="font-size:11px;color:#f87171;background:#f8717110;border:1px solid #f8717130;border-radius:6px;padding:8px 10px;">
+            네이버 블로그 Open API가 종료되어 자동 배포가 불가합니다. 콘텐츠 생성 후 수동으로 붙여넣기 해주세요.
           </div>
         </div>
 
         <!-- 티스토리 -->
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="card" style="opacity:.7;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="font-size:20px;">🟠</span>
               <div>
@@ -794,15 +789,10 @@
                 <div style="font-size:10px;color:#8b949e;">배포 · 애드센스</div>
               </div>
             </div>
-            <span id="plt-status-tistory" class="plt-status-badge">미연결</span>
+            <span id="plt-status-tistory" style="font-size:9px;padding:2px 8px;border-radius:10px;background:#f8717115;color:#f87171;border:1px solid #f8717140;font-weight:600;">서비스 종료</span>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
-            <div><label class="field-label">Access Token</label><input type="password" class="key-input" id="plt-tistory-access-token" placeholder="..." oninput="onPlatformKeyChange('tistory','access_token',this.value)" /></div>
-            <div><label class="field-label">블로그 주소</label><input type="text" class="key-input" id="plt-tistory-blog-name" placeholder="예: myblog.tistory.com" oninput="onPlatformKeyChange('tistory','blog_name',this.value)" /></div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button class="api-test-btn" style="flex:1;" onclick="testPlatform('tistory')">연결 테스트</button>
-            <a href="https://www.tistory.com/guide/api/manage/register" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;white-space:nowrap;">발급 →</a>
+          <div style="font-size:11px;color:#f87171;background:#f8717110;border:1px solid #f8717130;border-radius:6px;padding:8px 10px;">
+            티스토리 Open API가 2022년 12월 종료되어 자동 배포가 불가합니다. 콘텐츠 생성 후 수동으로 붙여넣기 해주세요.
           </div>
         </div>
 
@@ -5753,9 +5743,9 @@ const PLT_STORE = 'osmu_platform_connections';
 
 // 채널별 연결 현황 카드
 const _PLT_CHANNELS = [
-  { id:'tistory',   label:'티스토리',    icon:'assets/icons/tistory.svg',    webhookKey:'make_webhook_wordpress', pltKeys:['tistory'],   team:'팀원1' },
+  { id:'tistory',   label:'티스토리',    icon:'assets/icons/tistory.svg',    webhookKey:'make_webhook_wordpress', pltKeys:['tistory'],   team:'팀원1', deprecated:true },
   { id:'wordpress', label:'WordPress',   icon:'assets/icons/wordpress.svg',  webhookKey:'make_webhook_wordpress', pltKeys:['wordpress'], team:'팀원1' },
-  { id:'naver',     label:'네이버블로그',icon:'assets/icons/naver-blog.svg', webhookKey:'make_webhook_wordpress', pltKeys:['naver'],     team:'팀원1' },
+  { id:'naver',     label:'네이버블로그',icon:'assets/icons/naver-blog.svg', webhookKey:'make_webhook_wordpress', pltKeys:['naver'],     team:'팀원1', deprecated:true },
   { id:'linkedin',  label:'LinkedIn',    icon:'assets/icons/linkedin.svg',   webhookKey:'make_webhook_linkedin',  pltKeys:['linkedin'],  team:'팀원2' },
   { id:'threads',   label:'Threads',     icon:'assets/icons/threads.svg',    webhookKey:'make_webhook_linkedin',  pltKeys:['threads'],   team:'팀원2' },
   { id:'instagram', label:'Instagram',   icon:'assets/icons/instagram.svg',  webhookKey:'make_webhook_instagram', pltKeys:['meta'],      team:'팀원3' },
@@ -5781,7 +5771,8 @@ function renderPlatformStatus() {
     const api = hasPlatform(ch.pltKeys);
 
     let statusLabel, statusBg, statusColor, statusBorder;
-    if (wh && api)       { statusLabel='완전연결'; statusBg='#23863615'; statusColor='#4ade80'; statusBorder='#23863640'; }
+    if (ch.deprecated)   { statusLabel='서비스종료'; statusBg='#f8717115'; statusColor='#f87171'; statusBorder='#f8717140'; }
+    else if (wh && api)       { statusLabel='완전연결'; statusBg='#23863615'; statusColor='#4ade80'; statusBorder='#23863640'; }
     else if (wh && !api) { statusLabel='웹훅만';   statusBg='#1f6feb15'; statusColor='#60a5fa'; statusBorder='#1f6feb40'; }
     else if (!wh && api) { statusLabel='API만';    statusBg='#f59e0b15'; statusColor='#fbbf24'; statusBorder='#f59e0b40'; }
     else                 { statusLabel='미연결';   statusBg='#21262d';   statusColor='#484f58'; statusBorder='#30363d';   }
@@ -5816,6 +5807,7 @@ function renderPlatformStatus() {
       <span style="font-size:10px;color:#60a5fa;">● 웹훅만</span>
       <span style="font-size:10px;color:#fbbf24;">● API만</span>
       <span style="font-size:10px;color:#484f58;">● 미연결</span>
+      <span style="font-size:10px;color:#f87171;">● 서비스종료</span>
     </div>`;
 }
 
