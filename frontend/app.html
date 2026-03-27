@@ -2583,14 +2583,20 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
       <!-- 체크리스트 -->
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
-          <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:12px;">검수 체크리스트</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:11px;color:#8b949e;font-weight:700;">검수 체크리스트</div>
+            <div id="tsns-cl-progress" style="font-size:10px;color:#8b949e;font-weight:600;">0/6</div>
+          </div>
+          <div style="background:#21262d;border-radius:4px;height:4px;margin-bottom:12px;overflow:hidden;">
+            <div id="tsns-cl-bar" style="height:100%;background:#1f6feb;border-radius:4px;width:0%;transition:width .3s;"></div>
+          </div>
           <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">Hook 첫 줄이 강렬한가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">핵심 키워드 자연스럽게 포함</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">CTA 명확한가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">브랜드 톤 일치</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">글자 수 확인</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#1f6feb;" /><span style="color:#e6edf3;">오탈자 없음</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-hook"    style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-hook-lbl"    style="color:#8b949e;">Hook 첫 줄이 강렬한가</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-keyword" style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-keyword-lbl" style="color:#8b949e;">핵심 키워드 자연스럽게 포함</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-cta"     style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-cta-lbl"     style="color:#8b949e;">CTA 명확한가</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-tone"    style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-tone-lbl"    style="color:#8b949e;">브랜드 톤 일치</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-length"  style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-length-lbl"  style="color:#8b949e;">글자 수 확인</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-typo"    style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-typo-lbl"    style="color:#8b949e;">오탈자 없음</span></label>
           </div>
         </div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
@@ -2979,13 +2985,19 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
       </div>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
-          <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:12px;">검수 체크리스트</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:11px;color:#8b949e;font-weight:700;">검수 체크리스트</div>
+            <div id="isns-cl-progress" style="font-size:10px;color:#8b949e;font-weight:600;">0/5</div>
+          </div>
+          <div style="background:#21262d;border-radius:4px;height:4px;margin-bottom:12px;overflow:hidden;">
+            <div id="isns-cl-bar" style="height:100%;background:#e1306c;border-radius:4px;width:0%;transition:width .3s;"></div>
+          </div>
           <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#e1306c;" /><span style="color:#e6edf3;">첫 줄이 스크롤을 멈추게 하는가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#e1306c;" /><span style="color:#e6edf3;">이모지 적절히 사용</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#e1306c;" /><span style="color:#e6edf3;">해시태그 30개 이하 (인스타)</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#e1306c;" /><span style="color:#e6edf3;">CTA 명확한가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" style="accent-color:#e1306c;" /><span style="color:#e6edf3;">브랜드 톤 일치</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-hook"    style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-hook-lbl"    style="color:#8b949e;">첫 줄이 스크롤을 멈추게 하는가</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-emoji"   style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-emoji-lbl"   style="color:#8b949e;">이모지 적절히 사용</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-hashtag" style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-hashtag-lbl" style="color:#8b949e;">해시태그 30개 이하</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-cta"     style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-cta-lbl"     style="color:#8b949e;">CTA 명확한가</span></label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-tone"    style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-tone-lbl"    style="color:#8b949e;">브랜드 톤 일치</span></label>
           </div>
         </div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
@@ -7321,6 +7333,96 @@ function _updateBlogClBar() {
     progEl.textContent = `${done}/${total}`;
     progEl.style.color = pct === 100 ? '#4ade80' : '#8b949e';
   }
+}
+
+// ── 텍스트형 SNS 체크리스트 ─────────────────────────
+function _refreshTsnsChecklist() {
+  const platform = window._tsnsActivePlatform || 'linkedin';
+  const bodyId   = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+  const body     = document.getElementById(bodyId)?.value || document.getElementById('tsns-review-body')?.value || '';
+  const topic    = document.getElementById('tsns-topic')?.value || '';
+  const maxLen   = platform === 'threads' ? 500 : 3000;
+
+  const ctaWords = ['댓글', '링크', '팔로우', '저장', '공유', '클릭', '바로가기', '확인', '알아보기', 'DM', '문의'];
+  const checks = {
+    hook:    body.length > 10,
+    keyword: topic.length > 1 && body.toLowerCase().includes(topic.slice(0, 4).toLowerCase()),
+    cta:     ctaWords.some(w => body.includes(w)),
+    tone:    document.getElementById('tsns-cl-tone')?.checked || false,
+    length:  body.length > 0 && body.length <= maxLen,
+    typo:    document.getElementById('tsns-cl-typo')?.checked || false,
+  };
+
+  const ids = ['hook','keyword','cta','tone','length','typo'];
+  ids.forEach(k => {
+    const cb  = document.getElementById(`tsns-cl-${k}`);
+    const lbl = document.getElementById(`tsns-cl-${k}-lbl`);
+    if (!cb) return;
+    if (k !== 'tone' && k !== 'typo') cb.checked = checks[k];
+    if (lbl) lbl.style.color = cb.checked ? '#e6edf3' : '#8b949e';
+  });
+
+  // 글자 수 레이블 업데이트
+  const lenLbl = document.getElementById('tsns-cl-length-lbl');
+  if (lenLbl && body.length > 0) lenLbl.textContent = `글자 수 확인 (${body.length}/${maxLen}자)`;
+
+  _updateTsnsClBar();
+}
+
+function _onTsnsCl() { _updateTsnsClBar(); }
+
+function _updateTsnsClBar() {
+  const ids  = ['hook','keyword','cta','tone','length','typo'];
+  const done = ids.filter(k => document.getElementById(`tsns-cl-${k}`)?.checked).length;
+  const pct  = Math.round(done / ids.length * 100);
+  const bar  = document.getElementById('tsns-cl-bar');
+  const prog = document.getElementById('tsns-cl-progress');
+  if (bar)  { bar.style.width = pct + '%'; bar.style.background = pct===100 ? '#4ade80' : pct>=60 ? '#f59e0b' : '#1f6feb'; }
+  if (prog) { prog.textContent = `${done}/${ids.length}`; prog.style.color = pct===100 ? '#4ade80' : '#8b949e'; }
+}
+
+// ── 이미지형 SNS 체크리스트 ─────────────────────────
+function _refreshIsnsChecklist() {
+  const caption  = document.getElementById('isns-review-caption')?.value || '';
+  const tagsText = document.getElementById('isns-review-tags')?.value || '';
+  const hashCount = (tagsText.match(/#\S+/g) || []).length;
+  const hasEmoji  = /\p{Emoji}/u.test(caption);
+  const ctaWords  = ['클릭', '링크', '팔로우', '저장', '공유', '댓글', '바로가기', '확인', 'DM', '문의', '프로필'];
+
+  const checks = {
+    hook:    caption.length > 10,
+    emoji:   hasEmoji,
+    hashtag: hashCount > 0 && hashCount <= 30,
+    cta:     ctaWords.some(w => caption.includes(w)),
+    tone:    document.getElementById('isns-cl-tone')?.checked || false,
+  };
+
+  const ids = ['hook','emoji','hashtag','cta','tone'];
+  ids.forEach(k => {
+    const cb  = document.getElementById(`isns-cl-${k}`);
+    const lbl = document.getElementById(`isns-cl-${k}-lbl`);
+    if (!cb) return;
+    if (k !== 'tone') cb.checked = checks[k];
+    if (lbl) lbl.style.color = cb.checked ? '#e6edf3' : '#8b949e';
+  });
+
+  // 해시태그 수 레이블 업데이트
+  const htLbl = document.getElementById('isns-cl-hashtag-lbl');
+  if (htLbl && hashCount > 0) htLbl.textContent = `해시태그 30개 이하 (현재 ${hashCount}개)`;
+
+  _updateIsnsClBar();
+}
+
+function _onIsnsCl() { _updateIsnsClBar(); }
+
+function _updateIsnsClBar() {
+  const ids  = ['hook','emoji','hashtag','cta','tone'];
+  const done = ids.filter(k => document.getElementById(`isns-cl-${k}`)?.checked).length;
+  const pct  = Math.round(done / ids.length * 100);
+  const bar  = document.getElementById('isns-cl-bar');
+  const prog = document.getElementById('isns-cl-progress');
+  if (bar)  { bar.style.width = pct + '%'; bar.style.background = pct===100 ? '#4ade80' : pct>=60 ? '#f59e0b' : '#e1306c'; }
+  if (prog) { prog.textContent = `${done}/${ids.length}`; prog.style.color = pct===100 ? '#4ade80' : '#8b949e'; }
 }
 
 // ── 카드뉴스 슬라이드 수 자동 계산 ───────────────
@@ -12465,7 +12567,7 @@ async function generateTSNS(platform) {
     const data = await res.json();
     const post = data.post || {};
     const body = post.body || '';
-    if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. API 키를 확인하세요.', 'orange'); return; }
+    if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. 잠시 후 다시 시도해주세요.', 'orange'); return; }
     if (bodyEl) bodyEl.value = body;
     const previewId = platform === 'linkedin' ? 'tsns-li-preview' : 'tsns-th-preview';
     const preview = document.getElementById(previewId);
@@ -12473,6 +12575,7 @@ async function generateTSNS(platform) {
     const reviewEl = document.getElementById('tsns-review-body');
     if (reviewEl) reviewEl.value = body;
     toast(`${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠 생성 완료!`, '#4ade80');
+    setTimeout(_refreshTsnsChecklist, 100);
   } catch(e) {
     if (bodyEl) bodyEl.value = '';
     toast('생성 실패: ' + e.message, 'red');
@@ -12524,7 +12627,7 @@ async function generateISNS(platform) {
     const post = data.post || {};
     const body = post.body || '';
     const tags = (post.hashtags || []).join(' ');
-    if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. API 키를 확인하세요.', 'orange'); return; }
+    if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. 잠시 후 다시 시도해주세요.', 'orange'); return; }
     if (bodyEl) bodyEl.value = body;
     if (tagsId) { const t = document.getElementById(tagsId); if (t) t.value = tags; }
     const previewId = isInsta ? 'isns-insta-preview' : 'isns-fb-preview';
@@ -12535,6 +12638,7 @@ async function generateISNS(platform) {
     if (rc) rc.value = body;
     if (rt) rt.value = tags;
     toast('이미지형 SNS 콘텐츠 생성 완료!', '#4ade80');
+    setTimeout(_refreshIsnsChecklist, 100);
   } catch(e) {
     if (bodyEl) bodyEl.value = '';
     toast('생성 실패: ' + e.message, 'red');
@@ -12594,12 +12698,12 @@ async function generateCardNewsISNS() {
 // ── 텍스트형 SNS 탭 전환 ──────────────────────────────────
 function switchTsnsTab(tab) {
   if (tab === 'review') {
-    // 현재 활성 플랫폼 본문을 검수 탭으로 복사
     const plat = window._tsnsActivePlatform || 'linkedin';
     const bodyId = plat === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
     const body = document.getElementById(bodyId)?.value || '';
     const reviewEl = document.getElementById('tsns-review-body');
     if (reviewEl && body) reviewEl.value = body;
+    setTimeout(_refreshTsnsChecklist, 50);
   }
   const tabs = ['basic','content','review'];
   const nums  = {basic:1, content:2, review:3};
@@ -12665,6 +12769,7 @@ function switchIsnsTab(tab) {
     const rt = document.getElementById('isns-review-tags');
     if (rc && caption) rc.value = caption;
     if (rt && tags)    rt.value = tags;
+    setTimeout(_refreshIsnsChecklist, 50);
   }
   const tabs = ['basic','content','cardnews','review'];
   const nums  = {basic:1, content:2, cardnews:3, review:4};
