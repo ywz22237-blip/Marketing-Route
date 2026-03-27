@@ -2451,32 +2451,27 @@ async def agency_learn_csv(req: AgencyLearnRequest):
     }
 
 
-# ── 이미지 생성 (HuggingFace FLUX.1) ────────────────────────────
+# ── 이미지 생성 (Pollinations.ai - 무료, 토큰 불필요) ────────────────────────────
 @app.post("/image/generate")
 async def generate_image(body: dict):
-    """HuggingFace FLUX.1-schnell로 이미지 생성 → base64 반환"""
-    import httpx, base64
+    """Pollinations.ai로 이미지 생성 → base64 반환"""
+    import httpx, base64, urllib.parse
 
-    prompt    = body.get("prompt", "")
-    hf_token  = body.get("hf_token") or (body.get("api_keys") or {}).get("hf_api_token", "")
+    prompt = body.get("prompt", "")
+    width  = body.get("width", 1024)
+    height = body.get("height", 1024)
 
     if not prompt:
         raise HTTPException(status_code=400, detail="prompt가 비어있습니다.")
-    if not hf_token:
-        raise HTTPException(status_code=400, detail="HuggingFace API 토큰이 없습니다. API 설정에서 HF Token을 입력해주세요.")
 
-    model_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
+    encoded = urllib.parse.quote(prompt)
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&enhance=false"
 
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            r = await client.post(
-                model_url,
-                headers={"Authorization": f"Bearer {hf_token}"},
-                json={"inputs": prompt}
-            )
+        async with httpx.AsyncClient(timeout=90, follow_redirects=True) as client:
+            r = await client.get(url)
             if r.status_code != 200:
-                err = r.text[:200]
-                raise HTTPException(status_code=502, detail=f"HuggingFace 오류 ({r.status_code}): {err}")
+                raise HTTPException(status_code=502, detail=f"Pollinations 오류 ({r.status_code}): {r.text[:200]}")
             img_b64 = base64.b64encode(r.content).decode()
             return {"image_b64": img_b64, "mime": "image/jpeg"}
     except HTTPException:
