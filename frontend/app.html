@@ -12441,7 +12441,7 @@ let _tsnsActivePlatform = 'linkedin';
 async function generateTSNS(platform) {
   _tsnsActivePlatform = platform;
   const topic   = document.getElementById('tsns-topic')?.value.trim();
-  const summary = document.getElementById('tsns-message')?.value.trim();
+  const summary = document.getElementById('tsns-message')?.value.trim() || '';
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchTsnsTab('basic'); return; }
 
   const bodyId = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
@@ -12456,17 +12456,22 @@ async function generateTSNS(platform) {
         tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile
       })
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.detail?.[0]?.msg || err.detail || `HTTP ${res.status}`;
+      if (bodyEl) bodyEl.value = '';
+      toast('생성 실패: ' + msg, 'red'); return;
+    }
     const data = await res.json();
     const post = data.post || {};
     const body = post.body || '';
+    if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. API 키를 확인하세요.', 'orange'); return; }
     if (bodyEl) bodyEl.value = body;
-    // 미리보기 업데이트
     const previewId = platform === 'linkedin' ? 'tsns-li-preview' : 'tsns-th-preview';
     const preview = document.getElementById(previewId);
     if (preview) preview.textContent = body;
-    // 검수 탭 복사
     const reviewEl = document.getElementById('tsns-review-body');
-    if (reviewEl && !reviewEl.value) reviewEl.value = body;
+    if (reviewEl) reviewEl.value = body;
     toast(`${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠 생성 완료!`, '#4ade80');
   } catch(e) {
     if (bodyEl) bodyEl.value = '';
@@ -12489,13 +12494,15 @@ let _isnsActivePlatform = 'instagram';
 
 async function generateISNS(platform) {
   _isnsActivePlatform = platform;
-  const topic   = document.getElementById('isns-topic')?.value.trim();
-  const summary = '';
+  const topic = document.getElementById('isns-topic')?.value.trim();
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
 
-  const apiPlatform = platform === 'insta' ? 'instagram' : platform;
-  const bodyId  = platform === 'insta' || platform === 'instagram' ? 'isns-insta-caption' : 'isns-fb-body';
-  const tagsId  = platform === 'insta' || platform === 'instagram' ? 'isns-insta-tags'    : null;
+  // 백엔드 SNSPlatform enum: linkedin / instagram / threads 만 지원
+  // facebook → instagram 프롬프트로 대체 (Meta 계열 동일 방향)
+  const isInsta = platform === 'insta' || platform === 'instagram';
+  const apiPlatform = isInsta ? 'instagram' : (platform === 'facebook' ? 'instagram' : platform);
+  const bodyId  = isInsta ? 'isns-insta-caption' : 'isns-fb-body';
+  const tagsId  = isInsta ? 'isns-insta-tags' : null;
   const bodyEl  = document.getElementById(bodyId);
   if (bodyEl) bodyEl.value = '⏳ 생성 중...';
 
@@ -12503,25 +12510,30 @@ async function generateISNS(platform) {
     const res = await fetch(`${API}/sns/generate`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        topic, seo_summary: summary, platform: apiPlatform,
+        topic, seo_summary: '', platform: apiPlatform,
         tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile
       })
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.detail?.[0]?.msg || err.detail || `HTTP ${res.status}`;
+      if (bodyEl) bodyEl.value = '';
+      toast('생성 실패: ' + msg, 'red'); return;
+    }
     const data = await res.json();
     const post = data.post || {};
     const body = post.body || '';
     const tags = (post.hashtags || []).join(' ');
+    if (!body) { if (bodyEl) bodyEl.value = ''; toast('본문이 비어있습니다. API 키를 확인하세요.', 'orange'); return; }
     if (bodyEl) bodyEl.value = body;
     if (tagsId) { const t = document.getElementById(tagsId); if (t) t.value = tags; }
-    // 미리보기
-    const previewId = platform === 'insta' || platform === 'instagram' ? 'isns-insta-preview' : 'isns-fb-preview';
+    const previewId = isInsta ? 'isns-insta-preview' : 'isns-fb-preview';
     const preview = document.getElementById(previewId);
     if (preview) preview.textContent = body;
-    // 검수 복사
     const rc = document.getElementById('isns-review-caption');
     const rt = document.getElementById('isns-review-tags');
-    if (rc && !rc.value) rc.value = body;
-    if (rt && !rt.value) rt.value = tags;
+    if (rc) rc.value = body;
+    if (rt) rt.value = tags;
     toast('이미지형 SNS 콘텐츠 생성 완료!', '#4ade80');
   } catch(e) {
     if (bodyEl) bodyEl.value = '';
