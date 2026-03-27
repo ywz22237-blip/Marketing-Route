@@ -2307,33 +2307,22 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <!-- 카테고리 -->
             <div style="font-size:11px;color:#03c75a;font-weight:700;margin-bottom:8px;">마케팅 인사이트</div>
             <!-- 제목 -->
-            <h1 id="blog-preview-title" style="font-size:22px;font-weight:800;color:#1a1a1a;line-height:1.4;margin:0 0 12px;">B2B 콘텐츠 마케팅 완벽 가이드: 스타트업이 6개월 만에 리드를 3배 늘린 실전 전략</h1>
+            <h1 id="blog-preview-title" style="font-size:22px;font-weight:800;color:#1a1a1a;line-height:1.4;margin:0 0 12px;">(제목 없음)</h1>
             <!-- 메타 -->
             <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:#999;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #eee;">
-              <span>박혁신</span>
+              <span id="blog-preview-date">2026. 3. 28.</span>
               <span>·</span>
-              <span>2026. 3. 26.</span>
-              <span>·</span>
-              <span>읽기 6분</span>
+              <span id="blog-preview-readtime">읽기 --분</span>
               <span style="margin-left:auto;">조회 0</span>
             </div>
             <!-- 썸네일 -->
-            <div style="background:#f5f5f5;aspect-ratio:3/2;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:#999;font-size:12px;">썸네일 이미지</div>
+            <div id="blog-preview-thumbnail" style="background:#f5f5f5;aspect-ratio:3/2;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:#999;font-size:12px;">썸네일 이미지</div>
             <!-- 본문 미리보기 -->
-            <div style="font-size:14px;line-height:1.9;color:#333;">
-              <h2 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:20px 0 10px;">서론: 콘텐츠가 곧 영업이다</h2>
-              <p>B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 쏟아붓기보다 콘텐츠 한 편이 6개월 뒤에도 리드를 만들어내는 자산이 될 수 있다면 어떨까요?</p>
-              <h2 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:20px 0 10px;">1. 왜 B2B에서 콘텐츠 마케팅이 효과적인가</h2>
-              <p><strong>구매 결정 주기가 길다</strong> — B2B 구매는 평균 6~12개월이 걸립니다. 그 긴 여정 동안 잠재고객의 머릿속에 있으려면 콘텐츠가 필요합니다.</p>
-              <div style="background:#f5f5f5;height:1px;margin:20px 0;"></div>
-              <p style="color:#999;font-size:12px;text-align:center;">... 본문 계속 ...</p>
+            <div id="blog-preview-body" style="font-size:14px;line-height:1.9;color:#333;">
+              <p style="color:#999;text-align:center;">본문을 생성하면 여기에 표시됩니다.</p>
             </div>
             <!-- 태그 -->
-            <div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;display:flex;flex-wrap:wrap;gap:6px;">
-              <span style="padding:4px 10px;background:#f1f3f5;border-radius:20px;font-size:11px;color:#555;">#B2B마케팅</span>
-              <span style="padding:4px 10px;background:#f1f3f5;border-radius:20px;font-size:11px;color:#555;">#콘텐츠마케팅</span>
-              <span style="padding:4px 10px;background:#f1f3f5;border-radius:20px;font-size:11px;color:#555;">#스타트업마케팅</span>
-            </div>
+            <div id="blog-preview-tags" style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;display:flex;flex-wrap:wrap;gap:6px;"></div>
           </div>
         </div>
       </div>
@@ -7106,6 +7095,7 @@ function blogDraftReset() {
 
 function switchBlogTab(tab) {
   window._currentBlogTab = tab;
+  if (tab === 'review') renderBlogReview();
   const tabs = ['basic','content','image','review'];
   const nums  = {basic:1, content:2, image:3, review:4};
   tabs.forEach(t => {
@@ -7143,6 +7133,67 @@ function selectBlogLen(el) {
   });
   el.style.borderColor = '#1f6feb'; el.style.background = '#1f6feb15'; el.style.color = '#60a5fa';
   el.querySelector('div').style.color = '#60a5fa80';
+}
+
+function renderBlogReview() {
+  const title = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '(제목 없음)';
+  const body  = document.getElementById('blog-body')?.value  || '';
+
+  // 제목
+  const titleEl = document.getElementById('blog-preview-title');
+  if (titleEl) titleEl.textContent = title;
+
+  // 읽기 시간 (200자/분 기준)
+  const words = body.replace(/\s+/g,' ').trim().length;
+  const mins  = Math.max(1, Math.round(words / 300));
+  const readEl = document.getElementById('blog-preview-readtime');
+  if (readEl) readEl.textContent = `읽기 ${mins}분`;
+
+  // 날짜
+  const dateEl = document.getElementById('blog-preview-date');
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = `${now.getFullYear()}. ${now.getMonth()+1}. ${now.getDate()}.`;
+  }
+
+  // 썸네일 (이미지 탭에서 생성한 것 사용)
+  const thumbSrc = document.getElementById('blog-thumbnail-preview')?.querySelector('img')?.src || '';
+  const thumbEl  = document.getElementById('blog-preview-thumbnail');
+  if (thumbEl) {
+    thumbEl.innerHTML = thumbSrc
+      ? `<img src="${thumbSrc}" style="width:100%;height:100%;object-fit:cover;" />`
+      : '<span style="color:#999;font-size:12px;">썸네일 이미지 (이미지 탭에서 생성)</span>';
+  }
+
+  // 본문 마크다운 → HTML 변환
+  const bodyEl = document.getElementById('blog-preview-body');
+  if (bodyEl) {
+    if (!body) {
+      bodyEl.innerHTML = '<p style="color:#999;text-align:center;">본문을 생성하면 여기에 표시됩니다.</p>';
+    } else {
+      const html = body
+        .replace(/^### (.+)$/gm, '<h3 style="font-size:15px;font-weight:700;color:#1a1a1a;margin:16px 0 8px;">$1</h3>')
+        .replace(/^## (.+)$/gm,  '<h2 style="font-size:18px;font-weight:700;color:#1a1a1a;margin:20px 0 10px;">$1</h2>')
+        .replace(/^# (.+)$/gm,   '<h1 style="font-size:22px;font-weight:800;color:#1a1a1a;margin:24px 0 12px;">$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+        .replace(/^- (.+)$/gm,    '<li style="margin:4px 0;">$1</li>')
+        .replace(/(<li.*<\/li>\n?)+/g, m => `<ul style="padding-left:20px;margin:10px 0;">${m}</ul>`)
+        .replace(/\n{2,}/g, '</p><p style="margin:10px 0;">')
+        .replace(/\n/g, '<br>');
+      bodyEl.innerHTML = `<p style="margin:10px 0;">${html}</p>`;
+    }
+  }
+
+  // 태그 (제목에서 키워드 추출)
+  const tagsEl = document.getElementById('blog-preview-tags');
+  if (tagsEl) {
+    const topic = document.getElementById('blog-topic')?.value || title;
+    const keywords = topic.split(/[\s,]+/).filter(w => w.length > 1).slice(0, 5);
+    tagsEl.innerHTML = keywords.map(k =>
+      `<span style="padding:4px 10px;background:#f1f3f5;border-radius:20px;font-size:11px;color:#555;">#${k}</span>`
+    ).join('');
+  }
 }
 
 function switchBlogReviewPlat(plat) {
