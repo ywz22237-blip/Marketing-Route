@@ -1819,8 +1819,8 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" style="font-size:11px;">다시 불러오기</button>
-        <button class="btn btn-ghost" style="font-size:11px;color:#f87171;border-color:#f8717140;">연동 해제</button>
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="goto('seo')">다시 불러오기</button>
+        <button class="btn btn-ghost" style="font-size:11px;color:#f87171;border-color:#f8717140;" onclick="document.getElementById('blog-seo-linked').style.display='none';document.getElementById('blog-seo-unlinked').style.display='';">연동 해제</button>
       </div>
     </div>
     <!-- SEO 미연동 상태 (숨김) -->
@@ -1943,7 +1943,7 @@
         <div class="card" style="padding:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">제목</div>
-            <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;">✨ AI 재생성</button>
+            <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;" onclick="regenerateBlogTitle()">✨ AI 재생성</button>
           </div>
           <input type="text" id="blog-title" class="field-input" value="B2B 콘텐츠 마케팅 완벽 가이드: 스타트업이 6개월 만에 리드를 3배 늘린 실전 전략" style="font-size:15px;font-weight:600;color:#e6edf3;" />
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
@@ -1959,7 +1959,7 @@
             <div style="font-size:11px;color:#8b949e;font-weight:700;">본문</div>
             <div style="display:flex;gap:6px;">
               <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;" onclick="generateBlog()">✨ AI 생성</button>
-              <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;">구조 보기</button>
+              <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;" onclick="viewBlogStructure()">구조 보기</button>
             </div>
           </div>
           <!-- 빈 상태 -->
@@ -2061,7 +2061,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
               </select>
             </div>
           </div>
-          <button class="btn btn-primary" style="width:100%;margin-top:14px;font-size:12px;">✨ 전체 재생성</button>
+          <button class="btn btn-primary" style="width:100%;margin-top:14px;font-size:12px;" onclick="generateBlog()">✨ 전체 재생성</button>
         </div>
         <!-- SEO 점수 -->
         <div class="card" style="padding:14px;">
@@ -2276,8 +2276,8 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         </div>
 
         <!-- 발행 버튼 -->
-        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:700;">🚀 발행하기</button>
-        <button class="btn btn-ghost" style="width:100%;font-size:12px;">💾 임시저장</button>
+        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;font-weight:700;" onclick="goto('deploy')">🚀 발행하기</button>
+        <button class="btn btn-ghost" style="width:100%;font-size:12px;" onclick="saveBlogDraft()">💾 임시저장</button>
       </div>
 
       <!-- 우측: 블로그 미리보기 -->
@@ -2285,8 +2285,8 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;">미리보기 — 네이버 블로그</div>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost" style="font-size:10px;">PC</button>
-            <button class="btn btn-ghost" style="font-size:10px;">모바일</button>
+            <button class="btn btn-ghost" style="font-size:10px;" onclick="toggleBlogPreview('pc',this)">PC</button>
+            <button class="btn btn-ghost" style="font-size:10px;" onclick="toggleBlogPreview('mobile',this)">모바일</button>
           </div>
         </div>
         <!-- 네이버 블로그 스타일 미리보기 -->
@@ -6799,6 +6799,48 @@ function renderBlogResult(posts) {
   // 드래프트 자동 저장
   posts.forEach(p => saveDraft({ type:'blog', platform:p.platform, title:p.title||'블로그 글', content:p.body||'' }));
   toast('블로그 본문이 생성되었습니다!', '#4ade80');
+}
+
+async function regenerateBlogTitle() {
+  const topic = document.getElementById('blog-topic')?.value.trim() || document.getElementById('blog-title')?.value.trim();
+  if (!topic) { toast('주제를 먼저 입력하세요', 'orange'); return; }
+  const titleEl = document.getElementById('blog-title');
+  if (titleEl) titleEl.value = '⏳ 생성 중...';
+  try {
+    const res = await fetch(`${API}/seo/meta`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ keyword: topic, api_keys: getKeys(), tier: selectedTier })
+    });
+    const data = await res.json();
+    const title = data.titles?.[0] || data.title || '';
+    if (titleEl && title) titleEl.value = title;
+    else if (titleEl) titleEl.value = topic;
+    toast('제목 재생성 완료', '#4ade80');
+  } catch(e) {
+    if (titleEl) titleEl.value = topic;
+    toast('재생성 실패: ' + e.message, 'red');
+  }
+}
+
+function viewBlogStructure() {
+  const body = document.getElementById('blog-body')?.value || '';
+  const h2s = [...body.matchAll(/^#{1,3}\s+(.+)$/gm)].map(m => m[0].trim());
+  if (!h2s.length) { toast('본문을 먼저 생성하세요', 'orange'); return; }
+  alert('📋 본문 구조\n\n' + h2s.join('\n'));
+}
+
+function saveBlogDraft() {
+  const title = document.getElementById('blog-title')?.value || '제목 없음';
+  const body  = document.getElementById('blog-body')?.value  || '';
+  saveDraft({ type:'blog', platform:'draft', title, content: body });
+  toast('임시저장 완료', '#4ade80');
+}
+
+function toggleBlogPreview(mode, btn) {
+  const previewWrap = document.querySelector('#blog-panel-review .preview-wrap, #blog-panel-review [style*="background:#fff"]');
+  btn.closest('div').querySelectorAll('button').forEach(b => { b.style.background='transparent'; b.style.color='#8b949e'; });
+  btn.style.background = '#1f6feb20'; btn.style.color = '#60a5fa';
+  if (previewWrap) previewWrap.style.maxWidth = mode === 'mobile' ? '375px' : '100%';
 }
 
 function loadBlogPost(idx) {
