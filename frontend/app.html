@@ -566,19 +566,21 @@
 
   </div>
 
-  <!-- ── API 키 입력 섹션 ── -->
+  <!-- ── API 키 입력 섹션 (콘텐츠 타입별) ── -->
+
+  <!-- 블로그 -->
   <div class="card" style="margin-bottom:12px;">
-    <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 16px;">🔑 필수 키</h3>
+    <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">📝 블로그</h3>
+    <p style="font-size:11px;color:#484f58;margin:0 0 14px;">네이버블로그 · 티스토리 · 워드프레스</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <div>
             <label class="field-label" style="margin:0 0 3px;display:block;">Gemini API Key <span style="color:#f87171;">*</span></label>
-            <div style="display:flex;gap:4px;margin-bottom:6px;">
+            <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;">
               <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#1f6feb20;color:#60a5fa;">SEO기획</span>
               <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#1f6feb20;color:#60a5fa;">블로그작성</span>
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#1f6feb20;color:#60a5fa;">SNS글쓰기</span>
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#1f6feb20;color:#60a5fa;">카드뉴스</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">전채널공유</span>
             </div>
           </div>
           <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
@@ -588,16 +590,16 @@
           <button class="api-test-btn" onclick="testApiKey('gemini')">테스트</button>
         </div>
         <div id="test-result-gemini" class="api-test-result" style="display:none;"></div>
-        <p style="font-size:10px;color:#484f58;margin:4px 0 0;">무료 1일 250회 요청 · Google AI Studio</p>
+        <p style="font-size:10px;color:#484f58;margin:4px 0 0;">무료 1일 250회 · Google AI Studio</p>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <div>
             <label class="field-label" style="margin:0 0 3px;display:block;">Groq API Key <span style="color:#f87171;">*</span></label>
-            <div style="display:flex;gap:4px;margin-bottom:6px;">
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">숏폼대본</span>
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">롱폼대본</span>
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">빠른요약</span>
+            <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;">
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">초고속생성</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">검수분석</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">전채널공유</span>
             </div>
           </div>
           <a href="https://console.groq.com/keys" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
@@ -609,45 +611,13 @@
         <div id="test-result-groq" class="api-test-result" style="display:none;"></div>
         <p style="font-size:10px;color:#484f58;margin:4px 0 0;">무료 Llama3 초고속 · console.groq.com</p>
       </div>
-    </div>
-  </div>
-
-  <div class="card tier-panel" id="panel-tier2" style="margin-bottom:12px;">
-    <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 16px;">🔑 추가 키 <span style="font-size:10px;color:#4ade80;font-weight:400;">무료</span></h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div>
-            <label class="field-label" style="margin:0 0 3px;display:block;">Google TTS Key</label>
-            <div style="display:flex;gap:4px;margin-bottom:6px;">
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#f59e0b20;color:#fbbf24;">음성생성(MP3)</span>
-            </div>
-          </div>
-          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
-        </div>
-        <input type="password" class="key-input" id="key-tts" placeholder="AIza..." oninput="onKeyChange(this,'google_tts_api_key')" />
-        <p style="font-size:10px;color:#484f58;margin:4px 0 0;">무료 100만자/월 · 결제수단 등록 필요</p>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div>
-            <label class="field-label" style="margin:0 0 3px;display:block;">HuggingFace Token</label>
-            <div style="display:flex;gap:4px;margin-bottom:6px;">
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">고품질썸네일</span>
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">이미지생성</span>
-            </div>
-          </div>
-          <a href="https://huggingface.co/settings/tokens" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
-        </div>
-        <input type="password" class="key-input" id="key-hf" placeholder="hf_..." oninput="onKeyChange(this,'hf_api_token')" />
-        <p style="font-size:10px;color:#484f58;margin:4px 0 0;">무료 크레딧 · Stable Diffusion XL</p>
-      </div>
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <div>
             <label class="field-label" style="margin:0 0 3px;display:block;">공공데이터포털 Key</label>
             <div style="display:flex;gap:4px;margin-bottom:6px;">
-              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#1f6feb20;color:#60a5fa;">국내트렌드분석</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#1f6feb20;color:#60a5fa;">트렌드소재</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#1f6feb20;color:#60a5fa;">키워드데이터</span>
             </div>
           </div>
           <a href="https://www.data.go.kr" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
@@ -658,22 +628,85 @@
     </div>
   </div>
 
-  <div class="card tier-panel" id="panel-tier3" style="margin-bottom:16px;">
-    <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 12px;">🔑 유료 키 <span style="font-size:10px;color:#f59e0b;font-weight:400;">선택사항</span></h3>
-    <div style="max-width:420px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div>
-          <label class="field-label" style="margin:0 0 3px;display:block;">SerpAPI Key <span style="color:#a78bfa;">★</span></label>
-          <div style="display:flex;gap:4px;margin-bottom:6px;">
-            <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">실시간구글검색</span>
-            <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">경쟁사분석</span>
-            <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">바이럴패턴수집</span>
-          </div>
-        </div>
-        <a href="https://serpapi.com/manage-api-key" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
+  <!-- 텍스트형 SNS -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">💬 텍스트형 SNS</h3>
+    <p style="font-size:11px;color:#484f58;margin:0 0 14px;">링크드인 · 쓰레드</p>
+    <div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:18px;">🔗</span>
+      <div>
+        <div style="font-size:12px;color:#c9d1d9;font-weight:600;margin-bottom:3px;">블로그 키 공유 사용</div>
+        <div style="font-size:11px;color:#484f58;">Gemini + Groq — 블로그 섹션에서 입력한 키로 자동 사용됩니다.</div>
       </div>
-      <input type="password" class="key-input" id="key-serp" placeholder="..." oninput="onKeyChange(this,'serp_api_key')" />
-      <p style="font-size:10px;color:#484f58;margin:4px 0 0;">가입 시 100회 무료 · 이후 $50/월 (5,000회)</p>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <span id="shared-gemini-badge" style="font-size:10px;padding:2px 8px;border-radius:10px;background:#21262d;color:#484f58;">Gemini</span>
+        <span id="shared-groq-badge" style="font-size:10px;padding:2px 8px;border-radius:10px;background:#21262d;color:#484f58;">Groq</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 이미지형 SNS -->
+  <div class="card" style="margin-bottom:12px;">
+    <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">🖼 이미지형 SNS</h3>
+    <p style="font-size:11px;color:#484f58;margin:0 0 14px;">인스타그램 · 페이스북</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div>
+            <label class="field-label" style="margin:0 0 3px;display:block;">HuggingFace Token</label>
+            <div style="display:flex;gap:4px;margin-bottom:6px;">
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">이미지생성</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">카드뉴스썸네일</span>
+            </div>
+          </div>
+          <a href="https://huggingface.co/settings/tokens" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
+        </div>
+        <input type="password" class="key-input" id="key-hf" placeholder="hf_..." oninput="onKeyChange(this,'hf_api_token')" />
+        <p style="font-size:10px;color:#484f58;margin:4px 0 0;">무료 크레딧 · Stable Diffusion XL</p>
+      </div>
+      <div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:12px;display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-size:16px;margin-top:2px;">🔗</span>
+        <div>
+          <div style="font-size:11px;color:#c9d1d9;font-weight:600;margin-bottom:3px;">카피라이팅</div>
+          <div style="font-size:11px;color:#484f58;">Gemini + Groq 공유 사용<br>블로그 섹션에서 입력</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 동영상 -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">🎬 동영상</h3>
+    <p style="font-size:11px;color:#484f58;margin:0 0 14px;">유튜브 · 틱톡</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div>
+            <label class="field-label" style="margin:0 0 3px;display:block;">Google TTS Key</label>
+            <div style="display:flex;gap:4px;margin-bottom:6px;">
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#f59e0b20;color:#fbbf24;">음성생성(MP3)</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#f59e0b20;color:#fbbf24;">나레이션</span>
+            </div>
+          </div>
+          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
+        </div>
+        <input type="password" class="key-input" id="key-tts" placeholder="AIza..." oninput="onKeyChange(this,'google_tts_api_key')" />
+        <p style="font-size:10px;color:#484f58;margin:4px 0 0;">무료 100만자/월 · 결제수단 등록 필요</p>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div>
+            <label class="field-label" style="margin:0 0 3px;display:block;">SerpAPI Key</label>
+            <div style="display:flex;gap:4px;margin-bottom:6px;">
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">트렌드분석</span>
+              <span style="font-size:9px;padding:1px 6px;border-radius:3px;background:#7c3aed20;color:#a78bfa;">경쟁영상분석</span>
+            </div>
+          </div>
+          <a href="https://serpapi.com/manage-api-key" target="_blank" style="font-size:10px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
+        </div>
+        <input type="password" class="key-input" id="key-serp" placeholder="..." oninput="onKeyChange(this,'serp_api_key')" />
+        <p style="font-size:10px;color:#484f58;margin:4px 0 0;">가입 시 100회 무료 · 이후 $50/월</p>
+      </div>
     </div>
   </div>
 
