@@ -1251,40 +1251,108 @@
 
     <!-- 플랫폼 링크 카드 -->
     <div class="card" style="grid-column:1/-1;">
-      <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">🔗 내 플랫폼 링크</h3>
-      <p style="font-size:11px;color:#8b949e;margin:0 0 14px;">저장된 링크는 콘텐츠 하단 CTA에 자동 삽입할 수 있습니다.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div>
-          <label class="field-label">블로그</label>
-          <div style="display:flex;gap:6px;">
-            <select id="ag-blog-platform" class="field-input" style="width:90px;font-size:11px;padding:5px 6px;">
-              <option value="티스토리">티스토리</option>
-              <option value="네이버">네이버</option>
-              <option value="워드프레스">워드프레스</option>
-              <option value="자체">자체블로그</option>
-            </select>
-            <input type="url" id="ag-blog-url" class="field-input" placeholder="https://..." style="flex:1;font-size:11px;" />
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0;">🔗 내 플랫폼 링크</h3>
+        <span style="font-size:10px;color:#484f58;">체크된 플랫폼만 본문 하단 CTA에 삽입됩니다</span>
+      </div>
+      <p style="font-size:11px;color:#8b949e;margin:0 0 16px;">사용 중인 채널을 체크하고 URL을 입력하세요. 콘텐츠 생성 시 하단에 자동 추가할 수 있습니다.</p>
+
+      <!-- 블로그 -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📝 블로그</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-tistory-on" style="accent-color:#ff5a00;" />
+              <span style="font-size:12px;color:#c9d1d9;">티스토리</span>
+            </label>
+            <input type="url" id="ag-tistory-url" class="field-input" placeholder="https://yourname.tistory.com" style="flex:1;font-size:11px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-naver-on" style="accent-color:#03c75a;" />
+              <span style="font-size:12px;color:#c9d1d9;">네이버 블로그</span>
+            </label>
+            <input type="url" id="ag-naver-url" class="field-input" placeholder="https://blog.naver.com/yourname" style="flex:1;font-size:11px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-wordpress-on" style="accent-color:#21759b;" />
+              <span style="font-size:12px;color:#c9d1d9;">워드프레스</span>
+            </label>
+            <input type="url" id="ag-wordpress-url" class="field-input" placeholder="https://yoursite.com" style="flex:1;font-size:11px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-etc-on" style="accent-color:#8b949e;" />
+              <span style="font-size:12px;color:#c9d1d9;">기타</span>
+            </label>
+            <input type="text" id="ag-etc-name" class="field-input" placeholder="채널명 (예: 브런치)" style="width:110px;font-size:11px;" />
+            <input type="url" id="ag-etc-url" class="field-input" placeholder="https://..." style="flex:1;font-size:11px;" />
           </div>
         </div>
-        <div>
-          <label class="field-label">링크드인</label>
-          <input type="url" id="ag-linkedin-url" class="field-input" placeholder="https://linkedin.com/in/..." style="font-size:11px;" />
+      </div>
+
+      <!-- 텍스트형 SNS -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 텍스트형 SNS</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-linkedin-on" style="accent-color:#0a66c2;" />
+              <span style="font-size:12px;color:#c9d1d9;">링크드인</span>
+            </label>
+            <input type="url" id="ag-linkedin-url" class="field-input" placeholder="https://linkedin.com/in/yourname" style="flex:1;font-size:11px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-threads-on" style="accent-color:#8b949e;" />
+              <span style="font-size:12px;color:#c9d1d9;">쓰레드</span>
+            </label>
+            <input type="url" id="ag-threads-url" class="field-input" placeholder="https://threads.net/@yourname" style="flex:1;font-size:11px;" />
+          </div>
         </div>
-        <div>
-          <label class="field-label">쓰레드</label>
-          <input type="url" id="ag-threads-url" class="field-input" placeholder="https://threads.net/@..." style="font-size:11px;" />
+      </div>
+
+      <!-- 이미지형 SNS -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📷 이미지형 SNS</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-instagram-on" style="accent-color:#e1306c;" />
+              <span style="font-size:12px;color:#c9d1d9;">인스타그램</span>
+            </label>
+            <input type="url" id="ag-instagram-url" class="field-input" placeholder="https://instagram.com/yourname" style="flex:1;font-size:11px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-facebook-on" style="accent-color:#1877f2;" />
+              <span style="font-size:12px;color:#c9d1d9;">페이스북</span>
+            </label>
+            <input type="url" id="ag-facebook-url" class="field-input" placeholder="https://facebook.com/yourname" style="flex:1;font-size:11px;" />
+          </div>
         </div>
-        <div>
-          <label class="field-label">인스타그램</label>
-          <input type="url" id="ag-instagram-url" class="field-input" placeholder="https://instagram.com/..." style="font-size:11px;" />
-        </div>
-        <div>
-          <label class="field-label">유튜브</label>
-          <input type="url" id="ag-youtube-url" class="field-input" placeholder="https://youtube.com/@..." style="font-size:11px;" />
-        </div>
-        <div>
-          <label class="field-label">틱톡</label>
-          <input type="url" id="ag-tiktok-url" class="field-input" placeholder="https://tiktok.com/@..." style="font-size:11px;" />
+      </div>
+
+      <!-- 동영상 -->
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">▶️ 동영상</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-youtube-on" style="accent-color:#ff0000;" />
+              <span style="font-size:12px;color:#c9d1d9;">유튜브</span>
+            </label>
+            <input type="url" id="ag-youtube-url" class="field-input" placeholder="https://youtube.com/@yourname" style="flex:1;font-size:11px;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="display:flex;align-items:center;gap:6px;min-width:100px;cursor:pointer;">
+              <input type="checkbox" id="ag-pl-tiktok-on" style="accent-color:#8b949e;" />
+              <span style="font-size:12px;color:#c9d1d9;">틱톡</span>
+            </label>
+            <input type="url" id="ag-tiktok-url" class="field-input" placeholder="https://tiktok.com/@yourname" style="flex:1;font-size:11px;" />
+          </div>
         </div>
       </div>
     </div>
@@ -2085,12 +2153,17 @@
       </div>
     </div>
 
-    <!-- 다음 버튼 + 링크 삽입 토글 -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:10px;">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#8b949e;" title="저장된 플랫폼 링크를 본문 하단에 자동 추가합니다">
-        <input type="checkbox" id="blog-link-toggle" style="accent-color:#238636;" onchange="_updateLinkToggleLabel('blog')" />
-        <span id="blog-link-toggle-label">🔗 플랫폼 링크 하단 삽입</span>
-      </label>
+    <!-- 링크 CTA 토글 -->
+    <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-top:14px;padding:12px 16px;background:#0d1117;border:1px solid #30363d;border-radius:10px;transition:border-color .15s;" onmouseenter="this.style.borderColor='#388bfd'" onmouseleave="this.style.borderColor=document.getElementById('blog-link-toggle').checked?'#238636':'#30363d'">
+      <input type="checkbox" id="blog-link-toggle" style="accent-color:#238636;width:16px;height:16px;flex-shrink:0;" onchange="this.closest('label').style.borderColor=this.checked?'#238636':'#30363d'" />
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#c9d1d9;">🔗 내 채널 링크 본문 하단에 자동 추가</div>
+        <div style="font-size:11px;color:#484f58;margin-top:2px;">체크하면 생성된 블로그 본문 맨 아래에 에이전시 설정의 <strong style="color:#8b949e;">활성화된 채널 링크</strong>가 자동 삽입됩니다</div>
+      </div>
+    </label>
+
+    <!-- 다음 버튼 -->
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
       <button class="btn btn-primary" onclick="generateBlog()" style="gap:8px;">
         ✨ AI 본문 생성하기 →
       </button>
@@ -2650,18 +2723,21 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">💼 링크드인 본문</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#484f58;" title="플랫폼 링크 하단 삽입">
-                <input type="checkbox" id="tsns-link-toggle" style="accent-color:#238636;" />🔗
-              </label>
-              <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateTSNS('linkedin')">AI 생성</button>
-            </div>
+            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateTSNS('linkedin')">AI 생성</button>
           </div>
           <textarea class="field-input" id="tsns-linkedin-body" rows="16" placeholder="AI 생성 버튼을 누르거나 직접 작성하세요&#10;&#10;링크드인은 최대 3,000자&#10;Hook(첫줄) → 본문 → CTA 구조 권장" style="resize:vertical;font-size:13px;line-height:1.7;"></textarea>
           <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#484f58;">
             <span>링크드인 최대 3,000자</span>
             <span id="tsns-li-count">0자</span>
           </div>
+          <!-- 링크 CTA 토글 -->
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;padding:10px 14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;" onmouseenter="this.style.borderColor='#388bfd'" onmouseleave="this.style.borderColor=document.getElementById('tsns-link-toggle').checked?'#238636':'#30363d'">
+            <input type="checkbox" id="tsns-link-toggle" style="accent-color:#238636;width:15px;height:15px;flex-shrink:0;" onchange="this.closest('label').style.borderColor=this.checked?'#238636':'#30363d'" />
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#c9d1d9;">🔗 내 채널 링크 본문 하단에 자동 추가</div>
+              <div style="font-size:10px;color:#484f58;margin-top:1px;">에이전시 설정에서 활성화한 채널 링크가 본문 마지막에 삽입됩니다</div>
+            </div>
+          </label>
         </div>
         <!-- 미리보기 -->
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
@@ -2982,16 +3058,19 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">📷 인스타그램 캡션</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#484f58;" title="플랫폼 링크 하단 삽입">
-                <input type="checkbox" id="isns-link-toggle" style="accent-color:#238636;" />🔗
-              </label>
-              <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateISNS('instagram')">AI 생성</button>
-            </div>
+            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateISNS('instagram')">AI 생성</button>
           </div>
           <textarea class="field-input" id="isns-insta-caption" rows="8" placeholder="감성적이고 공감 가는 캡션을 작성하세요&#10;이모지 활용 권장" style="resize:vertical;margin-bottom:10px;"></textarea>
           <label class="field-label">해시태그</label>
           <textarea class="field-input" id="isns-insta-tags" rows="3" placeholder="#마케팅 #콘텐츠 #브랜딩 (최대 30개)" style="resize:none;font-size:12px;"></textarea>
+          <!-- 링크 CTA 토글 -->
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;padding:10px 14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;" onmouseenter="this.style.borderColor='#388bfd'" onmouseleave="this.style.borderColor=document.getElementById('isns-link-toggle').checked?'#238636':'#30363d'">
+            <input type="checkbox" id="isns-link-toggle" style="accent-color:#238636;width:15px;height:15px;flex-shrink:0;" onchange="this.closest('label').style.borderColor=this.checked?'#238636':'#30363d'" />
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#c9d1d9;">🔗 내 채널 링크 본문 하단에 자동 추가</div>
+              <div style="font-size:10px;color:#484f58;margin-top:1px;">에이전시 설정에서 활성화한 채널 링크가 캡션 마지막에 삽입됩니다</div>
+            </div>
+          </label>
         </div>
         <!-- 인스타 미리보기 -->
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
@@ -6388,13 +6467,16 @@ function _collectAgencyFields() {
     sns_platforms:   [...document.querySelectorAll('.ag-sns:checked')].map(c=>c.value),
     video_platforms: [...document.querySelectorAll('.ag-video:checked')].map(c=>c.value),
     platform_links: {
-      blog_platform: document.getElementById('ag-blog-platform')?.value || '티스토리',
-      blog:      document.getElementById('ag-blog-url')?.value || '',
-      linkedin:  document.getElementById('ag-linkedin-url')?.value || '',
-      threads:   document.getElementById('ag-threads-url')?.value || '',
-      instagram: document.getElementById('ag-instagram-url')?.value || '',
-      youtube:   document.getElementById('ag-youtube-url')?.value || '',
-      tiktok:    document.getElementById('ag-tiktok-url')?.value || '',
+      tistory:   { on: document.getElementById('ag-pl-tistory-on')?.checked,   url: document.getElementById('ag-tistory-url')?.value || '',   label: '티스토리' },
+      naver:     { on: document.getElementById('ag-pl-naver-on')?.checked,     url: document.getElementById('ag-naver-url')?.value || '',     label: '네이버 블로그' },
+      wordpress: { on: document.getElementById('ag-pl-wordpress-on')?.checked, url: document.getElementById('ag-wordpress-url')?.value || '', label: '워드프레스' },
+      etc:       { on: document.getElementById('ag-pl-etc-on')?.checked,       url: document.getElementById('ag-etc-url')?.value || '',       label: document.getElementById('ag-etc-name')?.value || '기타' },
+      linkedin:  { on: document.getElementById('ag-pl-linkedin-on')?.checked,  url: document.getElementById('ag-linkedin-url')?.value || '',  label: '링크드인' },
+      threads:   { on: document.getElementById('ag-pl-threads-on')?.checked,   url: document.getElementById('ag-threads-url')?.value || '',   label: '쓰레드' },
+      instagram: { on: document.getElementById('ag-pl-instagram-on')?.checked, url: document.getElementById('ag-instagram-url')?.value || '', label: '인스타그램' },
+      facebook:  { on: document.getElementById('ag-pl-facebook-on')?.checked,  url: document.getElementById('ag-facebook-url')?.value || '',  label: '페이스북' },
+      youtube:   { on: document.getElementById('ag-pl-youtube-on')?.checked,   url: document.getElementById('ag-youtube-url')?.value || '',   label: '유튜브' },
+      tiktok:    { on: document.getElementById('ag-pl-tiktok-on')?.checked,    url: document.getElementById('ag-tiktok-url')?.value || '',    label: '틱톡' },
     },
   };
 }
@@ -6410,10 +6492,15 @@ function _loadAgencyFields(saved) {
   f('ag-competitors', saved.competitors);
   // 플랫폼 링크 로드
   const pl = saved.platform_links || {};
-  f('ag-blog-platform', pl.blog_platform);
-  f('ag-blog-url', pl.blog); f('ag-linkedin-url', pl.linkedin);
-  f('ag-threads-url', pl.threads); f('ag-instagram-url', pl.instagram);
-  f('ag-youtube-url', pl.youtube); f('ag-tiktok-url', pl.tiktok);
+  const plKeys = ['tistory','naver','wordpress','etc','linkedin','threads','instagram','facebook','youtube','tiktok'];
+  plKeys.forEach(k => {
+    const d = pl[k] || {};
+    const cb = document.getElementById(`ag-pl-${k}-on`);
+    const urlEl = document.getElementById(`ag-${k}-url`);
+    if (cb) cb.checked = !!d.on;
+    if (urlEl) urlEl.value = d.url || '';
+    if (k === 'etc') { const n = document.getElementById('ag-etc-name'); if (n) n.value = d.label || ''; }
+  });
   // 보이스 카드 로드 (신규 구조 우선, 구버전 호환)
   if (saved.brand_voice_cards?.length) {
     _voiceCards = saved.brand_voice_cards;
@@ -12271,21 +12358,20 @@ function _getPlatformLinks() {
 
 function _buildLinkCTA(forPlatform) {
   const pl = _getPlatformLinks();
+  const icons = { tistory:'📝', naver:'📝', wordpress:'📝', etc:'📝', linkedin:'💼', threads:'🧵', instagram:'📷', facebook:'📘', youtube:'▶️', tiktok:'🎵' };
+  // 현재 플랫폼 계열 제외 목록
+  const blogKeys = ['tistory','naver','wordpress','etc'];
+  const normFor  = forPlatform === 'insta' ? 'instagram' : forPlatform;
+  const excludeKeys = blogKeys.includes(normFor) ? blogKeys : [normFor];
+
   const lines = [];
-  const icons = { blog: '📝', linkedin: '💼', threads: '🧵', instagram: '📷', youtube: '▶️', tiktok: '🎵' };
-  const labels = {
-    blog: pl.blog_platform || '블로그',
-    linkedin: '링크드인', threads: '쓰레드',
-    instagram: '인스타그램', youtube: '유튜브', tiktok: '틱톡'
-  };
-  // 다른 플랫폼 링크만 표시 (현재 플랫폼 제외)
-  const normFor = forPlatform === 'insta' ? 'instagram' : forPlatform;
-  Object.entries(pl).forEach(([k, v]) => {
-    if (!v || k === 'blog_platform' || k === normFor) return;
-    lines.push(`${icons[k] || '🔗'} ${labels[k]}: ${v}`);
+  Object.entries(pl).forEach(([k, d]) => {
+    if (!d?.on || !d?.url) return;           // 비활성화 or URL 없음
+    if (excludeKeys.includes(k)) return;     // 현재 플랫폼 계열 제외
+    lines.push(`${icons[k] || '🔗'} ${d.label || k}: ${d.url}`);
   });
   if (!lines.length) return '';
-  return '\n\n---\n' + lines.join('\n');
+  return '\n\n---\n📌 다른 채널에서도 만나요\n' + lines.join('\n');
 }
 
 function _updateLinkToggleLabel(type) {
