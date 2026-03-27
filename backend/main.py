@@ -1421,6 +1421,59 @@ async def generate_sns(req: SNSRequest):
     )
 
 
+@app.post("/content/revise")
+async def revise_content(req: dict):
+    """콘텐츠 수정 지시 적용 — 블로그/링크드인/쓰레드/인스타그램/페이스북"""
+    import json as jsonlib
+    content     = req.get("content", "").strip()
+    instruction = req.get("instruction", "").strip()
+    platform    = req.get("platform", "blog")
+    api_keys    = req.get("api_keys") or {}
+
+    if not content:
+        raise HTTPException(status_code=400, detail="content가 비어있습니다.")
+    if not instruction:
+        raise HTTPException(status_code=400, detail="수정 지시를 입력해주세요.")
+
+    plat_guide = {
+        "blog":      "블로그 (SEO 최적화·마크다운 구조·검색 의도 반영)",
+        "linkedin":  "링크드인 (전문적 B2B 인사이트, 3,000자 이내, 해시태그 포함)",
+        "threads":   "쓰레드 (500자 이내, 대화체, 시리즈 구조 --- 분절)",
+        "instagram": "인스타그램 (감성 캡션, 이모지 적극 사용, 해시태그 최적화)",
+        "facebook":  "페이스북 (친근한 톤, 공유 유도, 간결하게)",
+    }.get(platform, platform)
+
+    prompt = f"""다음 {plat_guide} 콘텐츠를 수정 지시에 따라 개선하세요.
+
+[원본 콘텐츠]
+{content}
+
+[수정 지시]
+{instruction}
+
+규칙:
+- 수정 지시를 정확히 반영할 것
+- 핵심 주제와 메시지는 유지
+- 플랫폼 특성({plat_guide})에 맞게 유지
+- 수정된 콘텐츠만 출력 (설명·주석 없이)
+
+[수정된 콘텐츠]"""
+
+    raw = await _llm_generate(prompt, api_keys)
+
+    # 오류 JSON 감지
+    if raw.strip().startswith('{"error"'):
+        try:
+            d = jsonlib.loads(raw)
+            raise HTTPException(status_code=500, detail=d.get("error", "LLM 오류"))
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
+    return {"revised_content": raw.strip()}
+
+
 @app.post("/blog/generate", response_model=BlogResult)
 async def generate_blog(req: BlogRequest):
     """블로그 플랫폼별 최적화 글 생성 (네이버/티스토리/워드프레스)"""

@@ -2268,21 +2268,27 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
 
         <!-- 최종 체크리스트 -->
         <div class="card" style="padding:14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div style="font-size:11px;color:#8b949e;font-weight:700;">최종 체크리스트</div>
-            <div id="blog-cl-progress" style="font-size:10px;color:#4ade80;font-weight:600;">0/6</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:11px;color:#8b949e;font-weight:700;">✅ 블로그 검수 체크리스트</div>
+            <div id="blog-cl-progress" style="font-size:10px;color:#8b949e;font-weight:600;">0/6</div>
           </div>
           <div style="background:#21262d;border-radius:4px;height:4px;margin-bottom:12px;overflow:hidden;">
             <div id="blog-cl-bar" style="height:100%;background:#1f6feb;border-radius:4px;width:0%;transition:width .3s;"></div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:7px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-title"    style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-title-lbl"    style="color:#8b949e;">제목 확인</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-keyword"  style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-keyword-lbl"  style="color:#8b949e;">키워드 포함 여부</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-image"    style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-image-lbl"    style="color:#8b949e;">이미지 삽입</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-tags"     style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-tags-lbl"     style="color:#8b949e;">태그 정리</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-category" style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-category-lbl" style="color:#8b949e;">카테고리 설정</span></label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;"><input type="checkbox" id="blog-cl-schedule" style="accent-color:#1f6feb;" onchange="_onBlogCl()" /><span id="blog-cl-schedule-lbl" style="color:#8b949e;">발행 시간 설정</span></label>
+          <div id="blog-cl-items" style="display:flex;flex-direction:column;gap:7px;font-size:11px;"></div>
+        </div>
+
+        <!-- AI 수정 지시 -->
+        <div class="card" style="padding:14px;">
+          <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:8px;">💬 AI 수정 지시</div>
+          <div id="blog-revise-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;"></div>
+          <textarea id="blog-revise-input" class="field-input" rows="2" placeholder="예: CTA를 더 강하게 바꿔줘 / 더 친근한 톤으로 수정해줘" style="font-size:12px;margin-bottom:8px;resize:none;"></textarea>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="_revUndo('blog','blog-body')" id="blog-rev-undo" style="display:none;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:11px;padding:5px 10px;cursor:pointer;">← 이전</button>
+            <button onclick="_revRedo('blog','blog-body')" id="blog-rev-redo" style="display:none;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:11px;padding:5px 10px;cursor:pointer;">다음 →</button>
+            <button onclick="_revApply('blog','blog-body','blog')" style="flex:1;background:#1f6feb;border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:600;padding:7px;cursor:pointer;font-family:inherit;">✨ AI 수정 적용</button>
           </div>
+          <div id="blog-rev-hist" style="font-size:10px;color:#484f58;margin-top:5px;text-align:right;"></div>
         </div>
 
         <!-- 발행 버튼 -->
@@ -2580,24 +2586,29 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         </div>
         <textarea class="field-input" id="tsns-review-body" rows="18" style="resize:vertical;font-size:13px;line-height:1.8;"></textarea>
       </div>
-      <!-- 체크리스트 -->
+      <!-- 체크리스트 + 수정 지시 -->
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="font-size:11px;color:#8b949e;font-weight:700;">검수 체크리스트</div>
+            <div id="tsns-cl-title" style="font-size:11px;color:#8b949e;font-weight:700;">검수 체크리스트</div>
             <div id="tsns-cl-progress" style="font-size:10px;color:#8b949e;font-weight:600;">0/6</div>
           </div>
           <div style="background:#21262d;border-radius:4px;height:4px;margin-bottom:12px;overflow:hidden;">
             <div id="tsns-cl-bar" style="height:100%;background:#1f6feb;border-radius:4px;width:0%;transition:width .3s;"></div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-hook"    style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-hook-lbl"    style="color:#8b949e;">Hook 첫 줄이 강렬한가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-keyword" style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-keyword-lbl" style="color:#8b949e;">핵심 키워드 자연스럽게 포함</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-cta"     style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-cta-lbl"     style="color:#8b949e;">CTA 명확한가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-tone"    style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-tone-lbl"    style="color:#8b949e;">브랜드 톤 일치</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-length"  style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-length-lbl"  style="color:#8b949e;">글자 수 확인</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="tsns-cl-typo"    style="accent-color:#1f6feb;" onchange="_onTsnsCl()" /><span id="tsns-cl-typo-lbl"    style="color:#8b949e;">오탈자 없음</span></label>
+          <div id="tsns-cl-items" style="display:flex;flex-direction:column;gap:8px;font-size:12px;"></div>
+        </div>
+        <!-- AI 수정 지시 -->
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:8px;">💬 AI 수정 지시</div>
+          <div id="tsns-revise-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;"></div>
+          <textarea id="tsns-revise-input" class="field-input" rows="2" placeholder="예: 더 전문적인 톤으로 / Hook을 더 강렬하게" style="font-size:12px;margin-bottom:8px;resize:none;"></textarea>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="_revUndo('tsns','tsns-review-body')" id="tsns-rev-undo" style="display:none;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:11px;padding:5px 10px;cursor:pointer;">← 이전</button>
+            <button onclick="_revRedo('tsns','tsns-review-body')" id="tsns-rev-redo" style="display:none;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:11px;padding:5px 10px;cursor:pointer;">다음 →</button>
+            <button onclick="_revApply('tsns','tsns-review-body',window._tsnsActivePlatform||'linkedin')" style="flex:1;background:#1f6feb;border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:600;padding:7px;cursor:pointer;font-family:inherit;">✨ AI 수정 적용</button>
           </div>
+          <div id="tsns-rev-hist" style="font-size:10px;color:#484f58;margin-top:5px;text-align:right;"></div>
         </div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:8px;">발행 설정</div>
@@ -2605,9 +2616,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <input type="datetime-local" class="field-input" style="margin-bottom:8px;" />
           <label class="field-label">발행 방식</label>
           <select class="field-input">
-            <option>즉시 발행</option>
-            <option>예약 발행</option>
-            <option>검수 후 수동 발행</option>
+            <option>즉시 발행</option><option>예약 발행</option><option>검수 후 수동 발행</option>
           </select>
         </div>
         <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="goto('deploy')">🚀 배포로 보내기</button>
@@ -2986,19 +2995,25 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="font-size:11px;color:#8b949e;font-weight:700;">검수 체크리스트</div>
+            <div id="isns-cl-title" style="font-size:11px;color:#8b949e;font-weight:700;">검수 체크리스트</div>
             <div id="isns-cl-progress" style="font-size:10px;color:#8b949e;font-weight:600;">0/5</div>
           </div>
           <div style="background:#21262d;border-radius:4px;height:4px;margin-bottom:12px;overflow:hidden;">
             <div id="isns-cl-bar" style="height:100%;background:#e1306c;border-radius:4px;width:0%;transition:width .3s;"></div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-hook"    style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-hook-lbl"    style="color:#8b949e;">첫 줄이 스크롤을 멈추게 하는가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-emoji"   style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-emoji-lbl"   style="color:#8b949e;">이모지 적절히 사용</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-hashtag" style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-hashtag-lbl" style="color:#8b949e;">해시태그 30개 이하</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-cta"     style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-cta-lbl"     style="color:#8b949e;">CTA 명확한가</span></label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="isns-cl-tone"    style="accent-color:#e1306c;" onchange="_onIsnsCl()" /><span id="isns-cl-tone-lbl"    style="color:#8b949e;">브랜드 톤 일치</span></label>
+          <div id="isns-cl-items" style="display:flex;flex-direction:column;gap:8px;font-size:12px;"></div>
+        </div>
+        <!-- AI 수정 지시 -->
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:8px;">💬 AI 수정 지시</div>
+          <div id="isns-revise-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;"></div>
+          <textarea id="isns-revise-input" class="field-input" rows="2" placeholder="예: 이모지 더 추가해줘 / 더 감성적인 톤으로" style="font-size:12px;margin-bottom:8px;resize:none;"></textarea>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="_revUndo('isns','isns-review-caption')" id="isns-rev-undo" style="display:none;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:11px;padding:5px 10px;cursor:pointer;">← 이전</button>
+            <button onclick="_revRedo('isns','isns-review-caption')" id="isns-rev-redo" style="display:none;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:11px;padding:5px 10px;cursor:pointer;">다음 →</button>
+            <button onclick="_revApply('isns','isns-review-caption',window._isnsActivePlatform||'instagram')" style="flex:1;background:#e1306c;border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:600;padding:7px;cursor:pointer;font-family:inherit;">✨ AI 수정 적용</button>
           </div>
+          <div id="isns-rev-hist" style="font-size:10px;color:#484f58;margin-top:5px;text-align:right;"></div>
         </div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:8px;">발행 설정</div>
@@ -7281,148 +7296,236 @@ function renderBlogReview() {
   _refreshBlogChecklist();
 }
 
-// ── 블로그 검수 체크리스트 ────────────────────────
+// ════════════════════════════════════════════════
+// 플랫폼별 검수 체크리스트 (동적 렌더링)
+// ════════════════════════════════════════════════
+
+function _clRender(containerId, barId, progId, items, accentColor) {
+  const c = document.getElementById(containerId); if (!c) return;
+  // 수동 체크 상태 보존
+  const manuals = {};
+  c.querySelectorAll('input[data-manual]').forEach(cb => { manuals[cb.dataset.id] = cb.checked; });
+  c.innerHTML = items.map(it => {
+    const checked = it.manual ? (manuals[it.id] || false) : it.auto;
+    return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+      <input type="checkbox" ${checked?'checked':''} ${it.manual?`data-manual data-id="${it.id}"`:''}
+        style="accent-color:${accentColor};" onchange="_clUpdate('${barId}','${progId}','${containerId}','${accentColor}')" />
+      <span style="color:${checked?'#e6edf3':'#8b949e'};font-size:11px;">${it.label}</span>
+    </label>`;
+  }).join('');
+  _clUpdate(barId, progId, containerId, accentColor);
+}
+
+function _clUpdate(barId, progId, containerId, accentColor) {
+  const c = document.getElementById(containerId); if (!c) return;
+  const cbs = [...c.querySelectorAll('input[type=checkbox]')];
+  // 수동 체크 시 span 색상 갱신
+  cbs.forEach(cb => { const sp = cb.nextElementSibling; if (sp) sp.style.color = cb.checked ? '#e6edf3' : '#8b949e'; });
+  const done = cbs.filter(cb => cb.checked).length;
+  const pct  = cbs.length ? Math.round(done / cbs.length * 100) : 0;
+  const bar  = document.getElementById(barId);
+  const prog = document.getElementById(progId);
+  if (bar)  { bar.style.width = pct+'%'; bar.style.background = pct===100?'#4ade80':pct>=60?'#f59e0b':accentColor; }
+  if (prog) { prog.textContent = `${done}/${cbs.length}`; prog.style.color = pct===100?'#4ade80':'#8b949e'; }
+}
+
+// ── 블로그 검수 ───────────────────────────────
 function _refreshBlogChecklist() {
-  const title   = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '';
-  const body    = document.getElementById('blog-body')?.value  || '';
-  const topic   = document.getElementById('blog-topic')?.value || '';
-  const thumbEl = document.getElementById('blog-thumbnail-preview')?.querySelector('img');
-  const hasThumbnail = !!(thumbEl?.src && !thumbEl.src.endsWith('#'));
-  const hasSectionImg = Object.keys(window._sectionImages || {}).length > 0;
-  const tagsEl  = document.getElementById('blog-preview-tags');
-  const hasTags = !!(tagsEl?.children?.length);
-  const keywordInBody = topic.length > 1 && body.toLowerCase().includes(topic.slice(0,4).toLowerCase());
+  const title  = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '';
+  const body   = document.getElementById('blog-body')?.value  || '';
+  const topic  = document.getElementById('blog-topic')?.value || '';
+  const thumb  = document.getElementById('blog-thumbnail-preview')?.querySelector('img');
+  const hasImg = !!(thumb?.src && !thumb.src.endsWith('#')) || Object.keys(window._sectionImages||{}).length > 0;
+  const kwIn   = topic.length > 1 && body.toLowerCase().includes(topic.slice(0,5).toLowerCase());
+  const hasH2  = /^## .+/m.test(body);
+  const cta    = /구독|공유|댓글|클릭|링크|바로가기|확인하기|더보기/.test(body);
 
-  const checks = {
-    title:    !!title && title !== '(제목 없음)',
-    keyword:  keywordInBody,
-    image:    hasThumbnail || hasSectionImg,
-    tags:     hasTags,
-    category: !!document.getElementById('blog-cl-category')?.checked,
-    schedule: !!document.getElementById('blog-cl-schedule')?.checked,
-  };
-
-  const ids = ['title','keyword','image','tags','category','schedule'];
-  ids.forEach(k => {
-    const cb  = document.getElementById(`blog-cl-${k}`);
-    const lbl = document.getElementById(`blog-cl-${k}-lbl`);
-    if (!cb) return;
-    // auto-checked items (not manual ones)
-    if (k !== 'category' && k !== 'schedule') cb.checked = checks[k];
-    const done = cb.checked;
-    if (lbl) lbl.style.color = done ? '#e6edf3' : '#8b949e';
-  });
-
-  _updateBlogClBar();
+  const items = [
+    { id:'seo',     label:`SEO 최적화 제목 (검색 의도 포함)`,           auto: title.length > 10 && kwIn },
+    { id:'keyword', label:`핵심 키워드 본문에 자연스럽게 포함`,           auto: kwIn },
+    { id:'h2',      label:`소제목(H2/H3) 목차 구조 명확`,               auto: hasH2 },
+    { id:'length',  label:`본문 분량 충분 (현재 ${body.length.toLocaleString()}자 / 권장 1,500자+)`, auto: body.length >= 1500 },
+    { id:'image',   label:`썸네일·섹션 이미지 삽입`,                     auto: hasImg },
+    { id:'cta',     label:`마무리 CTA(구독·공유·댓글 유도) 포함`,         auto: cta },
+  ];
+  _clRender('blog-cl-items','blog-cl-bar','blog-cl-progress', items, '#1f6feb');
+  _initReviseChips('blog');
 }
 
-function _onBlogCl() { _updateBlogClBar(); }
-
-function _updateBlogClBar() {
-  const ids = ['title','keyword','image','tags','category','schedule'];
-  const done = ids.filter(k => document.getElementById(`blog-cl-${k}`)?.checked).length;
-  const total = ids.length;
-  const pct = Math.round(done / total * 100);
-  const barEl  = document.getElementById('blog-cl-bar');
-  const progEl = document.getElementById('blog-cl-progress');
-  if (barEl) {
-    barEl.style.width = pct + '%';
-    barEl.style.background = pct === 100 ? '#4ade80' : pct >= 60 ? '#f59e0b' : '#1f6feb';
-  }
-  if (progEl) {
-    progEl.textContent = `${done}/${total}`;
-    progEl.style.color = pct === 100 ? '#4ade80' : '#8b949e';
-  }
-}
-
-// ── 텍스트형 SNS 체크리스트 ─────────────────────────
+// ── 텍스트형 SNS 검수 ─────────────────────────
 function _refreshTsnsChecklist() {
   const platform = window._tsnsActivePlatform || 'linkedin';
   const bodyId   = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
   const body     = document.getElementById(bodyId)?.value || document.getElementById('tsns-review-body')?.value || '';
   const topic    = document.getElementById('tsns-topic')?.value || '';
-  const maxLen   = platform === 'threads' ? 500 : 3000;
+  const kwIn     = topic.length > 1 && body.toLowerCase().includes(topic.slice(0,5).toLowerCase());
 
-  const ctaWords = ['댓글', '링크', '팔로우', '저장', '공유', '클릭', '바로가기', '확인', '알아보기', 'DM', '문의'];
-  const checks = {
-    hook:    body.length > 10,
-    keyword: topic.length > 1 && body.toLowerCase().includes(topic.slice(0, 4).toLowerCase()),
-    cta:     ctaWords.some(w => body.includes(w)),
-    tone:    document.getElementById('tsns-cl-tone')?.checked || false,
-    length:  body.length > 0 && body.length <= maxLen,
-    typo:    document.getElementById('tsns-cl-typo')?.checked || false,
-  };
-
-  const ids = ['hook','keyword','cta','tone','length','typo'];
-  ids.forEach(k => {
-    const cb  = document.getElementById(`tsns-cl-${k}`);
-    const lbl = document.getElementById(`tsns-cl-${k}-lbl`);
-    if (!cb) return;
-    if (k !== 'tone' && k !== 'typo') cb.checked = checks[k];
-    if (lbl) lbl.style.color = cb.checked ? '#e6edf3' : '#8b949e';
-  });
-
-  // 글자 수 레이블 업데이트
-  const lenLbl = document.getElementById('tsns-cl-length-lbl');
-  if (lenLbl && body.length > 0) lenLbl.textContent = `글자 수 확인 (${body.length}/${maxLen}자)`;
-
-  _updateTsnsClBar();
+  const titleEl = document.getElementById('tsns-cl-title');
+  let items;
+  if (platform === 'linkedin') {
+    if (titleEl) titleEl.textContent = '💼 LinkedIn 검수 체크리스트';
+    const insight = /인사이트|전략|트렌드|데이터|사례|결과|연구|성장/.test(body);
+    const cta     = /댓글|의견|공유|클릭|링크|팔로우|DM|알아보기/.test(body);
+    const htOk    = /#\S+/.test(body);
+    items = [
+      { id:'hook',    label:'Hook 첫 줄이 전문적이며 클릭을 유도하는가',         auto: body.length > 20 },
+      { id:'insight', label:'B2B 인사이트·통찰·데이터가 담겨있는가',             auto: insight },
+      { id:'keyword', label:'핵심 키워드 자연스럽게 포함',                       auto: kwIn },
+      { id:'length',  label:`3,000자 이내 (현재 ${body.length}자)`,             auto: body.length > 0 && body.length <= 3000 },
+      { id:'cta',     label:'CTA (댓글·링크·팔로우 유도) 명확',                  auto: cta },
+      { id:'hashtag', label:'해시태그 3~5개 포함',                              auto: htOk },
+    ];
+  } else {
+    if (titleEl) titleEl.textContent = '🧵 Threads 검수 체크리스트';
+    const series  = body.includes('---');
+    const engage  = /\?|어떻게|왜|여러분|어떤|생각|의견/.test(body);
+    const cta     = /팔로우|공유|저장|댓글|DM/.test(body);
+    items = [
+      { id:'hook',   label:'첫 글이 호기심을 유발하는가',                        auto: body.length > 10 },
+      { id:'length', label:`500자 이내로 간결 (현재 ${body.length}자)`,          auto: body.length > 0 && body.length <= 500 },
+      { id:'series', label:'시리즈 분절(---) 구조 사용',                         auto: series },
+      { id:'engage', label:'대화 유도·질문 요소 포함',                           auto: engage },
+      { id:'cta',    label:'CTA·반응 유도 포함',                                auto: cta },
+    ];
+  }
+  _clRender('tsns-cl-items','tsns-cl-bar','tsns-cl-progress', items, '#1f6feb');
+  _initReviseChips('tsns');
 }
 
-function _onTsnsCl() { _updateTsnsClBar(); }
-
-function _updateTsnsClBar() {
-  const ids  = ['hook','keyword','cta','tone','length','typo'];
-  const done = ids.filter(k => document.getElementById(`tsns-cl-${k}`)?.checked).length;
-  const pct  = Math.round(done / ids.length * 100);
-  const bar  = document.getElementById('tsns-cl-bar');
-  const prog = document.getElementById('tsns-cl-progress');
-  if (bar)  { bar.style.width = pct + '%'; bar.style.background = pct===100 ? '#4ade80' : pct>=60 ? '#f59e0b' : '#1f6feb'; }
-  if (prog) { prog.textContent = `${done}/${ids.length}`; prog.style.color = pct===100 ? '#4ade80' : '#8b949e'; }
-}
-
-// ── 이미지형 SNS 체크리스트 ─────────────────────────
+// ── 이미지형 SNS 검수 ─────────────────────────
 function _refreshIsnsChecklist() {
-  const caption  = document.getElementById('isns-review-caption')?.value || '';
-  const tagsText = document.getElementById('isns-review-tags')?.value || '';
-  const hashCount = (tagsText.match(/#\S+/g) || []).length;
+  const platform  = window._isnsActivePlatform || 'insta';
+  const isInsta   = platform === 'insta' || platform === 'instagram';
+  const caption   = document.getElementById('isns-review-caption')?.value || '';
+  const tagsText  = document.getElementById('isns-review-tags')?.value    || '';
+  const hashCount = (tagsText.match(/#\S+/g)||[]).length;
   const hasEmoji  = /\p{Emoji}/u.test(caption);
-  const ctaWords  = ['클릭', '링크', '팔로우', '저장', '공유', '댓글', '바로가기', '확인', 'DM', '문의', '프로필'];
+  const cta       = /클릭|링크|팔로우|저장|공유|댓글|바로가기|DM|프로필/.test(caption);
 
-  const checks = {
-    hook:    caption.length > 10,
-    emoji:   hasEmoji,
-    hashtag: hashCount > 0 && hashCount <= 30,
-    cta:     ctaWords.some(w => caption.includes(w)),
-    tone:    document.getElementById('isns-cl-tone')?.checked || false,
-  };
-
-  const ids = ['hook','emoji','hashtag','cta','tone'];
-  ids.forEach(k => {
-    const cb  = document.getElementById(`isns-cl-${k}`);
-    const lbl = document.getElementById(`isns-cl-${k}-lbl`);
-    if (!cb) return;
-    if (k !== 'tone') cb.checked = checks[k];
-    if (lbl) lbl.style.color = cb.checked ? '#e6edf3' : '#8b949e';
-  });
-
-  // 해시태그 수 레이블 업데이트
-  const htLbl = document.getElementById('isns-cl-hashtag-lbl');
-  if (htLbl && hashCount > 0) htLbl.textContent = `해시태그 30개 이하 (현재 ${hashCount}개)`;
-
-  _updateIsnsClBar();
+  const titleEl = document.getElementById('isns-cl-title');
+  let items, color;
+  if (isInsta) {
+    if (titleEl) titleEl.textContent = '📷 Instagram 검수 체크리스트';
+    color = '#e1306c';
+    items = [
+      { id:'hook',    label:'첫 줄이 스크롤을 멈추게 하는가',                    auto: caption.length > 10 },
+      { id:'emoji',   label:`이모지 자연스럽게 사용 (3~10개 권장)`,             auto: hasEmoji },
+      { id:'hashtag', label:`해시태그 11~30개 (현재 ${hashCount}개)`,           auto: hashCount >= 11 && hashCount <= 30 },
+      { id:'visual',  label:'캡션이 비주얼 콘텐츠 맥락을 보완하는가',            auto: caption.length > 50, manual: true },
+      { id:'cta',     label:'CTA (팔로우·저장·링크) 명확',                      auto: cta },
+    ];
+  } else {
+    if (titleEl) titleEl.textContent = '📘 Facebook 검수 체크리스트';
+    color = '#1877f2';
+    const share   = /공유|나눠|퍼트|바이럴|태그/.test(caption);
+    const linkOk  = caption.length > 0 && caption.length <= 500;
+    items = [
+      { id:'hook',   label:'첫 줄이 공유하고 싶게 만드는가',                    auto: caption.length > 10 },
+      { id:'tone',   label:'친근하고 자연스러운 톤인가',                        auto: caption.length > 20, manual: true },
+      { id:'share',  label:'공유·바이럴 유도 요소 포함',                        auto: share },
+      { id:'length', label:`적절한 길이 (현재 ${caption.length}자 / 권장 500자 이내)`, auto: linkOk },
+      { id:'cta',    label:'CTA 명확 (링크 클릭·공유 유도)',                    auto: cta },
+    ];
+  }
+  const bar = document.getElementById('isns-cl-bar');
+  if (bar) bar.style.background = color;
+  _clRender('isns-cl-items','isns-cl-bar','isns-cl-progress', items, color);
+  _initReviseChips('isns');
 }
 
-function _onIsnsCl() { _updateIsnsClBar(); }
+// ════════════════════════════════════════════════
+// AI 수정 지시 — 빠른 칩 + 이력 관리
+// ════════════════════════════════════════════════
+const _REVISE_CHIPS = {
+  blog:      ['제목 더 SEO 최적화', '본문 길이 늘려줘', 'CTA 더 강하게', '톤 더 친근하게', '소제목 구조 개선', '키워드 더 자연스럽게'],
+  linkedin:  ['Hook 더 강렬하게', '더 전문적인 톤으로', '길이 30% 줄여줘', '데이터·수치 추가', 'CTA 더 구체적으로', '인사이트 강화'],
+  threads:   ['더 짧고 강렬하게', '시리즈 구조로 분리', '더 대화체로', '마지막에 질문 추가', '500자 이내로 줄여줘'],
+  instagram: ['이모지 더 추가', '해시태그 최적화', '더 감성적으로', 'CTA 더 강하게', '첫 줄 더 강렬하게'],
+  facebook:  ['더 친근한 톤으로', '공유 유도 강화', '길이 줄여줘 (500자 이내)', '스토리텔링 요소 추가'],
+};
 
-function _updateIsnsClBar() {
-  const ids  = ['hook','emoji','hashtag','cta','tone'];
-  const done = ids.filter(k => document.getElementById(`isns-cl-${k}`)?.checked).length;
-  const pct  = Math.round(done / ids.length * 100);
-  const bar  = document.getElementById('isns-cl-bar');
-  const prog = document.getElementById('isns-cl-progress');
-  if (bar)  { bar.style.width = pct + '%'; bar.style.background = pct===100 ? '#4ade80' : pct>=60 ? '#f59e0b' : '#e1306c'; }
-  if (prog) { prog.textContent = `${done}/${ids.length}`; prog.style.color = pct===100 ? '#4ade80' : '#8b949e'; }
+const _revHist = { blog:[], tsns:[], isns:[] };
+const _revPtr  = { blog:-1, tsns:-1, isns:-1 };
+
+function _initReviseChips(type) {
+  const platform = type === 'blog' ? 'blog'
+    : type === 'tsns' ? (window._tsnsActivePlatform || 'linkedin')
+    : (window._isnsActivePlatform === 'facebook' ? 'facebook' : 'instagram');
+  const chips = _REVISE_CHIPS[platform] || [];
+  const el = document.getElementById(`${type}-revise-chips`);
+  if (!el) return;
+  el.innerHTML = chips.map(c =>
+    `<button onclick="document.getElementById('${type}-revise-input').value='${c.replace(/'/g,"\\'")}'"
+      style="background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:20px;font-size:10px;padding:3px 10px;cursor:pointer;white-space:nowrap;">${c}</button>`
+  ).join('');
+}
+
+async function _revApply(type, targetId, platform) {
+  const inputEl  = document.getElementById(`${type}-revise-input`);
+  const targetEl = document.getElementById(targetId);
+  const instruction = inputEl?.value.trim();
+  const content     = targetEl?.value.trim();
+  if (!content)     { toast('수정할 콘텐츠가 없습니다. 먼저 본문을 생성하세요.', 'orange'); return; }
+  if (!instruction) { toast('수정 지시를 입력하세요.', 'orange'); return; }
+
+  const origText = targetEl.value;
+  targetEl.value = '⏳ AI가 수정 중...';
+  const btnEl = document.querySelector(`button[onclick*="_revApply('${type}'"]`);
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '수정 중...'; }
+
+  try {
+    const res = await fetch(`${API}/content/revise`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ content, instruction, platform, api_keys: getKeys(), agency_profile: agencyProfile, tier: selectedTier })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail||`HTTP ${res.status}`); }
+    const data = await res.json();
+    const revised = data.revised_content || '';
+    if (!revised) throw new Error('수정 결과가 비어있습니다.');
+
+    // 이력 저장 (현재 포인터 이후 삭제 후 추가)
+    _revHist[type] = _revHist[type].slice(0, _revPtr[type]+1);
+    if (_revHist[type].length === 0) _revHist[type].push(origText); // 원본 저장
+    _revHist[type].push(revised);
+    if (_revHist[type].length > 6) _revHist[type].shift();
+    _revPtr[type] = _revHist[type].length - 1;
+
+    targetEl.value = revised;
+    inputEl.value  = '';
+    _revUpdateNav(type);
+    toast('수정 완료!', '#4ade80');
+    // 체크리스트 갱신
+    if (type === 'blog')  { setTimeout(_refreshBlogChecklist, 50); }
+    if (type === 'tsns')  { setTimeout(_refreshTsnsChecklist, 50); }
+    if (type === 'isns')  { setTimeout(_refreshIsnsChecklist, 50); }
+  } catch(e) {
+    targetEl.value = origText;
+    toast('수정 실패: ' + e.message, 'red');
+  } finally {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '✨ AI 수정 적용'; }
+  }
+}
+
+function _revUndo(type, targetId) {
+  if (_revPtr[type] <= 0) return;
+  _revPtr[type]--;
+  document.getElementById(targetId).value = _revHist[type][_revPtr[type]] || '';
+  _revUpdateNav(type);
+}
+function _revRedo(type, targetId) {
+  if (_revPtr[type] >= _revHist[type].length - 1) return;
+  _revPtr[type]++;
+  document.getElementById(targetId).value = _revHist[type][_revPtr[type]] || '';
+  _revUpdateNav(type);
+}
+function _revUpdateNav(type) {
+  const undoEl = document.getElementById(`${type}-rev-undo`);
+  const redoEl = document.getElementById(`${type}-rev-redo`);
+  const histEl = document.getElementById(`${type}-rev-hist`);
+  const hist = _revHist[type], ptr = _revPtr[type];
+  if (undoEl) undoEl.style.display = ptr > 0 ? '' : 'none';
+  if (redoEl) redoEl.style.display = ptr < hist.length-1 ? '' : 'none';
+  if (histEl && hist.length > 1) histEl.textContent = `수정 이력 ${ptr}/${hist.length-1}`;
 }
 
 // ── 카드뉴스 슬라이드 수 자동 계산 ───────────────
@@ -12751,10 +12854,12 @@ function switchTsnsReviewPlatform(platform) {
     }
   });
   // 해당 플랫폼 본문을 검수 textarea에 로드
+  window._tsnsActivePlatform = platform;
   const bodyId = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
   const body = document.getElementById(bodyId)?.value || '';
   const reviewEl = document.getElementById('tsns-review-body');
   if (reviewEl) reviewEl.value = body || `(${platform === 'linkedin' ? '링크드인' : '쓰레드'} 본문을 먼저 생성하세요)`;
+  setTimeout(_refreshTsnsChecklist, 50);
 }
 
 // ── 이미지형 SNS 탭 전환 ──────────────────────────────────
@@ -12813,6 +12918,7 @@ function switchIsnsPlatform(platform) {
 }
 
 function switchIsnsReviewPlatform(platform) {
+  window._isnsActivePlatform = platform;
   ['insta','facebook'].forEach(p => {
     const btn = document.getElementById(`isns-rtab-${p}`);
     if (btn) {
@@ -12825,6 +12931,7 @@ function switchIsnsReviewPlatform(platform) {
       }
     }
   });
+  setTimeout(_refreshIsnsChecklist, 50);
 }
 
 // ── 동영상 콘텐츠 플랫폼/탭 전환 ─────────────────────────
