@@ -1758,6 +1758,10 @@
     <div>
       <h2 style="font-size:18px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">블로그</h2>
       <p style="font-size:12px;color:#8b949e;margin:0;">네이버 · 티스토리 · 워드프레스 — SEO 최적화 포스팅</p>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:5px;">
+        <span id="blog-autosave-label" style="display:none;font-size:10px;color:#484f58;">자동저장됨 --:--</span>
+        <button id="blog-autosave-reset" onclick="blogDraftReset()" style="display:none;font-size:10px;color:#f87171;background:transparent;border:none;cursor:pointer;padding:0;text-decoration:underline;">초기화</button>
+      </div>
     </div>
     <!-- 단계 인디케이터 -->
     <div style="display:flex;align-items:center;gap:0;">
@@ -5540,6 +5544,7 @@ function goto(name) {
   if (name === 'api')       renderApiSetupChecklist();
   if (name === 'agency')    { _loadAgencyFields(agencyProfile || {}); renderAgencyProgress(); _restorePersonaUI(); _updateAgencyProjBadge(); _renderLearnedDataList(); _updateSamplePicker(); }
   if (name === 'seo')       { _renderPlanAgencyHint(); _renderPlanHistory(); }
+  if (name === 'blog')      { const ok = blogDraftRestore(); if (ok) toast('이전 작업을 복원했습니다', '#4ade80'); }
 }
 
 // ── SNS 페이지 탭 전환 ───────────────────────────────────────
@@ -6799,6 +6804,7 @@ function renderBlogResult(posts) {
   // 드래프트 자동 저장
   posts.forEach(p => saveDraft({ type:'blog', platform:p.platform, title:p.title||'블로그 글', content:p.body||'' }));
   toast('블로그 본문이 생성되었습니다!', '#4ade80');
+  blogAutoSave();
 }
 
 async function regenerateBlogTitle() {
@@ -6934,13 +6940,134 @@ async function generateBlogThumbnail() {
     if (preview) preview.innerHTML = `<img src="data:${data.mime};base64,${data.image_b64}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" /><a download="thumbnail.jpg" href="data:${data.mime};base64,${data.image_b64}" style="position:absolute;bottom:8px;right:8px;background:#1f6feb;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;text-decoration:none;">다운로드</a>`;
     if (preview) preview.style.position = 'relative';
     toast('썸네일 생성 완료!', '#4ade80');
+    blogAutoSave();
   } catch(e) {
     if (preview) preview.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px;"><div style="font-size:13px;">❌ ${e.message}</div></div>`;
     toast('이미지 생성 실패: ' + e.message, 'red');
   }
 }
 
+// ── 블로그 자동저장 ──────────────────────────────────────────
+const BLOG_AUTOSAVE_KEY = 'mr_blog_autosave';
+let _blogSaveTimer = null;
+
+function blogAutoSave() {
+  const thumbEl = document.getElementById('blog-thumbnail-preview');
+  const thumbImg = thumbEl?.querySelector('img')?.src || '';
+  const data = {
+    ts:        Date.now(),
+    tab:       window._currentBlogTab || 'basic',
+    topic:     document.getElementById('blog-topic')?.value   || '',
+    title:     document.getElementById('blog-title')?.value   || '',
+    body:      document.getElementById('blog-body')?.value    || '',
+    imgPrompt: document.getElementById('blog-img-prompt')?.value || '',
+    imgStyle:  window._imgStyle || 'minimal',
+    platforms: {
+      naver:     document.getElementById('blog-plat-naver')?.checked     ?? true,
+      tistory:   document.getElementById('blog-plat-tistory')?.checked   ?? true,
+      wordpress: document.getElementById('blog-plat-wordpress')?.checked ?? false,
+    },
+    hasContent: (document.getElementById('blog-content-editor')?.style.display !== 'none'),
+    thumbnail: thumbImg.startsWith('data:') ? thumbImg : '',
+    posts: window._blogPosts || [],
+  };
+  try {
+    localStorage.setItem(BLOG_AUTOSAVE_KEY, JSON.stringify(data));
+    _blogAutoSaveUI(data.ts);
+  } catch(e) {}
+}
+
+function blogAutoSaveDebounced() {
+  clearTimeout(_blogSaveTimer);
+  _blogSaveTimer = setTimeout(blogAutoSave, 800);
+}
+
+function _blogAutoSaveUI(ts) {
+  const label = document.getElementById('blog-autosave-label');
+  const btn   = document.getElementById('blog-autosave-reset');
+  if (!label) return;
+  const d = new Date(ts);
+  const hhmm = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  label.textContent = `자동저장됨 ${hhmm}`;
+  label.style.display = '';
+  if (btn) btn.style.display = '';
+}
+
+function blogDraftRestore() {
+  try {
+    const raw = localStorage.getItem(BLOG_AUTOSAVE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d.ts || !d.topic) return false;
+
+    const topicEl     = document.getElementById('blog-topic');
+    const titleEl     = document.getElementById('blog-title');
+    const bodyEl      = document.getElementById('blog-body');
+    const imgPromptEl = document.getElementById('blog-img-prompt');
+
+    if (topicEl && d.topic) topicEl.value = d.topic;
+    if (titleEl && d.title) titleEl.value = d.title;
+    if (imgPromptEl && d.imgPrompt) imgPromptEl.value = d.imgPrompt;
+
+    if (d.platforms) {
+      const n = document.getElementById('blog-plat-naver');
+      const t = document.getElementById('blog-plat-tistory');
+      const w = document.getElementById('blog-plat-wordpress');
+      if (n) n.checked = d.platforms.naver;
+      if (t) t.checked = d.platforms.tistory;
+      if (w) w.checked = d.platforms.wordpress;
+    }
+
+    if (d.hasContent && d.body) {
+      if (bodyEl) bodyEl.value = d.body;
+      const emptyEl  = document.getElementById('blog-content-empty');
+      const editorEl = document.getElementById('blog-content-editor');
+      if (emptyEl)  emptyEl.style.display  = 'none';
+      if (editorEl) editorEl.style.display = '';
+    }
+
+    if (d.posts?.length) window._blogPosts = d.posts;
+
+    if (d.thumbnail) {
+      const preview = document.getElementById('blog-thumbnail-preview');
+      if (preview) {
+        preview.style.position = 'relative';
+        preview.innerHTML = `<img src="${d.thumbnail}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" /><a download="thumbnail.jpg" href="${d.thumbnail}" style="position:absolute;bottom:8px;right:8px;background:#1f6feb;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;text-decoration:none;">다운로드</a>`;
+      }
+    }
+
+    if (d.imgStyle) window._imgStyle = d.imgStyle;
+    if (d.posts?.length) _buildSectionList();
+
+    switchBlogTab(d.tab || 'basic');
+    _blogAutoSaveUI(d.ts);
+    return true;
+  } catch(e) { return false; }
+}
+
+function blogDraftReset() {
+  if (!confirm('임시저장된 블로그 작업을 초기화할까요?')) return;
+  localStorage.removeItem(BLOG_AUTOSAVE_KEY);
+  // 필드 초기화
+  const els = ['blog-topic','blog-title','blog-body','blog-img-prompt'];
+  els.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const emptyEl  = document.getElementById('blog-content-empty');
+  const editorEl = document.getElementById('blog-content-editor');
+  if (emptyEl)  { emptyEl.style.display = ''; emptyEl.innerHTML = '<div style="text-align:center;padding:60px 20px;border:1px dashed #30363d;border-radius:8px;"><div style="font-size:32px;margin-bottom:10px;">✍️</div><div style="font-size:13px;color:#8b949e;margin-bottom:6px;">AI가 기본 설정 기반으로 본문을 생성합니다</div></div>'; }
+  if (editorEl) editorEl.style.display = 'none';
+  const thumbPrev = document.getElementById('blog-thumbnail-preview');
+  if (thumbPrev) thumbPrev.innerHTML = '<div style="text-align:center;color:#484f58;"><div style="font-size:28px;margin-bottom:6px;">🖼️</div><div style="font-size:11px;">생성 버튼을 눌러주세요</div></div>';
+  window._blogPosts = [];
+  const label = document.getElementById('blog-autosave-label');
+  const btn   = document.getElementById('blog-autosave-reset');
+  if (label) label.style.display = 'none';
+  if (btn)   btn.style.display   = 'none';
+  switchBlogTab('basic');
+  toast('초기화되었습니다', '#8b949e');
+}
+
 function switchBlogTab(tab) {
+  window._currentBlogTab = tab;
   const tabs = ['basic','content','image','review'];
   const nums  = {basic:1, content:2, image:3, review:4};
   tabs.forEach(t => {
@@ -6960,6 +7087,7 @@ function switchBlogTab(tab) {
     }
     if (label) label.style.color = (isActive || isDone) ? '#fff' : '#8b949e';
   });
+  blogAutoSaveDebounced();
 }
 
 function selectBlogPurpose(el) {
@@ -11737,6 +11865,20 @@ _restorePersonaUI();
 // 기획 플로우 초기화
 planStep1();
 _renderPlanHistory();
+
+// ── 블로그 자동저장 이벤트 리스너 ────────────────────────────
+(function() {
+  const textIds = ['blog-topic','blog-title','blog-body','blog-img-prompt'];
+  textIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', blogAutoSaveDebounced);
+  });
+  const cbIds = ['blog-plat-naver','blog-plat-tistory','blog-plat-wordpress'];
+  cbIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', blogAutoSave);
+  });
+})();
 
 // ── SEO Phase1/2 탭 전환 ────────────────────────────────────
 
