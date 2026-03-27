@@ -2487,7 +2487,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">💼 링크드인 본문</div>
-            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;">AI 생성</button>
+            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateTSNS('linkedin')">AI 생성</button>
           </div>
           <textarea class="field-input" id="tsns-linkedin-body" rows="16" placeholder="AI 생성 버튼을 누르거나 직접 작성하세요&#10;&#10;링크드인은 최대 3,000자&#10;Hook(첫줄) → 본문 → CTA 구조 권장" style="resize:vertical;font-size:13px;line-height:1.7;"></textarea>
           <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#484f58;">
@@ -2524,7 +2524,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">🧵 쓰레드 본문</div>
-            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;">AI 생성</button>
+            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateTSNS('threads')">AI 생성</button>
           </div>
           <textarea class="field-input" id="tsns-threads-body" rows="16" placeholder="AI 생성 버튼을 누르거나 직접 작성하세요&#10;&#10;쓰레드는 최대 500자&#10;짧고 강렬하게, 연속 글 형식 권장" style="resize:vertical;font-size:13px;line-height:1.7;"></textarea>
           <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#484f58;">
@@ -2576,8 +2576,8 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;">최종 본문 (수동 편집 가능)</div>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost" style="font-size:11px;">AI 재생성</button>
-            <button class="btn btn-ghost" style="font-size:11px;">📋 복사</button>
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="regenerateTSNS()">AI 재생성</button>
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="copyEl('tsns-review-body')">📋 복사</button>
           </div>
         </div>
         <textarea class="field-input" id="tsns-review-body" rows="18" style="resize:vertical;font-size:13px;line-height:1.8;"></textarea>
@@ -2606,7 +2606,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <option>검수 후 수동 발행</option>
           </select>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:12px;">🚀 배포로 보내기</button>
+        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="goto('deploy')">🚀 배포로 보내기</button>
       </div>
     </div>
   </div>
@@ -2806,7 +2806,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">📷 인스타그램 캡션</div>
-            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;">AI 생성</button>
+            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateISNS('instagram')">AI 생성</button>
           </div>
           <textarea class="field-input" id="isns-insta-caption" rows="8" placeholder="감성적이고 공감 가는 캡션을 작성하세요&#10;이모지 활용 권장" style="resize:vertical;margin-bottom:10px;"></textarea>
           <label class="field-label">해시태그</label>
@@ -2844,7 +2844,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:11px;color:#8b949e;font-weight:700;">📘 페이스북 본문</div>
-            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;">AI 생성</button>
+            <button class="btn btn-primary" style="font-size:11px;padding:4px 12px;" onclick="generateISNS('facebook')">AI 생성</button>
           </div>
           <textarea class="field-input" id="isns-fb-body" rows="12" placeholder="페이스북은 링크 미리보기와 함께 표시됩니다&#10;링크 앞에 흥미로운 설명을 추가하세요" style="resize:vertical;margin-bottom:10px;"></textarea>
           <label class="field-label">링크 (선택)</label>
@@ -2905,7 +2905,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <option>컬러풀</option>
             <option>브랜드 커스텀</option>
           </select>
-          <button class="btn btn-primary" style="width:100%;margin-top:4px;">AI 카드뉴스 생성</button>
+          <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="generateCardNewsISNS()">AI 카드뉴스 생성</button>
         </div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;margin-bottom:8px;">슬라이드 목차</div>
@@ -2969,8 +2969,8 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div style="font-size:11px;color:#8b949e;font-weight:700;">최종 캡션 (수동 편집 가능)</div>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost" style="font-size:11px;">AI 재생성</button>
-            <button class="btn btn-ghost" style="font-size:11px;">📋 복사</button>
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="regenerateISNS()">AI 재생성</button>
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="copyEl('isns-review-caption')">📋 복사</button>
           </div>
         </div>
         <textarea class="field-input" id="isns-review-caption" rows="8" style="resize:vertical;margin-bottom:10px;"></textarea>
@@ -2995,7 +2995,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <label class="field-label">발행 방식</label>
           <select class="field-input"><option>즉시 발행</option><option>예약 발행</option><option>수동 발행</option></select>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:12px;">🚀 배포로 보내기</button>
+        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="goto('deploy')">🚀 배포로 보내기</button>
       </div>
     </div>
   </div>
@@ -12022,6 +12022,137 @@ function _renderGscResult(d) {
       <div style="font-size:12px;font-weight:600;color:#e6edf3;margin:4px 0;">${ins.title}</div>
       <div style="font-size:11px;color:#8b949e;">${ins.description}</div>
     </div>`).join('') || '<div style="color:#8b949e;font-size:12px;">인사이트 없음</div>';
+}
+
+// ── 텍스트형 SNS 생성 ──────────────────────────────────────
+let _tsnsActivePlatform = 'linkedin';
+
+async function generateTSNS(platform) {
+  _tsnsActivePlatform = platform;
+  const topic   = document.getElementById('tsns-topic')?.value.trim();
+  const summary = document.getElementById('tsns-message')?.value.trim();
+  if (!topic) { toast('주제를 입력하세요', 'orange'); switchTsnsTab('basic'); return; }
+
+  const bodyId = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+  const bodyEl = document.getElementById(bodyId);
+  if (bodyEl) bodyEl.value = '⏳ 생성 중...';
+
+  try {
+    const res = await fetch(`${API}/sns/generate`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic, seo_summary: summary, platform,
+        tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile
+      })
+    });
+    const data = await res.json();
+    const post = data.post || {};
+    const body = post.body || '';
+    if (bodyEl) bodyEl.value = body;
+    // 미리보기 업데이트
+    const previewId = platform === 'linkedin' ? 'tsns-li-preview' : 'tsns-th-preview';
+    const preview = document.getElementById(previewId);
+    if (preview) preview.textContent = body;
+    // 검수 탭 복사
+    const reviewEl = document.getElementById('tsns-review-body');
+    if (reviewEl && !reviewEl.value) reviewEl.value = body;
+    toast(`${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠 생성 완료!`, '#4ade80');
+  } catch(e) {
+    if (bodyEl) bodyEl.value = '';
+    toast('생성 실패: ' + e.message, 'red');
+  }
+}
+
+function regenerateTSNS() {
+  const reviewEl = document.getElementById('tsns-review-body');
+  const activePlatform = _tsnsActivePlatform || 'linkedin';
+  generateTSNS(activePlatform).then(() => {
+    const bodyId = activePlatform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+    const body = document.getElementById(bodyId)?.value || '';
+    if (reviewEl) reviewEl.value = body;
+  });
+}
+
+// ── 이미지형 SNS 생성 ──────────────────────────────────────
+let _isnsActivePlatform = 'instagram';
+
+async function generateISNS(platform) {
+  _isnsActivePlatform = platform;
+  const topic   = document.getElementById('isns-topic')?.value.trim();
+  const summary = document.getElementById('isns-message')?.value.trim();
+  if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
+
+  const apiPlatform = platform === 'insta' ? 'instagram' : platform;
+  const bodyId  = platform === 'insta' || platform === 'instagram' ? 'isns-insta-caption' : 'isns-fb-body';
+  const tagsId  = platform === 'insta' || platform === 'instagram' ? 'isns-insta-tags'    : null;
+  const bodyEl  = document.getElementById(bodyId);
+  if (bodyEl) bodyEl.value = '⏳ 생성 중...';
+
+  try {
+    const res = await fetch(`${API}/sns/generate`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic, seo_summary: summary, platform: apiPlatform,
+        tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile
+      })
+    });
+    const data = await res.json();
+    const post = data.post || {};
+    const body = post.body || '';
+    const tags = (post.hashtags || []).join(' ');
+    if (bodyEl) bodyEl.value = body;
+    if (tagsId) { const t = document.getElementById(tagsId); if (t) t.value = tags; }
+    // 미리보기
+    const previewId = platform === 'insta' || platform === 'instagram' ? 'isns-insta-preview' : 'isns-fb-preview';
+    const preview = document.getElementById(previewId);
+    if (preview) preview.textContent = body;
+    // 검수 복사
+    const rc = document.getElementById('isns-review-caption');
+    const rt = document.getElementById('isns-review-tags');
+    if (rc && !rc.value) rc.value = body;
+    if (rt && !rt.value) rt.value = tags;
+    toast('이미지형 SNS 콘텐츠 생성 완료!', '#4ade80');
+  } catch(e) {
+    if (bodyEl) bodyEl.value = '';
+    toast('생성 실패: ' + e.message, 'red');
+  }
+}
+
+function regenerateISNS() {
+  generateISNS(_isnsActivePlatform || 'instagram').then(() => {
+    const bodyId = (_isnsActivePlatform === 'insta' || _isnsActivePlatform === 'instagram') ? 'isns-insta-caption' : 'isns-fb-body';
+    const body = document.getElementById(bodyId)?.value || '';
+    const rc = document.getElementById('isns-review-caption');
+    if (rc) rc.value = body;
+  });
+}
+
+async function generateCardNewsISNS() {
+  const topic = document.getElementById('isns-topic')?.value.trim();
+  if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
+  const slideEl = document.querySelector('#isns-panel-cardnews select');
+  const slideCount = parseInt(slideEl?.value) || 6;
+  toast('카드뉴스 생성 중...', '#60a5fa');
+  try {
+    const res = await fetch(`${API}/cardnews/generate`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic, slide_count: slideCount, language:'ko',
+        tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile
+      })
+    });
+    const data = await res.json();
+    const slides = data.slides || [];
+    // 목차 업데이트
+    const outline = document.querySelector('#isns-panel-cardnews .card, #isns-panel-cardnews div[style*="flex-direction:column"] div:last-child');
+    const tocEl = document.querySelector('#isns-panel-cardnews div[style*="gap:4px"]');
+    if (tocEl && slides.length) {
+      tocEl.innerHTML = slides.map((s,i) => `<div style="padding:6px 8px;border-radius:6px;background:#21262d;${i===0?'color:#e6edf3':'color:#8b949e'};">${s.index}. ${s.title}</div>`).join('');
+    }
+    toast('카드뉴스 생성 완료!', '#4ade80');
+  } catch(e) {
+    toast('카드뉴스 생성 실패: ' + e.message, 'red');
+  }
 }
 
 // ── 텍스트형 SNS 탭 전환 ──────────────────────────────────
