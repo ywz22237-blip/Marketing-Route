@@ -2451,11 +2451,11 @@ async def agency_learn_csv(req: AgencyLearnRequest):
     }
 
 
-# ── 이미지 생성 (Pollinations.ai - 무료, 토큰 불필요) ────────────────────────────
+# ── 이미지 생성 (Pollinations.ai - URL 직접 반환, 브라우저에서 로드) ──────────
 @app.post("/image/generate")
 async def generate_image(body: dict):
-    """Pollinations.ai로 이미지 생성 → base64 반환"""
-    import httpx, base64, urllib.parse
+    """Pollinations.ai 이미지 URL 반환 (브라우저가 직접 로드)"""
+    import urllib.parse, random
 
     prompt = body.get("prompt", "")
     width  = body.get("width", 1024)
@@ -2464,17 +2464,8 @@ async def generate_image(body: dict):
     if not prompt:
         raise HTTPException(status_code=400, detail="prompt가 비어있습니다.")
 
+    seed = random.randint(1, 999999)
     encoded = urllib.parse.quote(prompt)
-    url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&enhance=false"
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&seed={seed}"
 
-    try:
-        async with httpx.AsyncClient(timeout=90, follow_redirects=True) as client:
-            r = await client.get(url)
-            if r.status_code != 200:
-                raise HTTPException(status_code=502, detail=f"Pollinations 오류 ({r.status_code}): {r.text[:200]}")
-            img_b64 = base64.b64encode(r.content).decode()
-            return {"image_b64": img_b64, "mime": "image/jpeg"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"이미지 생성 실패: {str(e)[:200]}")
+    return {"image_url": url, "mime": "image/jpeg"}
