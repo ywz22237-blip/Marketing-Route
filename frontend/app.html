@@ -10962,68 +10962,96 @@ function _loadDeployPanelInit() {
   dpSelectChannel(_dpSelectedChannel || 'blog');
 }
 
-// ── 채널별 배포 패널 ──────────────────────────────
+// ── 채널별 배포 패널 (바텀시트) ──────────────────
 function loadDeployPanel(draftId) {
   _dpSelectedDraftId = draftId;
-  // 선택 카드 하이라이트 갱신
   _dpRenderChannelList();
-  const container = document.getElementById('dp-deploy-content');
-  if (!container) return;
-  if (!draftId) { container.innerHTML=''; return; }
+  if (!draftId) return;
 
   const d = getDrafts().find(x=>x.id===draftId);
-  if (!d) { container.innerHTML='<div style="color:#484f58;text-align:center;padding:40px;">콘텐츠를 찾을 수 없습니다.</div>'; return; }
+  if (!d) return;
 
   const hist = _getDeployHistory();
   const g    = _dpGroup(d.type||d.content_type||'');
   const pls  = _DP_PLAT[g] || ['linkedin'];
 
-  container.innerHTML = `
-    <div style="margin-bottom:16px;padding:14px 16px;background:#161b22;border:1px solid #30363d;border-radius:10px;">
-      <div style="font-size:15px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">${_escHtml(d.title||'(제목 없음)')}</div>
-      <div style="font-size:13px;color:#484f58;">${(d.content||'').replace(/<[^>]*>/g,'').slice(0,120)}…</div>
-    </div>
-    ${pls.map(p=>{
-      const pm       = _DP_META[p]||{icon:'📄',label:p,tip:'',member:'-'};
-      const deployed = hist.some(h=>h.draft_id===draftId && h.channel===p);
-      const taId     = `dp-ta-${p}`;
-      return `
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:20px;">${pm.icon}</span>
-            <span style="font-size:16px;font-weight:700;color:#f0f6fc;">${pm.label}</span>
-            <span style="font-size:12px;color:#484f58;">${pm.member}</span>
-            ${deployed?'<span style="background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3);padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;">✅ 배포완료</span>':''}
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            ${(()=>{
-              const m = _dpGetMethod(p);
-              const methodBadge = m.method==='webhook'
-                ? '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3);">🔗 웹훅</span>'
-                : m.method==='api'
-                ? '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(56,139,253,.12);color:#388bfd;border:1px solid rgba(56,139,253,.3);">🔑 API</span>'
-                : '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:#21262d;color:#8b949e;border:1px solid #30363d;">✋ 수동</span>';
-              return methodBadge;
-            })()}
-            <button onclick="dpCopy('${taId}')" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">📋 복사</button>
-            ${!deployed
-              ? (()=>{
-                  const m = _dpGetMethod(p);
-                  const label = m.method==='webhook' ? '🚀 자동 배포' : m.method==='api' ? '🔗 API 배포' : '✓ 배포 완료';
-                  const bg    = m.method==='manual' ? '#238636' : '#1f6feb';
-                  return `<button id="dp-send-btn-${p}" onclick="dpAutoSend('${draftId}','${p}','${taId}')" style="background:${bg};border:none;color:#fff;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${label}</button>`;
-                })()
-              : `<button onclick="dpUnmark('${draftId}','${p}')" style="background:#21262d;border:1px solid #30363d;color:#8b949e;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">완료 취소</button>`
-            }
-          </div>
+  // 기존 바텀시트 제거
+  document.getElementById('dp-bottomsheet')?.remove();
+  document.getElementById('dp-bottomsheet-backdrop')?.remove();
+
+  // 백드롭
+  const backdrop = document.createElement('div');
+  backdrop.id = 'dp-bottomsheet-backdrop';
+  backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;';
+  backdrop.onclick = closeDpBottomSheet;
+
+  // 바텀시트
+  const sheet = document.createElement('div');
+  sheet.id = 'dp-bottomsheet';
+  sheet.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:801;background:#161b22;border-top:1px solid #30363d;border-radius:16px 16px 0 0;max-height:80vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease;';
+
+  sheet.innerHTML = `
+    <!-- 핸들 + 헤더 -->
+    <div style="position:sticky;top:0;background:#161b22;border-bottom:1px solid #21262d;padding:12px 20px 14px;z-index:1;">
+      <div style="width:40px;height:4px;background:#30363d;border-radius:2px;margin:0 auto 14px;"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#f0f6fc;">${_escHtml(d.title||'(제목 없음)')}</div>
+          <div style="font-size:12px;color:#484f58;margin-top:3px;">${(d.content||'').replace(/<[^>]*>/g,'').slice(0,80)}…</div>
         </div>
-        ${pm.tip?`<div style="font-size:13px;color:#8b949e;background:#0d1117;border:1px solid #21262d;padding:6px 10px;border-radius:6px;margin-bottom:10px;">💡 ${pm.tip}</div>`:''}
-        <textarea id="${taId}" readonly
-          style="width:100%;min-height:160px;background:#0d1117;border:1px solid #21262d;border-radius:8px;color:#c9d1d9;padding:12px;font-size:14px;font-family:'Noto Sans KR',monospace;line-height:1.65;resize:vertical;"
-        >${_escHtml(_dpFormat(d,p))}</textarea>
-      </div>`;
-    }).join('')}`;
+        <button onclick="closeDpBottomSheet()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0 0 0 12px;flex-shrink:0;">×</button>
+      </div>
+    </div>
+    <!-- 플랫폼 목록 -->
+    <div style="padding:16px 20px;">
+      ${pls.map(p => {
+        const pm      = _DP_META[p]||{icon:'📄',label:p,tip:'',member:'-'};
+        const deployed = hist.some(h=>h.draft_id===draftId && h.channel===p);
+        const taId    = `dp-ta-${p}`;
+        const m       = _dpGetMethod(p);
+        const methodBadge = m.method==='api'
+          ? '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(56,139,253,.12);color:#388bfd;border:1px solid rgba(56,139,253,.3);">🔑 API</span>'
+          : '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:#21262d;color:#8b949e;border:1px solid #30363d;">✋ 수동</span>';
+        const actionBtn = deployed
+          ? `<button onclick="dpUnmark('${draftId}','${p}');loadDeployPanel('${draftId}')" style="background:#21262d;border:1px solid #30363d;color:#8b949e;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">완료 취소</button>`
+          : `<button id="dp-send-btn-${p}" onclick="dpAutoSend('${draftId}','${p}','${taId}')" style="background:${m.method==='api'?'#1f6feb':'#238636'};border:none;color:#fff;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${m.method==='api'?'🔗 API 배포':'✓ 배포 완료'}</button>`;
+        return `
+        <div style="background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:14px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:20px;">${pm.icon}</span>
+              <span style="font-size:15px;font-weight:700;color:#f0f6fc;">${pm.label}</span>
+              ${methodBadge}
+              ${deployed?'<span style="background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3);padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;">✅ 배포완료</span>':''}
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button onclick="dpCopy('${taId}')" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">📋 복사</button>
+              ${actionBtn}
+            </div>
+          </div>
+          ${pm.tip?`<div style="font-size:12px;color:#8b949e;background:#161b22;border:1px solid #21262d;padding:6px 10px;border-radius:6px;margin-bottom:10px;">💡 ${pm.tip}</div>`:''}
+          <textarea id="${taId}" readonly
+            style="width:100%;min-height:140px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#c9d1d9;padding:12px;font-size:13px;font-family:'Noto Sans KR',monospace;line-height:1.65;resize:vertical;"
+          >${_escHtml(_dpFormat(d,p))}</textarea>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(sheet);
+  // 슬라이드 업 애니메이션
+  requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
+}
+
+function closeDpBottomSheet() {
+  const sheet    = document.getElementById('dp-bottomsheet');
+  const backdrop = document.getElementById('dp-bottomsheet-backdrop');
+  if (sheet) {
+    sheet.style.transform = 'translateY(100%)';
+    setTimeout(() => { sheet.remove(); backdrop?.remove(); }, 300);
+  }
+  _dpSelectedDraftId = null;
+  _dpRenderChannelList();
 }
 
 // ── 채널별 포맷 생성 ──────────────────────────────
