@@ -133,6 +133,14 @@
     .dp-filter-btn { padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #30363d;background:transparent;color:#8b949e;transition:all .15s;font-family:inherit; }
     .dp-filter-btn.active { border-color:#1f6feb;background:rgba(31,111,235,0.12);color:#388bfd; }
     .dp-filter-btn:hover:not(.active) { border-color:#484f58;color:#c9d1d9; }
+    /* 채널 배포 - 채널 선택 버튼 */
+    .dp-ch-btn { padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #30363d;background:#161b22;color:#8b949e;transition:all .15s;font-family:inherit; }
+    .dp-ch-btn.active { border-color:#1f6feb;background:rgba(31,111,235,0.15);color:#60a5fa; }
+    .dp-ch-btn:hover:not(.active) { border-color:#484f58;color:#c9d1d9; }
+    /* 채널 배포 - 콘텐츠 카드 */
+    .dp-content-card { background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .15s; }
+    .dp-content-card:hover { border-color:#388bfd;background:#1f6feb0a; }
+    .dp-content-card.selected { border-color:#388bfd;background:#1f6feb12; }
     /* 배포 플랫폼 체크박스 라벨 */
     .pub-plat-check { display:flex;align-items:center;gap:5px;font-size:13px;color:#8b949e;padding:4px 8px;border-radius:5px;border:1px solid #30363d;cursor:pointer;background:#21262d;transition:all .12s; }
     .pub-plat-check:has(input:checked) { border-color:#388bfd40;color:#60a5fa;background:#388bfd12; }
@@ -4729,13 +4737,19 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
 
   <!-- ── Tab 2: 채널 배포 ── -->
   <div id="dppanel-deploy" style="display:none;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <label style="font-size:14px;color:#8b949e;white-space:nowrap;">콘텐츠 선택</label>
-      <select id="dp-draft-select" onchange="loadDeployPanel(this.value)"
-        style="flex:1;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;padding:8px 12px;font-size:15px;font-family:inherit;">
-        <option value="">-- 콘텐츠를 선택하세요 --</option>
-      </select>
+
+    <!-- 채널 선택 -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;">
+      <button onclick="dpSelectChannel('blog')"      id="dp-ch-blog"      class="dp-ch-btn active">📝 블로그</button>
+      <button onclick="dpSelectChannel('text-sns')"  id="dp-ch-text-sns"  class="dp-ch-btn">💬 텍스트형 SNS</button>
+      <button onclick="dpSelectChannel('image-sns')" id="dp-ch-image-sns" class="dp-ch-btn">📷 이미지형 SNS</button>
+      <button onclick="dpSelectChannel('video')"     id="dp-ch-video"     class="dp-ch-btn">🎬 동영상</button>
     </div>
+
+    <!-- 해당 채널 콘텐츠 목록 -->
+    <div id="dp-ch-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
+
+    <!-- 배포 패널 -->
     <div id="dp-deploy-content"></div>
   </div>
 
@@ -10804,29 +10818,100 @@ function renderDeployQueue() {
   }).join('');
 }
 
+// ── 채널 타입 → 카테고리 매핑 ────────────────────
+const _DP_CH_MAP = {
+  blog:      ['blog','naver','tistory','wordpress'],
+  'text-sns':['linkedin','threads'],
+  'image-sns':['instagram','cardnews','facebook'],
+  video:     ['youtube','tiktok','video'],
+};
+const _DP_CH_LABEL = {
+  'blog':'📝 블로그', 'text-sns':'💬 텍스트형 SNS', 'image-sns':'📷 이미지형 SNS', 'video':'🎬 동영상'
+};
+let _dpSelectedChannel = 'blog';
+
+function _dpTypeToChannel(type) {
+  const t = (type||'').toLowerCase();
+  for (const [ch, types] of Object.entries(_DP_CH_MAP)) {
+    if (types.some(x => t.includes(x))) return ch;
+  }
+  return 'blog';
+}
+
+// ── 채널 선택 ─────────────────────────────────────
+function dpSelectChannel(ch) {
+  _dpSelectedChannel = ch;
+  document.querySelectorAll('.dp-ch-btn').forEach(b =>
+    b.classList.toggle('active', b.id === `dp-ch-${ch}`));
+  _dpRenderChannelList();
+  // 선택된 콘텐츠 초기화
+  document.getElementById('dp-deploy-content').innerHTML = '';
+  _dpSelectedDraftId = null;
+}
+
+// ── 채널별 콘텐츠 목록 렌더 ──────────────────────
+function _dpRenderChannelList() {
+  const listEl = document.getElementById('dp-ch-list');
+  if (!listEl) return;
+  const drafts = getDrafts().filter(d => _dpTypeToChannel(d.type||d.content_type||'') === _dpSelectedChannel);
+
+  if (!drafts.length) {
+    listEl.innerHTML = `<div style="text-align:center;padding:30px;color:#484f58;">
+      <div style="font-size:28px;margin-bottom:8px;">📭</div>
+      <div style="font-size:13px;">${_DP_CH_LABEL[_dpSelectedChannel]} 콘텐츠가 없습니다.</div>
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = drafts.map(d => {
+    const isSelected = d.id === _dpSelectedDraftId;
+    const hist = _getDeployHistory();
+    const g    = _dpGroup(d.type||d.content_type||'');
+    const pls  = _DP_PLAT[g] || [];
+    const deployedCnt = pls.filter(p => hist.some(h=>h.draft_id===d.id && h.channel===p)).length;
+    const statusBadge = deployedCnt === pls.length && pls.length > 0
+      ? `<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3);">✅ 배포완료</span>`
+      : deployedCnt > 0
+        ? `<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(210,153,34,.12);color:#d2993c;border:1px solid rgba(210,153,34,.3);">⏳ ${deployedCnt}/${pls.length}</span>`
+        : `<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(31,111,235,.12);color:#388bfd;border:1px solid rgba(31,111,235,.3);">대기중</span>`;
+    return `
+    <div class="dp-content-card${isSelected?' selected':''}" onclick="loadDeployPanel('${d.id}')">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">${_typeIcon[d.type]||'📄'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;color:#f0f6fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_escHtml(d.title||'(제목 없음)')}</div>
+          <div style="font-size:12px;color:#484f58;margin-top:2px;">${(d.created_at||'').slice(0,10)}</div>
+        </div>
+        ${statusBadge}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ── 배포하기 진입 (대기열 → 채널배포 탭) ─────────
 function startDeploy(draftId) {
   _dpSelectedDraftId = draftId;
   switchDeployTab('deploy');
   setTimeout(()=>{
-    const sel = document.getElementById('dp-draft-select');
-    if (sel) { sel.value=draftId; loadDeployPanel(draftId); }
+    const d = getDrafts().find(x=>x.id===draftId);
+    if (d) {
+      const ch = _dpTypeToChannel(d.type||d.content_type||'');
+      dpSelectChannel(ch);
+      setTimeout(()=>loadDeployPanel(draftId), 30);
+    }
   }, 60);
 }
 
 // ── 채널 배포 탭 초기화 ───────────────────────────
 function _loadDeployPanelInit() {
-  const sel = document.getElementById('dp-draft-select');
-  if (!sel) return;
-  const drafts = getDrafts().filter(d => d.status === 'approved');
-  sel.innerHTML = '<option value="">-- 승인된 콘텐츠를 선택하세요 --</option>' +
-    drafts.map(d=>`<option value="${d.id}">${_escHtml(d.title||'(제목 없음)')}</option>`).join('');
-  if (_dpSelectedDraftId) { sel.value=_dpSelectedDraftId; loadDeployPanel(_dpSelectedDraftId); }
+  dpSelectChannel(_dpSelectedChannel || 'blog');
 }
 
 // ── 채널별 배포 패널 ──────────────────────────────
 function loadDeployPanel(draftId) {
   _dpSelectedDraftId = draftId;
+  // 선택 카드 하이라이트 갱신
+  _dpRenderChannelList();
   const container = document.getElementById('dp-deploy-content');
   if (!container) return;
   if (!draftId) { container.innerHTML=''; return; }
