@@ -72,8 +72,15 @@ app.mount("/outputs", StaticFiles(directory=str(_outputs_dir)), name="outputs")
 
 @app.get("/ui", include_in_schema=False)
 def serve_ui():
-    """브라우저에서 /ui 접속 시 대시보드 반환"""
+    """브라우저에서 /ui 접속 시 랜딩 반환"""
     return FileResponse(str(BASE_DIR / "frontend" / "index.html"))
+
+@app.get("/app.html", include_in_schema=False)
+@app.get("/app", include_in_schema=False)
+def serve_app():
+    """메인 앱 (app.html) 서빙 — 항상 최신 파일 반환"""
+    return FileResponse(str(BASE_DIR / "frontend" / "app.html"),
+                        headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
 @app.get("/")
 def root():

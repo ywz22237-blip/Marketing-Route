@@ -552,7 +552,7 @@
       <span>🎬</span><span>동영상 콘텐츠</span>
     </div>
     <div class="nav-item" onclick="goto('review')" id="nav-review" style="padding-left:20px;">
-      <span>✅</span><span>검수</span>
+      <span>✅</span><span>최종검수</span>
     </div>
     <div class="nav-item" onclick="goto('deploy')" id="nav-deploy" style="padding-left:20px;">
       <span>🚀</span><span>배포</span>
@@ -4732,7 +4732,7 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
     <div id="dp-queue-empty" style="display:none;text-align:center;padding:60px 20px;">
       <div style="font-size:36px;margin-bottom:12px;">📭</div>
       <div style="font-size:15px;font-weight:600;color:#8b949e;margin-bottom:6px;">배포 대기 중인 콘텐츠가 없습니다</div>
-      <div style="font-size:13px;color:#484f58;">콘텐츠를 생성하고 검수를 완료하세요.</div>
+      <div style="font-size:13px;color:#484f58;">검수 페이지에서 콘텐츠를 승인하면 여기에 표시됩니다.</div>
     </div>
   </div>
 
@@ -5233,205 +5233,74 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
 <div class="page" id="page-review">
 
   <!-- Header -->
-  <div style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;">
+  <div style="margin-bottom:18px;">
+    <h2 style="font-size:20px;font-weight:700;color:#f0f6fc;margin:0 0 3px;">최종검수</h2>
+    <p style="font-size:13px;color:#484f58;margin:0;">콘텐츠를 검토·수정하고 배포 승인하세요.</p>
+  </div>
+
+  <!-- 2-panel layout: 목록 + 에디터 -->
+  <div style="display:grid;grid-template-columns:270px 1fr;gap:16px;align-items:start;">
+
+    <!-- 왼쪽: 필터 + 목록 -->
     <div>
-      <h2 style="font-size:20px;font-weight:700;color:#f0f6fc;margin:0 0 3px;">최종 검수</h2>
-      <p style="font-size:13px;color:#484f58;margin:0;letter-spacing:.03em;">AGGREGATION → CROSS-ANALYSIS → FEEDBACK LOOP → FINAL SIGNAL</p>
-    </div>
-    <button class="btn btn-primary" onclick="openAddDraftModal()" style="font-size:14px;">＋ 수동 등록</button>
-  </div>
-
-  <!-- ── 워크플로우 파이프라인 바 ── -->
-  <div style="background:#0d1117;border:1px solid #21262d;border-radius:12px;padding:18px 24px;margin-bottom:14px;position:relative;overflow:hidden;">
-    <!-- 배경 그라데이션 라인 -->
-    <div style="position:absolute;top:36px;left:60px;right:60px;height:2px;background:linear-gradient(90deg,#1f6feb40,#388bfd60,#1f6feb40);border-radius:2px;pointer-events:none;"></div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;z-index:1;">
-
-      <!-- Stage 1: AGGREGATION -->
-      <div style="text-align:center;">
-        <div id="wf-dot-1" style="width:44px;height:44px;border-radius:50%;background:#161b22;border:2px solid #30363d;display:inline-flex;align-items:center;justify-content:center;font-size:20px;transition:all .4s;box-shadow:none;">📥</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;margin-top:7px;letter-spacing:.08em;">AGGREGATION</div>
-        <div style="font-size:11px;color:#30363d;margin-top:2px;">팀원 결과물 수집</div>
-        <div id="wf-sub-1" style="font-size:11px;color:#484f58;margin-top:4px;min-height:12px;">—</div>
+      <div style="display:flex;gap:3px;margin-bottom:10px;">
+        <button onclick="filterDrafts('all')"      id="drf-all"      class="pub-filter-btn active" style="flex:1;font-size:12px;">전체</button>
+        <button onclick="filterDrafts('draft')"    id="drf-draft"    class="pub-filter-btn" style="flex:1;font-size:12px;">검수 전</button>
+        <button onclick="filterDrafts('approved')" id="drf-approved" class="pub-filter-btn" style="flex:1;font-size:12px;">승인됨</button>
       </div>
-
-      <!-- Stage 2: CROSS-ANALYSIS -->
-      <div style="text-align:center;">
-        <div id="wf-dot-2" style="width:44px;height:44px;border-radius:50%;background:#161b22;border:2px solid #30363d;display:inline-flex;align-items:center;justify-content:center;font-size:20px;transition:all .4s;">🔬</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;margin-top:7px;letter-spacing:.08em;">CROSS-ANALYSIS</div>
-        <div style="font-size:11px;color:#30363d;margin-top:2px;">4-Filter 병렬 검수</div>
-        <div id="wf-sub-2" style="font-size:11px;color:#484f58;margin-top:4px;min-height:12px;">—</div>
-      </div>
-
-      <!-- Stage 3: FEEDBACK LOOP -->
-      <div style="text-align:center;">
-        <div id="wf-dot-3" style="width:44px;height:44px;border-radius:50%;background:#161b22;border:2px solid #30363d;display:inline-flex;align-items:center;justify-content:center;font-size:20px;transition:all .4s;">🔄</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;margin-top:7px;letter-spacing:.08em;">FEEDBACK LOOP</div>
-        <div style="font-size:11px;color:#30363d;margin-top:2px;">팀원 피드백·재작성</div>
-        <div id="wf-sub-3" style="font-size:11px;color:#484f58;margin-top:4px;min-height:12px;">—</div>
-      </div>
-
-      <!-- Stage 4: FINAL SIGNAL -->
-      <div style="text-align:center;">
-        <div id="wf-dot-4" style="width:44px;height:44px;border-radius:50%;background:#161b22;border:2px solid #30363d;display:inline-flex;align-items:center;justify-content:center;font-size:20px;transition:all .4s;">🚀</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;margin-top:7px;letter-spacing:.08em;">FINAL SIGNAL</div>
-        <div style="font-size:11px;color:#30363d;margin-top:2px;">CMO 승인·배포 확정</div>
-        <div id="wf-sub-4" style="font-size:11px;color:#484f58;margin-top:4px;min-height:12px;">—</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── 탭 네비게이션 ── -->
-  <div style="display:flex;gap:3px;margin-bottom:14px;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:3px;">
-    <button onclick="switchReviewTab('workflow')" id="rvtab-workflow"
-      style="flex:1;padding:8px 4px;border-radius:6px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:#1f6feb;color:#fff;transition:all .15s;">
-      📊 워크플로우
-    </button>
-    <button onclick="switchReviewTab('content')" id="rvtab-content"
-      style="flex:1;padding:8px 4px;border-radius:6px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:#484f58;transition:all .15s;">
-      📋 콘텐츠 검수
-    </button>
-    <button onclick="switchReviewTab('filter')" id="rvtab-filter"
-      style="flex:1;padding:8px 4px;border-radius:6px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:#484f58;transition:all .15s;">
-      🔬 AI 4-필터
-    </button>
-  </div>
-
-  <!-- ══ TAB 1: 워크플로우 현황 ══ -->
-  <div id="rvpanel-workflow">
-
-    <!-- Job 선택 + 파이프라인 상태 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <span style="font-size:14px;font-weight:700;color:#f0f6fc;">에이전시 Job</span>
-          <button onclick="loadReviewWorkflow()" style="font-size:12px;color:#388bfd;background:none;border:none;cursor:pointer;">↺ 새로고침</button>
-        </div>
-        <select id="rv-job-select" class="field-input" style="margin-bottom:8px;font-size:13px;" onchange="onReviewJobChange(this.value)">
-          <option value="">— 실행된 Job 선택 —</option>
-        </select>
-        <div id="rv-job-meta" style="font-size:12px;color:#484f58;line-height:1.6;"></div>
-      </div>
-      <div class="card">
-        <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:10px;">파이프라인 현황</div>
-        <div id="rv-pipeline-status">
-          <div style="font-size:13px;color:#484f58;text-align:center;padding:16px 0;">Job을 선택하면 현황이 표시됩니다</div>
-        </div>
+      <div id="review-list" style="display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 230px);overflow-y:auto;"></div>
+      <div id="review-list-empty" style="text-align:center;padding:40px;color:#484f58;display:none;">
+        <div style="font-size:32px;margin-bottom:8px;">📭</div>
+        <p style="font-size:14px;">콘텐츠를 생성하면 자동으로 등록됩니다.</p>
       </div>
     </div>
 
-    <!-- 4-Filter 요약 카드 4개 -->
-    <div id="rv-filter-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
-      <div style="background:#0d1117;border:1px dashed #21262d;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:22px;margin-bottom:6px;">📦</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;letter-spacing:.06em;">DATA SYNC</div>
-        <div style="font-size:12px;color:#30363d;margin-top:4px;">—</div>
+    <!-- 오른쪽: 상세 에디터 -->
+    <div>
+      <div id="review-detail-empty" style="text-align:center;padding:80px 40px;color:#484f58;">
+        <div style="font-size:48px;margin-bottom:14px;">✏️</div>
+        <p style="font-size:15px;font-weight:600;color:#8b949e;margin:0 0 6px;">왼쪽 목록에서 콘텐츠를 선택하세요.</p>
+        <p style="font-size:13px;margin:0;color:#30363d;">검토 · 수정 후 승인하면 배포 대기열에 등록됩니다.</p>
       </div>
-      <div style="background:#0d1117;border:1px dashed #21262d;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:22px;margin-bottom:6px;">📱</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;letter-spacing:.06em;">PLATFORM FIT</div>
-        <div style="font-size:12px;color:#30363d;margin-top:4px;">—</div>
-      </div>
-      <div style="background:#0d1117;border:1px dashed #21262d;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:22px;margin-bottom:6px;">🏷️</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;letter-spacing:.06em;">BRAND IDENTITY</div>
-        <div style="font-size:12px;color:#30363d;margin-top:4px;">—</div>
-      </div>
-      <div style="background:#0d1117;border:1px dashed #21262d;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:22px;margin-bottom:6px;">⚙️</div>
-        <div style="font-size:11px;font-weight:800;color:#484f58;letter-spacing:.06em;">TECHNICAL READY</div>
-        <div style="font-size:12px;color:#30363d;margin-top:4px;">—</div>
-      </div>
-    </div>
-
-    <!-- CMO 최종 결과 -->
-    <div id="rv-cmo-result" style="display:none;" class="card">
-      <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:10px;">🎯 CMO 최종 결과</div>
-      <div id="rv-cmo-inner"></div>
-    </div>
-  </div>
-
-  <!-- ══ TAB 2: 콘텐츠 검수 ══ -->
-  <div id="rvpanel-content" style="display:none;">
-    <div style="display:grid;grid-template-columns:270px 1fr;gap:16px;align-items:start;">
-
-      <!-- 왼쪽: 목록 -->
-      <div>
-        <div style="display:flex;gap:3px;margin-bottom:10px;">
-          <button onclick="filterDrafts('all')"      id="drf-all"      class="pub-filter-btn active" style="flex:1;font-size:12px;">전체</button>
-          <button onclick="filterDrafts('draft')"    id="drf-draft"    class="pub-filter-btn" style="flex:1;font-size:12px;">검수 전</button>
-          <button onclick="filterDrafts('approved')" id="drf-approved" class="pub-filter-btn" style="flex:1;font-size:12px;">완료</button>
-        </div>
-        <div id="review-list" style="display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 380px);overflow-y:auto;"></div>
-        <div id="review-list-empty" style="text-align:center;padding:40px;color:#484f58;display:none;">
-          <div style="font-size:32px;margin-bottom:8px;">📭</div>
-          <p style="font-size:14px;">콘텐츠를 생성하면 자동으로 등록됩니다.</p>
-        </div>
-      </div>
-
-      <!-- 오른쪽: 상세 -->
-      <div>
-        <div id="review-detail-empty" style="text-align:center;padding:60px;color:#484f58;">
-          <div style="font-size:40px;margin-bottom:12px;">✅</div>
-          <p>왼쪽 목록에서 콘텐츠를 선택하세요.</p>
-          <p style="font-size:13px;margin-top:4px;">콘텐츠 검토 후 크로스 링크를 추가하고 승인할 수 있습니다.</p>
-        </div>
-        <div id="review-detail" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span id="rv-type-badge" style="font-size:13px;padding:2px 8px;border-radius:4px;"></span>
-              <span id="rv-status-badge"></span>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <button onclick="approveCurrentDraft()" class="btn btn-success" style="font-size:13px;padding:5px 12px;">✅ 검수 완료</button>
-              <button onclick="sendToPublish()" class="btn btn-primary" style="font-size:13px;padding:5px 12px;">🚀 배포 등록</button>
-              <button onclick="deleteCurrentDraft()" class="btn btn-ghost" style="font-size:13px;padding:5px 10px;">삭제</button>
-            </div>
+      <div id="review-detail" style="display:none;">
+        <!-- 액션 바 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="rv-type-badge" style="font-size:13px;padding:2px 8px;border-radius:4px;"></span>
+            <span id="rv-status-badge"></span>
           </div>
-          <div class="card" style="margin-bottom:10px;">
-            <label class="field-label">제목</label>
-            <input type="text" class="field-input" id="rv-title" style="margin-bottom:0;" oninput="updateDraftField('title', this.value)" />
-          </div>
-          <div class="card" style="margin-bottom:10px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <label class="field-label" style="margin:0;">본문</label>
-              <button onclick="copyEl('rv-content')" style="font-size:12px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#8b949e;">복사</button>
-            </div>
-            <textarea class="field-input" id="rv-content" rows="11" style="font-size:14px;line-height:1.7;" oninput="updateDraftField('content', this.value)"></textarea>
-          </div>
-          <div class="card" style="margin-bottom:10px;">
-            <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">🔗 크로스 링크 삽입</div>
-            <p style="font-size:13px;color:#484f58;margin:0 0 10px;">체크하면 본문 하단에 해당 플랫폼 링크가 자동 추가됩니다.</p>
-            <div id="rv-cross-links"></div>
-            <button onclick="applyCrossLinks()" class="btn btn-ghost" style="font-size:13px;width:100%;margin-top:8px;">🔗 링크 본문에 적용</button>
-          </div>
-          <div class="card">
-            <label class="field-label">메모</label>
-            <textarea class="field-input" id="rv-memo" rows="2" placeholder="검수 메모, 수정사항 등" oninput="updateDraftField('memo', this.value)"></textarea>
-            <div style="font-size:12px;color:#484f58;margin-top:6px;" id="rv-created-at"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="approveCurrentDraft()" class="btn btn-success" style="font-size:13px;padding:5px 14px;">✅ 승인</button>
+            <button onclick="sendToPublish()" class="btn btn-primary" style="font-size:13px;padding:5px 14px;">🚀 배포로 이동</button>
+            <button onclick="deleteCurrentDraft()" class="btn btn-ghost" style="font-size:13px;padding:5px 10px;">🗑 삭제</button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ TAB 3: AI 4-필터 상세 ══ -->
-  <div id="rvpanel-filter" style="display:none;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-      <select id="rv-filter-job-select" class="field-input" style="max-width:300px;font-size:13px;" onchange="loadFilterDetail(this.value)">
-        <option value="">— Job 선택 —</option>
-      </select>
-      <div id="rv-filter-overall" style="font-size:13px;color:#484f58;"></div>
-      <div style="margin-left:auto;">
-        <button onclick="loadFilterDetail(document.getElementById('rv-filter-job-select').value)" style="font-size:12px;color:#388bfd;background:none;border:none;cursor:pointer;">↺ 새로고침</button>
-      </div>
-    </div>
-
-    <!-- 4-Filter 상세 (will be rendered by JS) -->
-    <div id="rv-filter-detail">
-      <div style="text-align:center;padding:60px;color:#484f58;">
-        <div style="font-size:36px;margin-bottom:10px;">🔬</div>
-        <p style="font-size:14px;">Job을 선택하면 4-필터 상세 결과가 표시됩니다.</p>
+        <!-- 제목 -->
+        <div class="card" style="margin-bottom:10px;">
+          <label class="field-label">제목</label>
+          <input type="text" class="field-input" id="rv-title" style="margin-bottom:0;" oninput="updateDraftField('title', this.value)" />
+        </div>
+        <!-- 본문 -->
+        <div class="card" style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <label class="field-label" style="margin:0;">본문</label>
+            <button onclick="copyEl('rv-content')" style="font-size:12px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#8b949e;">📋 복사</button>
+          </div>
+          <textarea class="field-input" id="rv-content" rows="12" style="font-size:14px;line-height:1.7;" oninput="updateDraftField('content', this.value)"></textarea>
+        </div>
+        <!-- 크로스 링크 -->
+        <div class="card" style="margin-bottom:10px;">
+          <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">🔗 크로스 링크 삽입</div>
+          <p style="font-size:13px;color:#484f58;margin:0 0 10px;">체크하면 본문 하단에 해당 플랫폼 링크가 자동 추가됩니다.</p>
+          <div id="rv-cross-links"></div>
+          <button onclick="applyCrossLinks()" class="btn btn-ghost" style="font-size:13px;width:100%;margin-top:8px;">🔗 링크 본문에 적용</button>
+        </div>
+        <!-- 메모 -->
+        <div class="card">
+          <label class="field-label">메모</label>
+          <textarea class="field-input" id="rv-memo" rows="2" placeholder="검수 메모, 수정사항 등" oninput="updateDraftField('memo', this.value)"></textarea>
+          <div style="font-size:12px;color:#484f58;margin-top:6px;" id="rv-created-at"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -10727,16 +10596,19 @@ function sendToPublish() {
   if (!_currentDraftId) return;
   const d = getDrafts().find(d=>d.id===_currentDraftId);
   if (!d) return;
-  // 배포 모달에 미리 채워서 열기
-  openPublishModal();
-  document.getElementById('pub-modal-title').value = d.title;
-  document.getElementById('pub-modal-type').value  = d.type;
-  // 해당 플랫폼 체크
-  document.querySelectorAll('#pub-modal-platforms input').forEach(cb => {
-    cb.checked = cb.value === d.platform || cb.value === d.type;
-  });
-  goto('publish');
-  toast('배포 모달을 확인하세요', 'green');
+  // 미승인이면 먼저 승인
+  if (d.status !== 'approved') {
+    const list = getDrafts();
+    const item = list.find(x=>x.id===_currentDraftId);
+    if (item) { item.status = 'approved'; saveDrafts(list); }
+    renderReviewList();
+    document.getElementById('rv-status-badge').className  = 'review-status-approved';
+    document.getElementById('rv-status-badge').textContent = '승인됨';
+  }
+  const sid = _currentDraftId;
+  goto('deploy');
+  setTimeout(() => startDeploy(sid), 80);
+  toast('배포 페이지로 이동했습니다', 'green');
 }
 
 // 수동 등록 모달
@@ -11531,12 +11403,13 @@ function _renderDpSummaryBar() {
   if (!bar) return;
   const hist   = _getDeployHistory();
   const drafts = getDrafts();
+  const approved = drafts.filter(d => d.status === 'approved');
   const today  = new Date().toDateString();
   const todayCnt = hist.filter(h => new Date(h.deployed_at).toDateString()===today).length;
   bar.innerHTML = `
     <div style="text-align:center;padding:8px 18px;background:#161b22;border:1px solid #30363d;border-radius:8px;">
-      <div style="font-size:22px;font-weight:700;color:#388bfd;">${drafts.length}</div>
-      <div style="font-size:12px;color:#8b949e;margin-top:2px;">전체 콘텐츠</div>
+      <div style="font-size:22px;font-weight:700;color:#388bfd;">${approved.length}</div>
+      <div style="font-size:12px;color:#8b949e;margin-top:2px;">승인된 콘텐츠</div>
     </div>
     <div style="text-align:center;padding:8px 18px;background:#161b22;border:1px solid #30363d;border-radius:8px;">
       <div style="font-size:22px;font-weight:700;color:#f0f6fc;">${hist.length}</div>
@@ -11564,9 +11437,11 @@ function renderDeployQueue() {
   const empty  = document.getElementById('dp-queue-empty');
   if (!list) return;
 
-  let items = drafts;
+  // 승인된 콘텐츠만 배포 대기열에 표시
+  let approved = drafts.filter(d => d.status === 'approved');
+  let items = approved;
   if (_dpQueueFilter !== 'all') {
-    items = drafts.filter(d => {
+    items = approved.filter(d => {
       const fg = _dpFilterGroup(d.type||d.content_type||'');
       return fg === _dpQueueFilter;
     });
@@ -11623,8 +11498,8 @@ function startDeploy(draftId) {
 function _loadDeployPanelInit() {
   const sel = document.getElementById('dp-draft-select');
   if (!sel) return;
-  const drafts = getDrafts();
-  sel.innerHTML = '<option value="">-- 콘텐츠를 선택하세요 --</option>' +
+  const drafts = getDrafts().filter(d => d.status === 'approved');
+  sel.innerHTML = '<option value="">-- 승인된 콘텐츠를 선택하세요 --</option>' +
     drafts.map(d=>`<option value="${d.id}">${_escHtml(d.title||'(제목 없음)')}</option>`).join('');
   if (_dpSelectedDraftId) { sel.value=_dpSelectedDraftId; loadDeployPanel(_dpSelectedDraftId); }
 }
