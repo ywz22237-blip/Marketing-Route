@@ -97,6 +97,21 @@
     .auto-log-failed  { border-left:3px solid #f87171; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     .pulse { animation:pulse 1.5s ease-in-out infinite; }
+    /* ── 파이프라인 ── */
+    .pipe-prog-card { display:flex;align-items:center;gap:14px;padding:14px 16px;background:#161b22;border:1px solid #30363d;border-radius:12px;transition:border-color .2s; }
+    .pipe-prog-card.running { border-color:#7c3aed; }
+    .pipe-prog-card.done    { border-color:#22c55e40; }
+    .pipe-prog-card.failed  { border-color:#f8717140; }
+    .pipe-prog-icon { font-size:22px;flex-shrink:0;width:32px;text-align:center; }
+    .pipe-badge { padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap; }
+    .pipe-badge-wait    { background:#21262d;color:#484f58; }
+    .pipe-badge-running { background:#7c3aed20;color:#a78bfa;border:1px solid #7c3aed40; }
+    .pipe-badge-done    { background:#22c55e20;color:#4ade80;border:1px solid #22c55e40; }
+    .pipe-badge-fail    { background:#f8717120;color:#f87171;border:1px solid #f8717140; }
+    .pipe-badge-skip    { background:#21262d;color:#484f58; }
+    .pipe-deploy-card { display:flex;align-items:center;gap:14px;padding:14px 16px;background:#161b22;border:1px solid #30363d;border-radius:12px; }
+    .pipe-deploy-btn  { padding:6px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s; }
+    .pipe-deploy-btn:disabled { opacity:.4;cursor:not-allowed; }
     /* 대시보드 */
     .dash-stat { background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:border-color .15s; }
     .dash-stat:hover { border-color:#388bfd; }
@@ -519,8 +534,8 @@
       <span>📅</span><span>스케줄링</span>
     </div>
 
-    <!-- 콘텐츠 생성 -->
-    <div style="font-size:12px;color:#484f58;font-weight:700;letter-spacing:.06em;padding:16px 8px 6px;">콘텐츠 생성</div>
+    <!-- 수동 -->
+    <div style="font-size:12px;color:#484f58;font-weight:700;letter-spacing:.06em;padding:16px 8px 6px;">수동</div>
     <div class="nav-item" onclick="goto('seo')" id="nav-seo" style="padding-left:20px;">
       <span>🔍</span><span>SEO · 기획</span>
     </div>
@@ -533,26 +548,20 @@
     <div class="nav-item" onclick="goto('instagram')" id="nav-instagram" style="padding-left:20px;">
       <span>📷</span><span>이미지형 SNS</span>
     </div>
-    <div class="nav-item" onclick="goto('cardnews')" id="nav-cardnews" style="padding-left:30px;">
-      <span>🃏</span><span>카드뉴스 파이프라인</span>
-    </div>
     <div class="nav-item" onclick="goto('youtube')" id="nav-youtube" style="padding-left:20px;">
       <span>🎬</span><span>동영상 콘텐츠</span>
     </div>
-
-    <!-- 검수 -->
-    <div style="font-size:12px;color:#484f58;font-weight:700;letter-spacing:.06em;padding:16px 8px 6px;">검수</div>
     <div class="nav-item" onclick="goto('review')" id="nav-review" style="padding-left:20px;">
-      <span>✅</span><span>최종 검수</span>
+      <span>✅</span><span>검수</span>
     </div>
-
-    <!-- 검수 -->
-    <div style="font-size:12px;color:#484f58;font-weight:700;letter-spacing:.06em;padding:16px 8px 6px;">배포 · 자동화</div>
     <div class="nav-item" onclick="goto('deploy')" id="nav-deploy" style="padding-left:20px;">
       <span>🚀</span><span>배포</span>
     </div>
-    <div class="nav-item" onclick="goto('autoflow')" id="nav-autoflow" style="padding-left:20px;">
-      <span>⚡</span><span>자동화 플로우</span>
+
+    <!-- 자동화·예약 -->
+    <div style="font-size:12px;color:#484f58;font-weight:700;letter-spacing:.06em;padding:16px 8px 6px;">자동화 · 예약</div>
+    <div class="nav-item" onclick="goto('pipeline')" id="nav-pipeline" style="padding-left:20px;">
+      <span>⚡</span><span>자동화 파이프라인</span>
     </div>
 
   </div>
@@ -3337,7 +3346,20 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
 
   <!-- ── 탭3: 카드뉴스 ── -->
   <div id="isns-panel-cardnews" style="display:none;">
-    <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;">
+
+    <!-- ── 주제: ①기본 탭에서 자동 사용 ── -->
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:20px;flex-shrink:0;">📋</span>
+      <div style="min-width:0;">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:4px;">①기본 탭의 주제를 사용합니다</div>
+        <div id="isns-cn-topic-display" style="font-size:14px;color:#e6edf3;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+      </div>
+      <button onclick="switchIsnsTab('basic')" style="margin-left:auto;flex-shrink:0;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;font-size:12px;padding:4px 10px;cursor:pointer;font-family:inherit;">✏️ 주제 수정</button>
+    </div>
+
+    <!-- ── 설정 + 미리보기 ── -->
+    <div style="display:grid;grid-template-columns:240px 1fr;gap:14px;">
+
       <!-- 왼쪽: 설정 -->
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
@@ -3356,60 +3378,46 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <option value="9:16">9:16 (스토리형)</option>
           </select>
           <label class="field-label">디자인 스타일</label>
-          <select id="isns-card-theme" class="field-input" style="margin-bottom:10px;">
+          <select id="isns-card-theme" class="field-input" style="margin-bottom:14px;">
             <option value="dark">다크 모드</option>
             <option value="light">미니멀 화이트</option>
             <option value="vivid">컬러풀</option>
             <option value="gradient">그라디언트</option>
           </select>
-          <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="generateCardNewsISNS()">AI 카드뉴스 생성</button>
-          <button id="isns-render-btn" class="btn btn-ghost" style="width:100%;margin-top:6px;display:none;border-color:#a78bfa;color:#a78bfa;" onclick="_renderIsnsCardImages()">🖼 이미지 생성 (PNG)</button>
+          <!-- 생성 + 렌더링 통합 버튼 -->
+          <button id="isns-cn-gen-btn" class="btn btn-primary" style="width:100%;background:#7c3aed;" onclick="generateCardNewsISNS()">
+            🚀 카드뉴스 생성
+          </button>
         </div>
+
+        <!-- 슬라이드 목차 -->
         <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;">
           <div style="font-size:13px;color:#8b949e;font-weight:700;margin-bottom:8px;">슬라이드 목차</div>
-          <div id="isns-card-toc" style="display:flex;flex-direction:column;gap:4px;font-size:14px;color:#8b949e;">
-            <div style="padding:6px 8px;border-radius:6px;background:#21262d;color:#e6edf3;">1. 표지 — 제목</div>
-            <div style="padding:6px 8px;border-radius:6px;background:#21262d;">2. 문제 제기</div>
-            <div style="padding:6px 8px;border-radius:6px;background:#21262d;">3. 핵심 포인트 1</div>
-            <div style="padding:6px 8px;border-radius:6px;background:#21262d;">4. 핵심 포인트 2</div>
-            <div style="padding:6px 8px;border-radius:6px;background:#21262d;">5. 핵심 포인트 3</div>
-            <div style="padding:6px 8px;border-radius:6px;background:#21262d;">6. 마무리 + CTA</div>
+          <div id="isns-card-toc" style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:#8b949e;">
+            <div style="color:#484f58;font-size:12px;">생성 후 표시됩니다</div>
           </div>
         </div>
       </div>
-      <!-- 오른쪽: 카드 미리보기 -->
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
-        <div style="font-size:13px;color:#8b949e;font-weight:700;margin-bottom:14px;">카드 미리보기</div>
-        <div id="isns-card-preview" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-          <!-- 카드 샘플들 -->
-          <div style="aspect-ratio:1;background:#21262d;border-radius:10px;border:2px solid #1f6feb;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;">
-            <div style="font-size:12px;color:#60a5fa;font-weight:700;">COVER</div>
-            <div style="font-size:13px;color:#e6edf3;text-align:center;padding:0 8px;">제목</div>
-          </div>
-          <div style="aspect-ratio:1;background:#21262d;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;">
-            <div style="font-size:12px;color:#8b949e;font-weight:700;">02</div>
-            <div style="font-size:12px;color:#8b949e;text-align:center;padding:0 8px;">문제 제기</div>
-          </div>
-          <div style="aspect-ratio:1;background:#21262d;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;">
-            <div style="font-size:12px;color:#8b949e;font-weight:700;">03</div>
-            <div style="font-size:12px;color:#8b949e;">포인트 1</div>
-          </div>
-          <div style="aspect-ratio:1;background:#21262d;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;">
-            <div style="font-size:12px;color:#8b949e;font-weight:700;">04</div>
-            <div style="font-size:12px;color:#8b949e;">포인트 2</div>
-          </div>
-          <div style="aspect-ratio:1;background:#21262d;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;">
-            <div style="font-size:12px;color:#8b949e;font-weight:700;">05</div>
-            <div style="font-size:12px;color:#8b949e;">포인트 3</div>
-          </div>
-          <div style="aspect-ratio:1;background:#21262d;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;cursor:pointer;">
-            <div style="font-size:12px;color:#4ade80;font-weight:700;">CTA</div>
-            <div style="font-size:12px;color:#8b949e;">마무리</div>
+
+      <!-- 오른쪽: 이미지 그리드 -->
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <span style="font-size:13px;color:#8b949e;font-weight:700;">카드 이미지</span>
+          <!-- 다운로드 + 배포 버튼 (이미지 생성 후 표시) -->
+          <div id="isns-cn-actions" style="display:none;gap:6px;">
+            <button onclick="_isnsDownloadAll()" class="btn btn-ghost" style="font-size:12px;padding:4px 10px;">⬇ 전체 저장</button>
+            <button onclick="_isnsDeploy()" class="btn btn-primary" style="font-size:12px;padding:4px 10px;background:#e1306c;">📤 Instagram 배포</button>
           </div>
         </div>
-        <div style="margin-top:14px;text-align:center;color:#484f58;font-size:14px;">카드를 클릭하면 내용을 편집할 수 있습니다</div>
+        <div id="isns-card-preview" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex:1;">
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 0;color:#484f58;">
+            <div style="font-size:36px;margin-bottom:10px;">🃏</div>
+            <div style="font-size:14px;">주제를 입력하고 카드뉴스 생성을 눌러주세요</div>
+          </div>
+        </div>
       </div>
     </div>
+
     <div style="display:flex;justify-content:space-between;margin-top:16px;">
       <button class="btn btn-ghost" onclick="switchIsnsTab('content')">← 본문으로</button>
       <button class="btn btn-primary" onclick="switchIsnsTab('review')">다음: 검수 →</button>
@@ -5569,6 +5577,201 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
         <div style="font-size:36px;margin-bottom:10px;">🤖</div>
         <p>아직 실행 기록이 없습니다.</p>
       </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     PAGE: 자동화 파이프라인
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-pipeline">
+
+  <!-- 헤더 -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="font-size:20px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">⚡ 자동화 파이프라인</h2>
+      <p style="font-size:14px;color:#8b949e;margin:0;">기획자료 → 전체 콘텐츠 자동 생성 → 플랫폼 배포까지 원클릭으로</p>
+    </div>
+    <div id="pipe-run-status" style="display:none;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;background:rgba(124,58,237,.15);border:1px solid #7c3aed40;color:#a78bfa;">
+      ⏳ 실행 중...
+    </div>
+  </div>
+
+  <!-- ── 3단계 스텝 표시기 ── -->
+  <div style="display:flex;align-items:center;margin-bottom:28px;gap:0;">
+    <div id="pipe-step-ind-1" onclick="pipe_goStep(1)" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px 0 0 10px;background:#1f6feb;border:1px solid #1f6feb;cursor:pointer;transition:.2s;">
+      <span style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">1</span>
+      <span style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;">기획자료 확인</span>
+    </div>
+    <div style="width:24px;height:2px;background:#30363d;flex-shrink:0;"></div>
+    <div id="pipe-step-ind-2" onclick="pipe_goStep(2)" style="display:flex;align-items:center;gap:8px;padding:10px 18px;background:#161b22;border:1px solid #30363d;cursor:pointer;transition:.2s;">
+      <span style="width:22px;height:22px;border-radius:50%;background:#30363d;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#8b949e;flex-shrink:0;">2</span>
+      <span style="font-size:13px;font-weight:600;color:#8b949e;white-space:nowrap;">자동 생성</span>
+    </div>
+    <div style="width:24px;height:2px;background:#30363d;flex-shrink:0;"></div>
+    <div id="pipe-step-ind-3" onclick="pipe_goStep(3)" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:0 10px 10px 0;background:#161b22;border:1px solid #30363d;cursor:pointer;transition:.2s;">
+      <span style="width:22px;height:22px;border-radius:50%;background:#30363d;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#8b949e;flex-shrink:0;">3</span>
+      <span style="font-size:13px;font-weight:600;color:#8b949e;white-space:nowrap;">배포 · 예약</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       STEP 1: 기획자료 확인
+  ════════════════════════════════ -->
+  <div id="pipe-panel-1">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+      <!-- 기획자료 요약 -->
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:14px;">📋 기획자료</div>
+
+        <div style="margin-bottom:10px;">
+          <div style="font-size:11px;color:#484f58;font-weight:700;letter-spacing:.05em;margin-bottom:4px;">주제</div>
+          <div id="pipe-s1-topic" style="font-size:14px;color:#e6edf3;padding:8px 10px;background:#21262d;border-radius:6px;min-height:32px;line-height:1.4;">—</div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <div style="font-size:11px;color:#484f58;font-weight:700;letter-spacing:.05em;margin-bottom:4px;">에이전시</div>
+          <div id="pipe-s1-agency" style="font-size:13px;color:#8b949e;padding:8px 10px;background:#21262d;border-radius:6px;">—</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#484f58;font-weight:700;letter-spacing:.05em;margin-bottom:4px;">타겟 키워드</div>
+          <div id="pipe-s1-keywords" style="font-size:13px;color:#8b949e;padding:8px 10px;background:#21262d;border-radius:6px;">—</div>
+        </div>
+        <button onclick="goto('seo')" style="margin-top:12px;width:100%;padding:6px;border-radius:6px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;">✏️ ①기본 탭에서 수정</button>
+      </div>
+
+      <!-- 생성 설정 -->
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:14px;">⚙️ 생성 설정</div>
+
+        <div style="font-size:12px;color:#8b949e;font-weight:700;margin-bottom:8px;">생성할 콘텐츠</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#c9d1d9;cursor:pointer;">
+            <input type="checkbox" class="pipe-ct" value="blog" checked style="accent-color:#1f6feb;width:14px;height:14px;" />
+            📝 블로그 본문
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#c9d1d9;cursor:pointer;">
+            <input type="checkbox" class="pipe-ct" value="text_sns" checked style="accent-color:#1f6feb;width:14px;height:14px;" />
+            💬 텍스트형 SNS <span style="font-size:11px;color:#484f58;">LinkedIn · Threads</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#c9d1d9;cursor:pointer;">
+            <input type="checkbox" class="pipe-ct" value="image_sns" checked style="accent-color:#1f6feb;width:14px;height:14px;" />
+            🖼 이미지형 SNS <span style="font-size:11px;color:#484f58;">카드뉴스 PNG</span>
+          </label>
+        </div>
+
+        <div style="font-size:12px;color:#8b949e;font-weight:700;margin-bottom:8px;">배포 플랫폼</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#c9d1d9;cursor:pointer;padding:4px 8px;background:#21262d;border-radius:6px;border:1px solid #30363d;">
+            <input type="checkbox" class="pipe-plat" value="wordpress" style="accent-color:#1f6feb;" /> 워드프레스
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#c9d1d9;cursor:pointer;padding:4px 8px;background:#21262d;border-radius:6px;border:1px solid #30363d;">
+            <input type="checkbox" class="pipe-plat" value="linkedin" checked style="accent-color:#0a66c2;" /> LinkedIn
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#c9d1d9;cursor:pointer;padding:4px 8px;background:#21262d;border-radius:6px;border:1px solid #30363d;">
+            <input type="checkbox" class="pipe-plat" value="threads" checked style="accent-color:#1f6feb;" /> Threads
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#c9d1d9;cursor:pointer;padding:4px 8px;background:#21262d;border-radius:6px;border:1px solid #30363d;">
+            <input type="checkbox" class="pipe-plat" value="instagram" style="accent-color:#e1306c;" /> Instagram
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#c9d1d9;cursor:pointer;padding:4px 8px;background:#21262d;border-radius:6px;border:1px solid #30363d;">
+            <input type="checkbox" class="pipe-plat" value="facebook" style="accent-color:#1877f2;" /> Facebook
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="btn btn-primary" style="background:#7c3aed;font-size:15px;padding:10px 28px;" onclick="pipe_goStep(2)">
+        ▶ 자동 생성 시작 →
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       STEP 2: 자동 생성
+  ════════════════════════════════ -->
+  <div id="pipe-panel-2" style="display:none;">
+
+    <!-- 생성 시작 버튼 (미실행 상태) -->
+    <div id="pipe-run-box" style="text-align:center;padding:32px;background:#161b22;border:1px solid #30363d;border-radius:14px;margin-bottom:20px;">
+      <div style="font-size:40px;margin-bottom:12px;">⚡</div>
+      <div style="font-size:16px;font-weight:700;color:#f0f6fc;margin-bottom:6px;">준비 완료</div>
+      <div style="font-size:13px;color:#8b949e;margin-bottom:20px;" id="pipe-run-summary">블로그 · 텍스트SNS · 이미지SNS 생성 후 배포까지 자동으로 처리합니다.</div>
+      <button id="pipe-start-btn" class="btn btn-primary" style="background:#7c3aed;font-size:15px;padding:12px 36px;" onclick="pipe_runAll()">
+        🚀 전체 자동 생성 시작
+      </button>
+    </div>
+
+    <!-- 진행 카드들 -->
+    <div style="display:flex;flex-direction:column;gap:10px;" id="pipe-progress-list">
+
+      <!-- 블로그 -->
+      <div id="pipe-prog-blog" class="pipe-prog-card">
+        <div class="pipe-prog-icon">📝</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:2px;">블로그 본문</div>
+          <div id="pipe-prog-blog-msg" style="font-size:12px;color:#8b949e;">대기 중</div>
+        </div>
+        <div id="pipe-prog-blog-badge" class="pipe-badge pipe-badge-wait">대기</div>
+      </div>
+
+      <!-- 텍스트 SNS -->
+      <div id="pipe-prog-text" class="pipe-prog-card">
+        <div class="pipe-prog-icon">💬</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:2px;">텍스트형 SNS</div>
+          <div id="pipe-prog-text-msg" style="font-size:12px;color:#8b949e;">LinkedIn · Threads</div>
+        </div>
+        <div id="pipe-prog-text-badge" class="pipe-badge pipe-badge-wait">대기</div>
+      </div>
+
+      <!-- 이미지 SNS -->
+      <div id="pipe-prog-image" class="pipe-prog-card">
+        <div class="pipe-prog-icon">🖼</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:2px;">이미지형 SNS</div>
+          <div id="pipe-prog-image-msg" style="font-size:12px;color:#8b949e;">카드뉴스 PNG 렌더링</div>
+        </div>
+        <div id="pipe-prog-image-badge" class="pipe-badge pipe-badge-wait">대기</div>
+      </div>
+
+    </div>
+
+    <!-- 생성 완료 후 다음 버튼 -->
+    <div id="pipe-to-deploy-btn" style="display:none;margin-top:20px;text-align:right;">
+      <button class="btn btn-primary" style="font-size:15px;padding:10px 28px;" onclick="pipe_goStep(3)">
+        배포 · 예약으로 →
+      </button>
+    </div>
+
+    <div style="margin-top:16px;">
+      <button class="btn btn-ghost" style="font-size:13px;" onclick="pipe_goStep(1)">← 설정으로</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       STEP 3: 배포 · 예약
+  ════════════════════════════════ -->
+  <div id="pipe-panel-3" style="display:none;">
+
+    <!-- 생성 결과 요약 -->
+    <div id="pipe-result-summary" style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:#f0f6fc;margin-bottom:12px;">✅ 생성 완료 — 배포할 플랫폼을 선택하세요</div>
+      <div id="pipe-result-items" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- 플랫폼별 배포 카드 -->
+    <div id="pipe-deploy-cards" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
+
+    <!-- 전체 배포 버튼 -->
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="pipe_goStep(2)">← 생성으로</button>
+      <button class="btn btn-primary" style="background:#7c3aed;padding:10px 24px;font-size:14px;" onclick="pipe_deployAll()">
+        📤 선택 플랫폼 전체 배포
+      </button>
     </div>
   </div>
 
@@ -14482,14 +14685,18 @@ let _isnsCardData = null; // 생성된 슬라이드 저장
 async function generateCardNewsISNS() {
   const topic = document.getElementById('isns-topic')?.value.trim();
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
-  const slideEl = document.getElementById('isns-card-slide-count');
+  const slideEl  = document.getElementById('isns-card-slide-count');
   const slideCount = parseInt(slideEl?.value) || 6;
-  const tocEl     = document.getElementById('isns-card-toc');
+  const tocEl    = document.getElementById('isns-card-toc');
   const previewEl = document.getElementById('isns-card-preview');
-  const renderBtn = document.getElementById('isns-render-btn');
+  const genBtn   = document.getElementById('isns-cn-gen-btn');
+  const actionsEl = document.getElementById('isns-cn-actions');
+
+  if (genBtn) { genBtn.disabled = true; genBtn.textContent = '⏳ 생성 중...'; }
+  if (actionsEl) actionsEl.style.display = 'none';
   if (tocEl) tocEl.innerHTML = '<div style="color:#8b949e;font-size:13px;padding:8px;">⏳ 생성 중...</div>';
   if (previewEl) previewEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#8b949e;font-size:14px;">⏳ AI가 카드뉴스를 생성 중입니다...</div>';
-  if (renderBtn) renderBtn.style.display = 'none';
+
   try {
     const res = await fetch(`${API}/cardnews/generate`, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -14500,41 +14707,34 @@ async function generateCardNewsISNS() {
     });
     const data = await res.json();
     const slides = data.slides || [];
-    _isnsCardData = data; // 저장
-    // 목차 업데이트
+    _isnsCardData = data;
+
     if (tocEl && slides.length) {
       tocEl.innerHTML = slides.map((s,i) =>
         `<div style="padding:6px 8px;border-radius:6px;background:#21262d;color:${i===0?'#e6edf3':'#8b949e'};">${s.index}. ${s.title}</div>`
       ).join('');
     }
-    // 카드 미리보기 그리드 업데이트
-    if (previewEl && slides.length) {
-      previewEl.innerHTML = slides.map((s,i) => `
-        <div style="aspect-ratio:1;background:#21262d;border-radius:10px;border:${i===0?'2px solid #1f6feb':'1px solid #30363d'};display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;padding:8px;overflow:hidden;">
-          <div style="font-size:11px;color:${i===0?'#60a5fa':'#8b949e'};font-weight:700;">${String(s.index).padStart(2,'0')}</div>
-          <div style="font-size:12px;color:${i===0?'#e6edf3':'#8b949e'};text-align:center;line-height:1.3;word-break:keep-all;">${s.title}</div>
-          ${s.body ? `<div style="font-size:11px;color:#484f58;text-align:center;line-height:1.3;overflow:hidden;max-height:36px;">${s.body.slice(0,40)}...</div>` : ''}
-        </div>`).join('');
-    }
-    if (renderBtn && slides.length) renderBtn.style.display = '';
-    toast('카드뉴스 생성 완료! 이미지 생성 버튼을 눌러 PNG로 변환하세요.', '#4ade80');
+    if (genBtn) { genBtn.disabled = false; genBtn.textContent = '🚀 카드뉴스 생성'; }
+    // 슬라이드 생성 완료 후 자동으로 이미지 렌더링
+    await _renderIsnsCardImages();
   } catch(e) {
     if (tocEl) tocEl.innerHTML = '<div style="color:#f87171;font-size:13px;padding:8px;">❌ 생성 실패</div>';
+    if (genBtn) { genBtn.disabled = false; genBtn.textContent = '🚀 카드뉴스 생성'; }
     toast('카드뉴스 생성 실패: ' + e.message, 'red');
   }
 }
 
 async function _renderIsnsCardImages() {
   if (!_isnsCardData?.slides?.length) { toast('먼저 카드뉴스를 생성하세요.', 'orange'); return; }
-  const renderBtn = document.getElementById('isns-render-btn');
-  const previewEl = document.getElementById('isns-card-preview');
-  const ratio     = document.getElementById('isns-card-ratio')?.value || '1:1';
-  const theme     = document.getElementById('isns-card-theme')?.value || 'dark';
+  const previewEl  = document.getElementById('isns-card-preview');
+  const actionsEl  = document.getElementById('isns-cn-actions');
+  const ratio      = document.getElementById('isns-card-ratio')?.value || '1:1';
+  const theme      = document.getElementById('isns-card-theme')?.value || 'dark';
   const brandColor = agencyProfile?.brand_color || '#1f6feb';
   const brandName  = agencyProfile?.agency_name || '';
 
-  if (renderBtn) { renderBtn.disabled = true; renderBtn.textContent = '⏳ 렌더링 중...'; }
-  if (previewEl) previewEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#8b949e;font-size:14px;">⏳ 이미지 렌더링 중... (Railway 서버에서 처리)</div>';
+  if (previewEl) previewEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#8b949e;font-size:14px;">⏳ 이미지 렌더링 중... (서버에서 처리 중)</div>';
+  if (actionsEl) actionsEl.style.display = 'none';
 
   try {
     const res = await fetch(`${API}/cardnews/render-images`, {
@@ -14550,7 +14750,6 @@ async function _renderIsnsCardImages() {
     const images = data.images || [];
     if (!images.length) throw new Error('렌더링 결과가 없습니다');
 
-    // PNG 이미지 그리드로 교체
     const isPortrait = ratio === '9:16';
     const cols = isPortrait ? 'repeat(4,1fr)' : 'repeat(3,1fr)';
     if (previewEl) {
@@ -14567,11 +14766,10 @@ async function _renderIsnsCardImages() {
         </div>`).join('');
     }
     window._isnsRenderedImages = images;
+    if (actionsEl) actionsEl.style.display = 'flex';
     toast(`✅ 이미지 ${images.length}장 생성 완료!`, 'green');
-    if (renderBtn) { renderBtn.disabled = false; renderBtn.textContent = '🖼 이미지 재생성'; }
   } catch(e) {
     if (previewEl) previewEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#f87171;font-size:14px;">❌ 렌더링 실패: ${e.message}</div>`;
-    if (renderBtn) { renderBtn.disabled = false; renderBtn.textContent = '🖼 이미지 생성 (PNG)'; }
     toast('렌더링 실패: ' + e.message, 'red');
   }
 }
@@ -14583,6 +14781,16 @@ function _isnsDownloadCard(idx) {
   a.href = `data:image/png;base64,${img.image_b64}`;
   a.download = `cardnews_${String(img.index).padStart(2,'0')}.png`;
   a.click();
+}
+
+function _isnsDownloadAll() {
+  const images = window._isnsRenderedImages || [];
+  if (!images.length) { toast('저장할 이미지가 없습니다', 'orange'); return; }
+  images.forEach((_, i) => setTimeout(() => _isnsDownloadCard(i), i * 200));
+}
+
+async function _isnsDeploy() {
+  toast('Instagram 직접 배포는 준비 중입니다', 'orange');
 }
 
 // ── 텍스트형 SNS 탭 전환 ──────────────────────────────────
@@ -14651,6 +14859,11 @@ function switchTsnsReviewPlatform(platform) {
 
 // ── 이미지형 SNS 탭 전환 ──────────────────────────────────
 function switchIsnsTab(tab) {
+  if (tab === 'cardnews') {
+    const topic = document.getElementById('isns-topic')?.value.trim() || '—';
+    const disp = document.getElementById('isns-cn-topic-display');
+    if (disp) disp.textContent = topic;
+  }
   if (tab === 'review') {
     const plat = window._isnsActivePlatform || 'insta';
     const captionId = (plat === 'insta' || plat === 'instagram') ? 'isns-insta-caption' : 'isns-fb-body';
@@ -14803,6 +15016,273 @@ function switchVidPlatform(platform) {
       }
     }
   });
+}
+
+// ══════════════════════════════════════════════════════
+// 자동화 파이프라인
+// ══════════════════════════════════════════════════════
+
+let _pipeData = {};   // 생성된 콘텐츠 저장
+let _pipeStep = 1;    // 현재 스텝
+
+// ── 스텝 이동 ──────────────────────────────────────────
+function pipe_goStep(n) {
+  if (n === 2 && _pipeStep === 1) pipe_initStep2();
+  if (n === 3 && !Object.keys(_pipeData).length) { toast('먼저 콘텐츠를 생성하세요', 'orange'); return; }
+  if (n === 3) pipe_initStep3();
+
+  _pipeStep = n;
+  [1,2,3].forEach(i => {
+    document.getElementById(`pipe-panel-${i}`).style.display = i === n ? '' : 'none';
+  });
+  _pipe_updateStepIndicators(n);
+}
+
+function _pipe_updateStepIndicators(active) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById(`pipe-step-ind-${i}`);
+    if (!el) return;
+    const isActive = i === active;
+    const isDone   = i < active;
+    el.style.background = isActive ? '#1f6feb' : (isDone ? '#1f6feb30' : '#161b22');
+    el.style.borderColor = isActive ? '#1f6feb' : (isDone ? '#1f6feb50' : '#30363d');
+    const num = el.querySelector('span:first-child');
+    const lbl = el.querySelector('span:last-child');
+    if (num) { num.style.background = isActive ? 'rgba(255,255,255,.25)' : (isDone ? '#1f6feb40' : '#30363d'); num.style.color = isActive || isDone ? '#fff' : '#8b949e'; }
+    if (lbl) lbl.style.color = isActive ? '#fff' : (isDone ? '#60a5fa' : '#8b949e');
+  });
+}
+
+// ── Step 1 → Step 2 진입 시 요약 표시 ────────────────────
+function pipe_initStep2() {
+  const cts  = [...document.querySelectorAll('.pipe-ct:checked')].map(e => e.value);
+  const plats = [...document.querySelectorAll('.pipe-plat:checked')].map(e => e.value);
+  const labels = { blog:'블로그', text_sns:'텍스트SNS', image_sns:'이미지SNS' };
+  const summary = cts.map(c => labels[c] || c).join(' · ') + ' 생성 → ' + (plats.length ? plats.join(', ') + ' 배포' : '배포 없음');
+  const el = document.getElementById('pipe-run-summary');
+  if (el) el.textContent = summary;
+  // 진행 카드 표시/숨김
+  const show = { blog: cts.includes('blog'), text: cts.includes('text_sns'), image: cts.includes('image_sns') };
+  Object.entries(show).forEach(([k, v]) => {
+    const card = document.getElementById(`pipe-prog-${k}`);
+    if (card) card.style.display = v ? '' : 'none';
+  });
+  // 배지 리셋
+  ['blog','text','image'].forEach(k => {
+    _pipe_setBadge(k, 'wait', '대기');
+    const msg = document.getElementById(`pipe-prog-${k}-msg`);
+    if (msg) msg.textContent = k === 'blog' ? '대기 중' : k === 'text' ? 'LinkedIn · Threads' : '카드뉴스 PNG 렌더링';
+  });
+  document.getElementById('pipe-to-deploy-btn').style.display = 'none';
+  document.getElementById('pipe-run-box').style.display = '';
+  const btn = document.getElementById('pipe-start-btn');
+  if (btn) { btn.disabled = false; btn.textContent = '🚀 전체 자동 생성 시작'; }
+  _pipeData = {};
+}
+
+// ── 배지 헬퍼 ─────────────────────────────────────────
+function _pipe_setBadge(key, state, label) {
+  const el = document.getElementById(`pipe-prog-${key}-badge`);
+  if (!el) return;
+  el.className = `pipe-badge pipe-badge-${state}`;
+  el.textContent = label;
+  const card = document.getElementById(`pipe-prog-${key}`);
+  if (card) {
+    card.classList.remove('running','done','failed');
+    if (state === 'running') card.classList.add('running');
+    if (state === 'done')    card.classList.add('done');
+    if (state === 'fail')    card.classList.add('failed');
+  }
+}
+function _pipe_setMsg(key, msg) {
+  const el = document.getElementById(`pipe-prog-${key}-msg`);
+  if (el) el.textContent = msg;
+}
+
+// ── 전체 생성 실행 ─────────────────────────────────────
+async function pipe_runAll() {
+  const topic = document.getElementById('isns-topic')?.value.trim();
+  if (!topic) { toast('①기본 탭에서 주제를 먼저 입력하세요', 'orange'); pipe_goStep(1); return; }
+
+  const cts   = [...document.querySelectorAll('.pipe-ct:checked')].map(e => e.value);
+  const keys  = getKeys();
+  const btn   = document.getElementById('pipe-start-btn');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 생성 중...'; }
+  document.getElementById('pipe-run-box').style.display = 'none';
+  document.getElementById('pipe-run-status').style.display = '';
+
+  _pipeData = {};
+  let anyFail = false;
+
+  // ① 블로그 생성
+  if (cts.includes('blog')) {
+    _pipe_setBadge('blog', 'running', '생성 중');
+    _pipe_setMsg('blog', 'AI 블로그 본문 생성 중...');
+    document.getElementById('pipe-prog-blog').querySelector('.pulse')?.remove();
+    try {
+      const res = await fetch(`${API}/blog/generate`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ topic, tier: selectedTier, api_keys: keys, agency_profile: agencyProfile })
+      });
+      const data = await res.json();
+      if (data.error || !data.title) throw new Error(data.error || '응답 없음');
+      _pipeData.blog = data;
+      _pipe_setBadge('blog', 'done', '완료 ✓');
+      _pipe_setMsg('blog', data.title || '블로그 생성 완료');
+    } catch(e) {
+      anyFail = true;
+      _pipe_setBadge('blog', 'fail', '실패');
+      _pipe_setMsg('blog', e.message);
+    }
+  }
+
+  // ② 텍스트 SNS (블로그 결과 활용)
+  if (cts.includes('text_sns')) {
+    _pipe_setBadge('text', 'running', '생성 중');
+    _pipe_setMsg('text', 'LinkedIn · Threads 포스트 생성 중...');
+    try {
+      const blogBody = _pipeData.blog?.body || topic;
+      const res = await fetch(`${API}/sns/generate`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ topic, blog_body: blogBody, platforms:['linkedin','threads'], tier: selectedTier, api_keys: keys, agency_profile: agencyProfile })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      _pipeData.text_sns = data;
+      _pipe_setBadge('text', 'done', '완료 ✓');
+      _pipe_setMsg('text', '포스트 생성 완료');
+    } catch(e) {
+      anyFail = true;
+      _pipe_setBadge('text', 'fail', '실패');
+      _pipe_setMsg('text', e.message);
+    }
+  }
+
+  // ③ 이미지 SNS (카드뉴스)
+  if (cts.includes('image_sns')) {
+    _pipe_setBadge('image', 'running', '생성 중');
+    _pipe_setMsg('image', '카드뉴스 슬라이드 생성 중...');
+    try {
+      const res = await fetch(`${API}/cardnews/generate`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ topic, slide_count: 6, language:'ko', tier: selectedTier, api_keys: keys, agency_profile: agencyProfile })
+      });
+      const cnData = await res.json();
+      if (cnData.error || !cnData.slides?.length) throw new Error(cnData.error || '슬라이드 없음');
+      _pipe_setMsg('image', `슬라이드 ${cnData.slides.length}장 → PNG 렌더링 중...`);
+
+      const renderRes = await fetch(`${API}/cardnews/render-images`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          slides: cnData.slides, hashtags: cnData.hashtags || [], cta: cnData.cta || '',
+          design: { ratio:'1:1', theme:'dark', brand_color: agencyProfile?.brand_color||'#1f6feb', brand_name: agencyProfile?.agency_name||'' }
+        })
+      });
+      const renderData = await renderRes.json();
+      if (!renderData.images?.length) throw new Error('렌더링 실패');
+      _pipeData.image_sns = { ...cnData, images: renderData.images };
+      _pipe_setBadge('image', 'done', '완료 ✓');
+      _pipe_setMsg('image', `${renderData.images.length}장 PNG 완료`);
+    } catch(e) {
+      anyFail = true;
+      _pipe_setBadge('image', 'fail', '실패');
+      _pipe_setMsg('image', e.message);
+    }
+  }
+
+  // 완료
+  document.getElementById('pipe-run-status').style.display = 'none';
+  document.getElementById('pipe-to-deploy-btn').style.display = '';
+  toast(anyFail ? '일부 콘텐츠 생성 실패. 배포 단계에서 확인하세요.' : '✅ 전체 콘텐츠 생성 완료!', anyFail ? 'orange' : 'green');
+}
+
+// ── Step 3: 배포 화면 초기화 ──────────────────────────
+function pipe_initStep3() {
+  const plats = [...document.querySelectorAll('.pipe-plat:checked')].map(e => e.value);
+
+  // 결과 요약
+  const resultEl = document.getElementById('pipe-result-items');
+  const items = [];
+  if (_pipeData.blog)      items.push({ icon:'📝', label:'블로그', sub: _pipeData.blog.title || '' });
+  if (_pipeData.text_sns)  items.push({ icon:'💬', label:'텍스트 SNS', sub:'LinkedIn · Threads 포스트 준비됨' });
+  if (_pipeData.image_sns) items.push({ icon:'🖼', label:'카드뉴스', sub:`${_pipeData.image_sns.images?.length||0}장 PNG 준비됨` });
+  if (resultEl) resultEl.innerHTML = items.map(it => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#21262d;border-radius:8px;">
+      <span style="font-size:18px;">${it.icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#e6edf3;">${it.label}</div>
+        <div style="font-size:12px;color:#8b949e;">${it.sub}</div>
+      </div>
+      <span style="margin-left:auto;font-size:12px;color:#4ade80;font-weight:700;">✓ 준비됨</span>
+    </div>`).join('');
+
+  // 배포 카드
+  const PLAT_META = {
+    wordpress: { icon:'🌐', label:'워드프레스',  color:'#21759b', content:'blog'      },
+    linkedin:  { icon:'💼', label:'LinkedIn',    color:'#0a66c2', content:'text_sns'  },
+    threads:   { icon:'🧵', label:'Threads',     color:'#e6edf3', content:'text_sns'  },
+    instagram: { icon:'📷', label:'Instagram',   color:'#e1306c', content:'image_sns' },
+    facebook:  { icon:'📘', label:'Facebook',    color:'#1877f2', content:'image_sns' },
+  };
+  const deployEl = document.getElementById('pipe-deploy-cards');
+  if (!deployEl) return;
+  deployEl.innerHTML = plats.map(p => {
+    const m = PLAT_META[p] || { icon:'🌐', label: p, color:'#7c3aed', content:'blog' };
+    const hasContent = !!_pipeData[m.content];
+    return `
+    <div class="pipe-deploy-card" id="pipe-dc-${p}">
+      <div style="font-size:22px;flex-shrink:0;">${m.icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:#f0f6fc;">${m.label}</div>
+        <div id="pipe-dc-${p}-status" style="font-size:12px;color:${hasContent?'#8b949e':'#f87171'};">${hasContent ? '배포 준비됨' : '콘텐츠 없음 (생성 단계에서 실패)'}</div>
+      </div>
+      <button class="pipe-deploy-btn" id="pipe-dc-${p}-btn"
+        style="background:${m.color};color:#fff;" ${hasContent?'':'disabled'}
+        onclick="pipe_deploySingle('${p}')">
+        📤 배포
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ── 단일 플랫폼 배포 (API 연결 전 UI 스켈레톤) ─────────
+async function pipe_deploySingle(platform) {
+  const btn = document.getElementById(`pipe-dc-${platform}-btn`);
+  const statusEl = document.getElementById(`pipe-dc-${platform}-status`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 배포 중...'; }
+  // TODO: 실제 배포 API 연결
+  await new Promise(r => setTimeout(r, 1200));
+  if (statusEl) statusEl.innerHTML = '<span style="color:#4ade80;font-weight:600;">✓ 배포 완료</span>';
+  if (btn) { btn.textContent = '✓ 완료'; btn.style.background = '#22c55e'; }
+  toast(`${platform} 배포 완료 (API 연결 후 실제 동작)`, 'green');
+}
+
+// ── 전체 배포 ─────────────────────────────────────────
+async function pipe_deployAll() {
+  const plats = [...document.querySelectorAll('.pipe-plat:checked')].map(e => e.value);
+  for (const p of plats) await pipe_deploySingle(p);
+}
+
+// ── goto('pipeline') 진입 시 기획자료 동기화 ──────────
+(function _patchGotoPipeline() {
+  const _orig = window.goto;
+  window.goto = function(name) {
+    _orig(name);
+    if (name === 'pipeline') _pipe_syncStep1();
+  };
+})();
+
+function _pipe_syncStep1() {
+  const topic    = document.getElementById('isns-topic')?.value.trim() || '—';
+  const agency   = agencyProfile?.agency_name || '—';
+  const keywords = agencyProfile?.keywords?.slice(0,4).join(', ') || '—';
+  const el1 = document.getElementById('pipe-s1-topic');
+  const el2 = document.getElementById('pipe-s1-agency');
+  const el3 = document.getElementById('pipe-s1-keywords');
+  if (el1) el1.textContent = topic;
+  if (el2) el2.textContent = agency;
+  if (el3) el3.textContent = keywords;
 }
 </script>
 </body>
