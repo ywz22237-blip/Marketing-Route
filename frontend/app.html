@@ -2726,7 +2726,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         </div>
 
         <!-- 발행 버튼 -->
-        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:16px;font-weight:700;" onclick="goto('deploy')">🚀 발행하기</button>
+        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:16px;font-weight:700;" onclick="blogGotoDeploy()">🚀 발행하기</button>
         <button class="btn btn-ghost" style="width:100%;font-size:14px;" onclick="saveBlogDraft()">💾 임시저장</button>
       </div>
 
@@ -4340,7 +4340,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <option>공개</option><option>일부 공개</option><option>비공개</option><option>예약 공개</option>
           </select>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:12px;">🚀 배포로 보내기</button>
+        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="goto('deploy')">🚀 배포로 보내기</button>
       </div>
     </div>
   </div>
@@ -13262,6 +13262,15 @@ function isnsApplyLinkToggle(checked) {
   const next = checked ? base + cta : base;
   if (bodyEl) bodyEl.value = next;
   if (revEl)  revEl.value  = next;
+}
+
+// ── 블로그 배포로 보내기 ─────────────────────────
+function blogGotoDeploy() {
+  const title   = document.getElementById('blog-title')?.value || '블로그 콘텐츠';
+  const content = document.getElementById('blog-body')?.value  || '';
+  if (content) saveDraft({ type: 'blog', platform: 'blog', title, content });
+  goto('deploy');
+  setTimeout(() => { switchDeployTab('deploy'); dpSelectChannel('blog'); }, 80);
 }
 
 // ── 텍스트형 SNS 배포로 보내기 ───────────────────
