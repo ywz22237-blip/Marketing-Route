@@ -3584,9 +3584,10 @@ async def publish_linkedin(body: _PublishLinkedInReq):
                          headers={"Authorization": f"Bearer {token}"})
         if ru.status_code != 200:
             raise HTTPException(400, f"LinkedIn 토큰 오류: {ru.text[:200]}")
-        author_urn = ru.json().get("sub", "")
-        if not author_urn:
+        author_id = ru.json().get("sub", "")
+        if not author_id:
             raise HTTPException(400, "LinkedIn 사용자 ID 조회 실패")
+        author_urn = f"urn:li:person:{author_id}"
 
         text = f"{body.title}\n\n{body.content}".strip() if body.title else body.content
         payload = {

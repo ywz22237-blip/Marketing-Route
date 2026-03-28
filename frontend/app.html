@@ -11044,9 +11044,8 @@ function loadDeployPanel(draftId) {
   const d = getDrafts().find(x=>x.id===draftId);
   if (!d) return;
 
-  // 기본 채널은 콘텐츠 타입 기반
-  const autoGroup = _dpGroup(d.type||d.content_type||'');
-  _dpSheetChannel = autoGroup || 'blog';
+  // 기본 채널은 콘텐츠 타입 기반 (_dpTypeToChannel로 그룹 매핑)
+  _dpSheetChannel = _dpTypeToChannel(d.type||d.content_type||'') || 'blog';
 
   _dpOpenBottomSheet(draftId, d);
 }
