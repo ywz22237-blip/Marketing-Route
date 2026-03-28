@@ -10886,7 +10886,6 @@ function _dpRenderChannelList() {
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #21262d;">
         <button onclick="loadDeployPanel('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #388bfd;background:rgba(56,139,253,.1);color:#388bfd;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🚀 수정</button>
-        <button onclick="dpEditDraft('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;">📋 복사</button>
         <button onclick="dpDeleteDraft('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='#f85149';this.style.borderColor='#f85149'" onmouseout="this.style.color='#8b949e';this.style.borderColor='#30363d'">🗑 삭제</button>
       </div>
     </div>`;
@@ -10903,18 +10902,18 @@ function dpEditDraft(draftId) {
   modal.id = 'dp-edit-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:900;display:flex;align-items:center;justify-content:center;';
   modal.innerHTML = `
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:16px;padding:28px;width:520px;max-height:85vh;overflow-y:auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="font-size:16px;font-weight:700;color:#f0f6fc;margin:0;">📋 콘텐츠 복사 편집</h3>
-        <button onclick="document.getElementById('dp-edit-modal').remove()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;">×</button>
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:16px;padding:32px;width:min(780px,92vw);max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h3 style="font-size:18px;font-weight:700;color:#f0f6fc;margin:0;">✏️ 상세수정</h3>
+        <button onclick="document.getElementById('dp-edit-modal').remove()" style="background:none;border:none;color:#8b949e;font-size:24px;cursor:pointer;">×</button>
       </div>
       <label class="field-label">제목</label>
-      <input id="dp-edit-title" class="field-input" value="${_escHtml(d.title||'')}" style="margin-bottom:12px;" />
+      <input id="dp-edit-title" class="field-input" value="${_escHtml(d.title||'')}" style="margin-bottom:16px;font-size:15px;padding:10px 14px;" />
       <label class="field-label">본문</label>
-      <textarea id="dp-edit-content" class="field-input" rows="10" style="font-size:13px;line-height:1.7;margin-bottom:16px;">${_escHtml(d.content||'')}</textarea>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button onclick="document.getElementById('dp-edit-modal').remove()" class="btn btn-ghost">취소</button>
-        <button onclick="dpSaveEditDraft('${draftId}')" class="btn btn-primary">저장</button>
+      <textarea id="dp-edit-content" class="field-input" rows="18" style="font-size:14px;line-height:1.75;margin-bottom:20px;resize:vertical;">${_escHtml(d.content||'')}</textarea>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="document.getElementById('dp-edit-modal').remove()" class="btn btn-ghost" style="padding:9px 22px;font-size:14px;">취소</button>
+        <button onclick="dpSaveEditDraft('${draftId}')" class="btn btn-primary" style="padding:9px 22px;font-size:14px;">저장</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -11022,7 +11021,10 @@ function _dpOpenBottomSheet(draftId, d) {
           <div style="font-size:16px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">${_escHtml(d.title||'(제목 없음)')}</div>
           <div style="font-size:12px;color:#484f58;">${(d.content||'').replace(/<[^>]*>/g,'').slice(0,80)}…</div>
         </div>
-        <button onclick="closeDpBottomSheet()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0;flex-shrink:0;">×</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <button onclick="dpEditDraft('${draftId}')" style="padding:5px 13px;border-radius:7px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;font-size:13px;cursor:pointer;font-family:inherit;">✏️ 상세수정</button>
+          <button onclick="closeDpBottomSheet()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0;">×</button>
+        </div>
       </div>
       <!-- 채널 드롭다운 -->
       <div style="margin-top:14px;">
