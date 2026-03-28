@@ -11152,39 +11152,17 @@ function closeDpBottomSheet() {
   _dpRenderChannelList();
 }
 
-// ── 채널별 포맷 생성 (platform_overrides 우선) ────
+// ── 채널별 포맷 생성 ─────────────────────────────
+// 각 콘텐츠는 생성기에서 이미 검수된 내용이므로 d.content 그대로 사용
+// platform_overrides(상세수정)가 있으면 그걸 우선 사용
 function _dpFormat(d, platform) {
-  // 플랫폼별 상세수정 내용이 있으면 우선 사용
   if (d.platform_overrides && d.platform_overrides[platform] !== undefined) {
     return d.platform_overrides[platform];
   }
-  const title   = d.title||'';
-  const content = (d.content||'').replace(/<[^>]*>/g,'').trim();
-  const tags    = Array.isArray(d.tags) ? d.tags : [];
-
-  if (platform==='linkedin') {
-    const body = content.slice(0,1300);
-    const ht   = tags.slice(0,5).map(t=>'#'+t).join(' ');
-    return [title, '', body, '', ht].filter(Boolean).join('\n').trim();
-  }
-  if (platform==='threads') {
-    const body = content.slice(0,450);
-    const ht   = tags.slice(0,5).map(t=>'#'+t).join(' ');
-    return [body, '', ht].filter(Boolean).join('\n').trim();
-  }
-  if (platform==='instagram') {
-    const body = content.slice(0,300);
-    const ht   = tags.map(t=>'#'+t).join(' ');
-    return [title, '.', '.', body, '.', '.', ht].filter(Boolean).join('\n').trim();
-  }
-  if (platform==='youtube') {
-    return `[제목]\n${title}\n\n[설명]\n${content.slice(0,500)}\n\n[태그]\n${tags.join(', ')}`.trim();
-  }
-  if (platform==='tiktok') {
-    return `${content.slice(0,150)}\n\n${tags.slice(0,10).map(t=>'#'+t).join(' ')}`.trim();
-  }
-  // 블로그 계열: naver, tistory, wordpress
-  return `${title}\n\n${content}`.trim();
+  const title   = d.title || '';
+  const content = (d.content || '').replace(/<[^>]*>/g, '').trim();
+  // 제목이 있으면 제목 + 내용, 없으면 내용만
+  return title ? `${title}\n\n${content}` : content;
 }
 
 // ── 배포 메서드 판별 (platform key → manual) ────────
