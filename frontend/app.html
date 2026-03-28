@@ -3595,6 +3595,34 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <span>3장</span><span>6~7장 권장</span><span>10장</span>
         </div>
 
+        <!-- 이미지 디자인 설정 (접힘) -->
+        <div style="border-top:1px solid #21262d;padding-top:12px;margin-bottom:10px;">
+          <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:6px;">
+            <span style="font-size:13px;color:#8b949e;font-weight:600;">🎨 이미지 디자인</span>
+            <span style="font-size:12px;color:#484f58;">▾</span>
+          </div>
+          <div>
+            <label class="field-label">비율</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+              <button id="cn-ratio-1:1" onclick="selectCnRatio('1:1')" class="cn-ratio-btn" style="padding:6px 4px;border-radius:6px;border:1px solid #1f6feb;background:#1f6feb20;color:#60a5fa;font-size:12px;cursor:pointer;">1:1<br><span style="font-size:11px;color:#484f58;">피드</span></button>
+              <button id="cn-ratio-4:5" onclick="selectCnRatio('4:5')" class="cn-ratio-btn" style="padding:6px 4px;border-radius:6px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:12px;cursor:pointer;">4:5<br><span style="font-size:11px;color:#484f58;">세로형</span></button>
+              <button id="cn-ratio-9:16" onclick="selectCnRatio('9:16')" class="cn-ratio-btn" style="padding:6px 4px;border-radius:6px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:12px;cursor:pointer;">9:16<br><span style="font-size:11px;color:#484f58;">스토리</span></button>
+            </div>
+            <label class="field-label">테마</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+              <button id="cn-theme-dark"     onclick="selectCnTheme('dark')"     class="cn-theme-btn" style="padding:7px 4px;border-radius:6px;border:1px solid #1f6feb;background:#1f6feb20;color:#60a5fa;font-size:12px;cursor:pointer;">🌑 Dark</button>
+              <button id="cn-theme-light"    onclick="selectCnTheme('light')"    class="cn-theme-btn" style="padding:7px 4px;border-radius:6px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:12px;cursor:pointer;">☀️ Light</button>
+              <button id="cn-theme-vivid"    onclick="selectCnTheme('vivid')"    class="cn-theme-btn" style="padding:7px 4px;border-radius:6px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:12px;cursor:pointer;">⚡ Vivid</button>
+              <button id="cn-theme-gradient" onclick="selectCnTheme('gradient')" class="cn-theme-btn" style="padding:7px 4px;border-radius:6px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:12px;cursor:pointer;">🌈 Gradient</button>
+            </div>
+            <label class="field-label">브랜드 컬러</label>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+              <input type="color" id="cn-brand-color" value="#1f6feb" style="width:40px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;" />
+              <input type="text"  id="cn-brand-color-hex" class="field-input" value="#1f6feb" placeholder="#1f6feb" style="flex:1;font-size:12px;font-family:monospace;" oninput="syncColorPicker(this)" />
+            </div>
+          </div>
+        </div>
+
         <!-- 구글시트 설정 (접힘) -->
         <div style="border-top:1px solid #21262d;padding-top:12px;margin-bottom:12px;">
           <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:6px;">
@@ -3606,9 +3634,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <input type="text" id="cn-sheet-id" class="field-input" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" style="font-size:12px;margin-bottom:8px;" />
             <label class="field-label">Service Account JSON</label>
             <textarea id="cn-sa-json" class="field-input" rows="3" placeholder='{"type":"service_account","project_id":"..."}' style="font-size:11px;font-family:monospace;"></textarea>
-            <div style="font-size:12px;color:#484f58;margin-top:4px;line-height:1.5;">
-              시트가 없으면 자동 생성됩니다. Service Account에 편집 권한을 부여하세요.
-            </div>
+            <div style="font-size:12px;color:#484f58;margin-top:4px;line-height:1.5;">시트가 없으면 자동 생성됩니다.</div>
           </div>
         </div>
 
@@ -3644,6 +3670,8 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
 
       <!-- 결과 영역 -->
       <div id="card-result-area" style="display:none;">
+
+        <!-- 결과 헤더 -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div>
             <span id="card-result-title" style="font-size:16px;font-weight:700;color:#f0f6fc;"></span>
@@ -3652,12 +3680,14 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;" onclick="addCardSlide()">＋ 슬라이드</button>
             <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;" onclick="copyCardText()">전체 복사</button>
-            <button id="cn-save-sheet-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;" onclick="saveCardNewsToSheet()">📊 시트에 저장</button>
+            <button id="cn-save-sheet-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;" onclick="saveCardNewsToSheet()">📊 시트 저장</button>
+            <button id="cn-render-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;border-color:#a78bfa;color:#a78bfa;" onclick="renderCardNewsImages()">🖼 이미지 생성</button>
+            <button id="cn-dl-all-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;" onclick="downloadAllImages()">⬇ 전체 다운로드</button>
           </div>
         </div>
 
         <!-- 시트 저장 결과 배너 -->
-        <div id="cn-sheet-result" style="display:none;padding:10px 14px;background:#238636 18;border:1px solid #23863640;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+        <div id="cn-sheet-result" style="display:none;padding:10px 14px;background:#23863615;border:1px solid #23863640;border-radius:8px;margin-bottom:12px;justify-content:space-between;align-items:center;">
           <div>
             <span style="font-size:13px;font-weight:600;color:#22c55e;">✅ 구글시트 저장 완료</span>
             <span id="cn-sheet-rows" style="font-size:13px;color:#8b949e;margin-left:8px;"></span>
@@ -3665,8 +3695,28 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <a id="cn-sheet-link" href="#" target="_blank" style="font-size:13px;color:#60a5fa;">시트 열기 →</a>
         </div>
 
-        <div id="card-slides-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
-        <div id="card-footer" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
+        <!-- 보기 탭: 텍스트 / 이미지 -->
+        <div class="tab-nav" id="cn-view-tabs" style="margin-bottom:14px;">
+          <button id="cn-view-tab-text"  class="active" onclick="switchCnView('text')">📝 텍스트</button>
+          <button id="cn-view-tab-image" onclick="switchCnView('image')">🖼 이미지 미리보기</button>
+        </div>
+
+        <!-- 텍스트 뷰 -->
+        <div id="cn-view-text">
+          <div id="card-slides-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
+          <div id="card-footer" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- 이미지 뷰 -->
+        <div id="cn-view-image" style="display:none;">
+          <div id="cn-image-empty" style="text-align:center;padding:48px;color:#484f58;">
+            <div style="font-size:32px;margin-bottom:10px;">🖼</div>
+            <p style="font-size:14px;margin-bottom:16px;">이미지가 아직 생성되지 않았습니다.</p>
+            <button class="btn btn-primary" onclick="renderCardNewsImages()">🖼 지금 이미지 생성</button>
+          </div>
+          <div id="cn-image-grid" style="display:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;"></div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -8611,6 +8661,140 @@ function renderSNSPageResult(platform, post, cfg) {
 
 // ── 카드뉴스 파이프라인 오케스트레이션 ───────────────────────────
 
+// ── 카드뉴스 디자인 설정 ─────────────────────────────────────
+let _cnRatio  = '1:1';
+let _cnTheme  = 'dark';
+let _cnImages = [];   // 렌더링된 이미지 결과 [{index, image_b64, width, height}]
+
+function selectCnRatio(ratio) {
+  _cnRatio = ratio;
+  document.querySelectorAll('.cn-ratio-btn').forEach(b => {
+    const active = b.id === `cn-ratio-${ratio}`;
+    b.style.borderColor = active ? '#1f6feb' : '#30363d';
+    b.style.background  = active ? '#1f6feb20' : 'transparent';
+    b.style.color       = active ? '#60a5fa' : '#8b949e';
+  });
+}
+
+function selectCnTheme(theme) {
+  _cnTheme = theme;
+  const colors = { dark:'#60a5fa', light:'#fb923c', vivid:'#f472b6', gradient:'#a78bfa' };
+  document.querySelectorAll('.cn-theme-btn').forEach(b => {
+    const active = b.id === `cn-theme-${theme}`;
+    const c = colors[theme] || '#60a5fa';
+    b.style.borderColor = active ? c : '#30363d';
+    b.style.background  = active ? c + '20' : 'transparent';
+    b.style.color       = active ? c : '#8b949e';
+  });
+}
+
+function syncColorPicker(input) {
+  const val = input.value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+    document.getElementById('cn-brand-color').value = val;
+  }
+}
+
+function _getCnDesign() {
+  const brandColor = document.getElementById('cn-brand-color')?.value || '#1f6feb';
+  const brandName  = agencyProfile?.agency_name || '';
+  return { ratio: _cnRatio, theme: _cnTheme, brand_color: brandColor, brand_name: brandName };
+}
+
+function switchCnView(view) {
+  document.getElementById('cn-view-text').style.display  = view === 'text'  ? '' : 'none';
+  document.getElementById('cn-view-image').style.display = view === 'image' ? '' : 'none';
+  document.getElementById('cn-view-tab-text').classList.toggle('active',  view === 'text');
+  document.getElementById('cn-view-tab-image').classList.toggle('active', view === 'image');
+}
+
+async function renderCardNewsImages() {
+  const gen = _cnStepResults?.step_generate;
+  if (!gen?.slides?.length) { toast('먼저 카드뉴스를 생성하세요.', 'orange'); return; }
+
+  const btn = document.getElementById('cn-render-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 렌더링 중...'; }
+  _setCnStepState(3, 'running');
+  document.getElementById('cn-image-empty').style.display = 'none';
+  document.getElementById('cn-image-grid').style.display  = 'none';
+
+  try {
+    const res  = await fetch(`${API}/cardnews/render-images`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        slides:   gen.slides,
+        hashtags: gen.hashtags || [],
+        cta:      gen.cta || '',
+        design:   _getCnDesign(),
+      })
+    });
+    const data = await res.json();
+    _cnImages = data.images || [];
+    _cnStepResults.step_image = { status: 'done', ...data };
+
+    _setCnStepState(3, 'done', `${_cnImages.length}장`);
+    _renderImageGrid(_cnImages, data.ratio);
+    switchCnView('image');
+
+    const dlBtn = document.getElementById('cn-dl-all-btn');
+    if (dlBtn) dlBtn.style.display = '';
+    toast(`✅ 이미지 ${_cnImages.length}장 생성 완료!`, 'green');
+  } catch(e) {
+    _setCnStepState(3, 'error');
+    document.getElementById('cn-image-empty').style.display = '';
+    toast('이미지 렌더링 오류: ' + e.message, 'red');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🖼 이미지 재생성'; }
+  }
+}
+
+function _renderImageGrid(images, ratio) {
+  const grid = document.getElementById('cn-image-grid');
+  if (!grid) return;
+  const isPortrait = ratio === '9:16';
+  const colW = isPortrait ? '160px' : '220px';
+  grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${colW}, 1fr))`;
+  grid.innerHTML = images.map((img, i) => {
+    const w = img.width, h = img.height;
+    const aspectPct = (h / w * 100).toFixed(1);
+    return `
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden;">
+      <div style="position:relative;padding-bottom:${aspectPct}%;background:#0d1117;">
+        <img src="data:image/png;base64,${img.image_b64}"
+             style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;"
+             alt="슬라이드 ${img.index}" loading="lazy" />
+        <div style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);border-radius:4px;padding:2px 6px;font-size:11px;color:#fff;">${img.index}</div>
+      </div>
+      <div style="padding:8px;display:flex;gap:6px;">
+        <button onclick="downloadSingleImage(${i})" style="flex:1;padding:5px;border-radius:6px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:12px;cursor:pointer;">⬇ 저장</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.style.display = 'grid';
+}
+
+function downloadSingleImage(idx) {
+  const img = _cnImages[idx];
+  if (!img) return;
+  const a    = document.createElement('a');
+  a.href     = `data:image/png;base64,${img.image_b64}`;
+  a.download = `cardnews_${String(img.index).padStart(2,'0')}.png`;
+  a.click();
+}
+
+function downloadAllImages() {
+  if (!_cnImages.length) { toast('먼저 이미지를 생성하세요.', 'orange'); return; }
+  _cnImages.forEach((img, i) => {
+    setTimeout(() => {
+      const a    = document.createElement('a');
+      a.href     = `data:image/png;base64,${img.image_b64}`;
+      a.download = `cardnews_${String(img.index).padStart(2,'0')}.png`;
+      a.click();
+    }, i * 200);
+  });
+  toast(`⬇ ${_cnImages.length}장 다운로드 시작`, 'green');
+}
+
 let _cnMode        = null;          // 'auto' | 'step'
 let _cnCurrentStep = 0;             // 현재 진행 단계
 let _cnStepResults = {};            // 단계별 결과 저장
@@ -8742,11 +8926,40 @@ async function _runPipelineAuto(topic) {
       _setCnStepState(2, 'error', sheet.error?.slice(0, 30));
     }
 
-    // STEP 3, 4 — 준비중
-    _setCnStepState(3, 'skip', '준비중');
-    _setCnStepState(4, 'skip', '대기중');
-
     _hideCnLoading();
+
+    // STEP 3 — 이미지 렌더링
+    if (gen?.status === 'done') {
+      _setCnStepState(3, 'running');
+      _showCnLoading('STEP 3: 이미지 렌더링 중...');
+      try {
+        const imgRes  = await fetch(`${API}/cardnews/render-images`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            slides:   gen.slides,
+            hashtags: gen.hashtags || [],
+            cta:      gen.cta || '',
+            design:   _getCnDesign(),
+          })
+        });
+        const imgData = await imgRes.json();
+        _cnImages = imgData.images || [];
+        _cnStepResults.step_image = { status: 'done', ...imgData };
+        _setCnStepState(3, 'done', `${_cnImages.length}장`);
+        _renderImageGrid(_cnImages, imgData.ratio);
+        switchCnView('image');
+        const dlBtn = document.getElementById('cn-dl-all-btn');
+        if (dlBtn) dlBtn.style.display = '';
+      } catch(imgErr) {
+        _setCnStepState(3, 'error', imgErr.message.slice(0, 30));
+      }
+      _hideCnLoading();
+    } else {
+      _setCnStepState(3, 'skip', '이전 단계 실패');
+    }
+
+    // STEP 4 — 준비중
+    _setCnStepState(4, 'skip', '준비중');
 
     // 결과 저장
     if (gen?.status === 'done') {
@@ -8790,6 +9003,8 @@ async function _runPipelineStep(topic, stepKey) {
         _setCnStepState(1, 'done', `${gen.slide_count}장 생성`);
         renderCardSlides({ slides: gen.slides, hashtags: gen.hashtags, cta: gen.cta, hook_title: gen.hook_title, topic });
         _hideCnLoading();
+        const renderBtn = document.getElementById('cn-render-btn');
+        if (renderBtn) renderBtn.style.display = '';
         _showStepNextBtn('sheet', 'STEP 2: 구글시트에 저장', topic);
       } else {
         _setCnStepState(1, 'error', gen?.error?.slice(0, 30));
@@ -8806,7 +9021,7 @@ async function _runPipelineStep(topic, stepKey) {
     if (!sheetId || !saJson) {
       _setCnStepState(2, 'skip', '설정 없음');
       toast('구글시트 설정(Spreadsheet ID, Service Account JSON)을 입력하세요.', 'orange');
-      _showStepNextBtn('image', 'STEP 3: 이미지 렌더링 (준비중)', topic);
+      _showStepNextBtn('image', 'STEP 3: 이미지 렌더링', topic);
       return;
     }
     _showCnLoading('STEP 2: 구글시트 저장 중...');
@@ -8828,7 +9043,7 @@ async function _runPipelineStep(topic, stepKey) {
       _setCnStepState(2, 'done', `${data.saved_rows}행 저장`);
       _showSheetResult(data);
       _hideCnLoading();
-      _showStepNextBtn('image', 'STEP 3: 이미지 렌더링 (준비중)', topic);
+      _showStepNextBtn('image', 'STEP 3: 이미지 렌더링', topic);
       toast('✅ 구글시트 저장 완료!', 'green');
     } catch(e) {
       _setCnStepState(2, 'error');
@@ -8837,9 +9052,41 @@ async function _runPipelineStep(topic, stepKey) {
     }
 
   } else if (stepKey === 'image') {
-    _setCnStepState(3, 'skip', '준비중 (Phase 2)');
-    toast('이미지 렌더링은 다음 단계에서 구현됩니다.', 'orange');
-    _showStepNextBtn('deploy', 'STEP 4: 배포 준비', topic);
+    _showCnLoading('STEP 3: 이미지 렌더링 중...');
+    _setCnStepState(3, 'running');
+    const gen = _cnStepResults?.step_generate;
+    if (!gen?.slides?.length) {
+      _setCnStepState(3, 'error', '생성된 슬라이드 없음');
+      _hideCnLoading();
+      toast('먼저 STEP 1을 완료하세요.', 'orange');
+      return;
+    }
+    try {
+      const res  = await fetch(`${API}/cardnews/render-images`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          slides:   gen.slides,
+          hashtags: gen.hashtags || [],
+          cta:      gen.cta || '',
+          design:   _getCnDesign(),
+        })
+      });
+      const data = await res.json();
+      _cnImages = data.images || [];
+      _cnStepResults.step_image = { status: 'done', ...data };
+      _setCnStepState(3, 'done', `${_cnImages.length}장`);
+      _renderImageGrid(_cnImages, data.ratio);
+      switchCnView('image');
+      const dlBtn = document.getElementById('cn-dl-all-btn');
+      if (dlBtn) dlBtn.style.display = '';
+      _hideCnLoading();
+      _showStepNextBtn('deploy', 'STEP 4: 배포 준비', topic);
+      toast(`✅ 이미지 ${_cnImages.length}장 생성 완료!`, 'green');
+    } catch(e) {
+      _setCnStepState(3, 'error');
+      _hideCnLoading();
+      toast('STEP 3 오류: ' + e.message, 'red');
+    }
 
   } else if (stepKey === 'deploy') {
     _setCnStepState(4, 'skip', '준비중');
