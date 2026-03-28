@@ -4711,13 +4711,13 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
 
   <!-- 탭 -->
   <div style="display:flex;gap:3px;margin-bottom:20px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:4px;">
-    <button id="dptab-queue"   onclick="switchDeployTab('queue')"   class="pub-tab-btn active">📋 배포 대기열</button>
+    <button id="dptab-history" onclick="switchDeployTab('history')" class="pub-tab-btn active">📊 배포 이력</button>
+    <button id="dptab-queue"   onclick="switchDeployTab('queue')"   class="pub-tab-btn">📋 배포 대기열</button>
     <button id="dptab-deploy"  onclick="switchDeployTab('deploy')"  class="pub-tab-btn">🚀 채널 배포</button>
-    <button id="dptab-history" onclick="switchDeployTab('history')" class="pub-tab-btn">📊 배포 이력</button>
   </div>
 
   <!-- ── Tab 1: 배포 대기열 ── -->
-  <div id="dppanel-queue">
+  <div id="dppanel-queue" style="display:none;">
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;" id="dp-channel-filter">
       <button class="dp-filter-btn active" onclick="filterDeployQueue('all')"       data-ch="all">전체</button>
       <button class="dp-filter-btn"        onclick="filterDeployQueue('blog')"      data-ch="blog">📝 블로그</button>
@@ -4754,7 +4754,7 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
   </div>
 
   <!-- ── Tab 3: 배포 이력 ── -->
-  <div id="dppanel-history" style="display:none;">
+  <div id="dppanel-history">
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;" id="dp-hist-cards"></div>
     <div id="dp-hist-list"  style="display:flex;flex-direction:column;gap:8px;"></div>
     <div id="dp-hist-empty" style="display:none;text-align:center;padding:60px 20px;">
@@ -10728,7 +10728,7 @@ function switchDeployTab(tab) {
 // ── 페이지 진입 ──────────────────────────────────
 function loadDeployPage() {
   _renderDpSummaryBar();
-  renderDeployQueue();
+  switchDeployTab('history');
 }
 
 // ── 요약 바 ──────────────────────────────────────
