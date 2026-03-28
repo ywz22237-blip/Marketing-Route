@@ -10931,6 +10931,69 @@ function dpSaveEditDraft(draftId) {
   toast('✅ 수정 완료', 'green');
 }
 
+// ── 플랫폼별 상세수정 모달 ────────────────────────
+function dpEditPlatform(draftId, platform) {
+  const d = getDrafts().find(x => x.id === draftId);
+  if (!d) return;
+  const pm = _DP_META[platform]||{icon:'📄',label:platform};
+  // override가 있으면 override, 없으면 자동포맷
+  const currentText = (d.platform_overrides||{})[platform] !== undefined
+    ? d.platform_overrides[platform]
+    : _dpFormat(d, platform);
+
+  document.getElementById('dp-plt-edit-modal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'dp-plt-edit-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:16px;padding:32px;width:min(820px,94vw);max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <h3 style="font-size:18px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">${pm.icon} ${pm.label} 상세수정</h3>
+          <div style="font-size:12px;color:#484f58;">이 플랫폼 전용 내용을 수정합니다. 저장하면 이 채널에만 적용됩니다.</div>
+        </div>
+        <button onclick="document.getElementById('dp-plt-edit-modal').remove()" style="background:none;border:none;color:#8b949e;font-size:24px;cursor:pointer;padding:0;line-height:1;">×</button>
+      </div>
+      <label style="font-size:13px;color:#8b949e;margin-bottom:6px;display:block;">내용</label>
+      <textarea id="dp-plt-edit-content"
+        style="width:100%;min-height:340px;background:#0d1117;border:1px solid #30363d;border-radius:10px;color:#c9d1d9;padding:14px;font-size:14px;font-family:'Noto Sans KR',monospace;line-height:1.75;resize:vertical;margin-bottom:20px;"
+      >${_escHtml(currentText)}</textarea>
+      <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;">
+        <button onclick="dpResetPlatformEdit('${draftId}','${platform}')" style="padding:9px 16px;border-radius:8px;border:1px solid #30363d;background:transparent;color:#8b949e;font-size:13px;cursor:pointer;font-family:inherit;">↩ 원본으로 초기화</button>
+        <div style="display:flex;gap:10px;">
+          <button onclick="document.getElementById('dp-plt-edit-modal').remove()" class="btn btn-ghost" style="padding:9px 22px;font-size:14px;">취소</button>
+          <button onclick="dpSavePlatformEdit('${draftId}','${platform}')" class="btn btn-primary" style="padding:9px 22px;font-size:14px;">저장</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function dpSavePlatformEdit(draftId, platform) {
+  const list = getDrafts();
+  const d = list.find(x => x.id === draftId);
+  if (!d) return;
+  if (!d.platform_overrides) d.platform_overrides = {};
+  d.platform_overrides[platform] = document.getElementById('dp-plt-edit-content')?.value || '';
+  saveDrafts(list);
+  document.getElementById('dp-plt-edit-modal')?.remove();
+  // 바텀시트 새로고침
+  _dpOpenBottomSheet(draftId, getDrafts().find(x=>x.id===draftId));
+  toast(`✅ ${_DP_META[platform]?.label||platform} 내용 저장`, 'green');
+}
+
+function dpResetPlatformEdit(draftId, platform) {
+  if (!confirm('원본 자동포맷으로 초기화할까요?')) return;
+  const list = getDrafts();
+  const d = list.find(x => x.id === draftId);
+  if (!d) return;
+  if (d.platform_overrides) delete d.platform_overrides[platform];
+  saveDrafts(list);
+  document.getElementById('dp-plt-edit-modal')?.remove();
+  _dpOpenBottomSheet(draftId, getDrafts().find(x=>x.id===draftId));
+  toast('초기화 완료', 'green');
+}
+
 // ── 콘텐츠 삭제 ──────────────────────────────────
 function dpDeleteDraft(draftId) {
   if (!confirm('이 콘텐츠를 삭제할까요?')) return;
@@ -11022,7 +11085,6 @@ function _dpOpenBottomSheet(draftId, d) {
           <div style="font-size:12px;color:#484f58;">${(d.content||'').replace(/<[^>]*>/g,'').slice(0,80)}…</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <button onclick="dpEditDraft('${draftId}')" style="padding:5px 13px;border-radius:7px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;font-size:13px;cursor:pointer;font-family:inherit;">✏️ 상세수정</button>
           <button onclick="closeDpBottomSheet()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0;">×</button>
         </div>
       </div>
@@ -11058,12 +11120,14 @@ function _dpOpenBottomSheet(draftId, d) {
               ${methodBadge}
               ${deployed?'<span style="background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.3);padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;">✅ 배포완료</span>':''}
             </div>
-            <div style="display:flex;gap:6px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button onclick="dpEditPlatform('${draftId}','${p}')" style="background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">✏️ 상세수정</button>
               <button onclick="dpCopy('${taId}')" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">📋 복사</button>
               ${actionBtn}
             </div>
           </div>
           ${pm.tip?`<div style="font-size:12px;color:#8b949e;background:#161b22;border:1px solid #21262d;padding:6px 10px;border-radius:6px;margin-bottom:10px;">💡 ${pm.tip}</div>`:''}
+          ${(d.platform_overrides||{})[p]!==undefined?'<div style="font-size:11px;color:#f0a83a;margin-bottom:6px;">✏️ 수정된 내용</div>':''}
           <textarea id="${taId}" readonly
             style="width:100%;min-height:140px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#c9d1d9;padding:12px;font-size:13px;font-family:'Noto Sans KR',monospace;line-height:1.65;resize:vertical;"
           >${_escHtml(_dpFormat(d,p))}</textarea>
@@ -11088,8 +11152,12 @@ function closeDpBottomSheet() {
   _dpRenderChannelList();
 }
 
-// ── 채널별 포맷 생성 ──────────────────────────────
+// ── 채널별 포맷 생성 (platform_overrides 우선) ────
 function _dpFormat(d, platform) {
+  // 플랫폼별 상세수정 내용이 있으면 우선 사용
+  if (d.platform_overrides && d.platform_overrides[platform] !== undefined) {
+    return d.platform_overrides[platform];
+  }
   const title   = d.title||'';
   const content = (d.content||'').replace(/<[^>]*>/g,'').trim();
   const tags    = Array.isArray(d.tags) ? d.tags : [];
