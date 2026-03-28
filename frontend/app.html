@@ -10876,7 +10876,7 @@ function _dpRenderChannelList() {
         : `<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(31,111,235,.12);color:#388bfd;border:1px solid rgba(31,111,235,.3);">대기중</span>`;
     return `
     <div class="dp-content-card${isSelected?' selected':''}">
-      <div style="display:flex;align-items:center;gap:10px;" onclick="loadDeployPanel('${d.id}')">
+      <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:18px;">${_typeIcon[d.type]||'📄'}</span>
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:600;color:#f0f6fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_escHtml(d.title||'(제목 없음)')}</div>
@@ -10885,7 +10885,8 @@ function _dpRenderChannelList() {
         ${statusBadge}
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #21262d;">
-        <button onclick="dpEditDraft('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;">✏️ 수정</button>
+        <button onclick="loadDeployPanel('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #388bfd;background:rgba(56,139,253,.1);color:#388bfd;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🚀 수정</button>
+        <button onclick="dpEditDraft('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;">📋 복사</button>
         <button onclick="dpDeleteDraft('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='#f85149';this.style.borderColor='#f85149'" onmouseout="this.style.color='#8b949e';this.style.borderColor='#30363d'">🗑 삭제</button>
       </div>
     </div>`;
@@ -10904,7 +10905,7 @@ function dpEditDraft(draftId) {
   modal.innerHTML = `
     <div style="background:#161b22;border:1px solid #30363d;border-radius:16px;padding:28px;width:520px;max-height:85vh;overflow-y:auto;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h3 style="font-size:16px;font-weight:700;color:#f0f6fc;margin:0;">✏️ 콘텐츠 수정</h3>
+        <h3 style="font-size:16px;font-weight:700;color:#f0f6fc;margin:0;">📋 콘텐츠 복사 편집</h3>
         <button onclick="document.getElementById('dp-edit-modal').remove()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;">×</button>
       </div>
       <label class="field-label">제목</label>
@@ -10963,6 +10964,16 @@ function _loadDeployPanelInit() {
 }
 
 // ── 채널별 배포 패널 (바텀시트) ──────────────────
+// 바텀시트 내 선택된 채널 그룹
+let _dpSheetChannel = null;
+
+const _DP_SHEET_CH_LABELS = {
+  blog:       '📝 블로그',
+  'text-sns': '💬 텍스트형 SNS',
+  'image-sns':'📷 이미지형 SNS',
+  video:      '🎬 동영상',
+};
+
 function loadDeployPanel(draftId) {
   _dpSelectedDraftId = draftId;
   _dpRenderChannelList();
@@ -10971,13 +10982,20 @@ function loadDeployPanel(draftId) {
   const d = getDrafts().find(x=>x.id===draftId);
   if (!d) return;
 
-  const hist = _getDeployHistory();
-  const g    = _dpGroup(d.type||d.content_type||'');
-  const pls  = _DP_PLAT[g] || ['linkedin'];
+  // 기본 채널은 콘텐츠 타입 기반
+  const autoGroup = _dpGroup(d.type||d.content_type||'');
+  _dpSheetChannel = autoGroup || 'blog';
 
+  _dpOpenBottomSheet(draftId, d);
+}
+
+function _dpOpenBottomSheet(draftId, d) {
   // 기존 바텀시트 제거
   document.getElementById('dp-bottomsheet')?.remove();
   document.getElementById('dp-bottomsheet-backdrop')?.remove();
+
+  const hist = _getDeployHistory();
+  const pls  = _DP_PLAT[_dpSheetChannel] || ['linkedin'];
 
   // 백드롭
   const backdrop = document.createElement('div');
@@ -10988,22 +11006,36 @@ function loadDeployPanel(draftId) {
   // 바텀시트
   const sheet = document.createElement('div');
   sheet.id = 'dp-bottomsheet';
-  sheet.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:801;background:#161b22;border-top:1px solid #30363d;border-radius:16px 16px 0 0;max-height:80vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease;';
+  sheet.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:801;background:#161b22;border-top:1px solid #30363d;border-radius:16px 16px 0 0;max-height:82vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease;';
+
+  // 채널 드롭다운 옵션
+  const chOptions = Object.entries(_DP_SHEET_CH_LABELS).map(([val, label]) =>
+    `<option value="${val}"${_dpSheetChannel===val?' selected':''}>${label}</option>`
+  ).join('');
 
   sheet.innerHTML = `
     <!-- 핸들 + 헤더 -->
     <div style="position:sticky;top:0;background:#161b22;border-bottom:1px solid #21262d;padding:12px 20px 14px;z-index:1;">
       <div style="width:40px;height:4px;background:#30363d;border-radius:2px;margin:0 auto 14px;"></div>
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-        <div>
-          <div style="font-size:16px;font-weight:700;color:#f0f6fc;">${_escHtml(d.title||'(제목 없음)')}</div>
-          <div style="font-size:12px;color:#484f58;margin-top:3px;">${(d.content||'').replace(/<[^>]*>/g,'').slice(0,80)}…</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:16px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">${_escHtml(d.title||'(제목 없음)')}</div>
+          <div style="font-size:12px;color:#484f58;">${(d.content||'').replace(/<[^>]*>/g,'').slice(0,80)}…</div>
         </div>
-        <button onclick="closeDpBottomSheet()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0 0 0 12px;flex-shrink:0;">×</button>
+        <button onclick="closeDpBottomSheet()" style="background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0;flex-shrink:0;">×</button>
+      </div>
+      <!-- 채널 드롭다운 -->
+      <div style="margin-top:14px;">
+        <label style="font-size:12px;color:#8b949e;margin-bottom:6px;display:block;">📡 배포 채널 선택</label>
+        <select id="dp-sheet-channel-select"
+          onchange="_dpSheetChannel=this.value; _dpOpenBottomSheet('${draftId}', getDrafts().find(x=>x.id==='${draftId}'))"
+          style="width:100%;padding:9px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:14px;font-family:inherit;cursor:pointer;appearance:auto;">
+          ${chOptions}
+        </select>
       </div>
     </div>
     <!-- 플랫폼 목록 -->
-    <div style="padding:16px 20px;">
+    <div style="padding:16px 20px;" id="dp-sheet-platforms">
       ${pls.map(p => {
         const pm      = _DP_META[p]||{icon:'📄',label:p,tip:'',member:'-'};
         const deployed = hist.some(h=>h.draft_id===draftId && h.channel===p);
@@ -11013,7 +11045,7 @@ function loadDeployPanel(draftId) {
           ? '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(56,139,253,.12);color:#388bfd;border:1px solid rgba(56,139,253,.3);">🔑 API</span>'
           : '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:#21262d;color:#8b949e;border:1px solid #30363d;">✋ 수동</span>';
         const actionBtn = deployed
-          ? `<button onclick="dpUnmark('${draftId}','${p}');loadDeployPanel('${draftId}')" style="background:#21262d;border:1px solid #30363d;color:#8b949e;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">완료 취소</button>`
+          ? `<button onclick="dpUnmark('${draftId}','${p}');_dpOpenBottomSheet('${draftId}',getDrafts().find(x=>x.id==='${draftId}'))" style="background:#21262d;border:1px solid #30363d;color:#8b949e;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">완료 취소</button>`
           : `<button id="dp-send-btn-${p}" onclick="dpAutoSend('${draftId}','${p}','${taId}')" style="background:${m.method==='api'?'#1f6feb':'#238636'};border:none;color:#fff;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${m.method==='api'?'🔗 API 배포':'✓ 배포 완료'}</button>`;
         return `
         <div style="background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:14px;margin-bottom:10px;">
