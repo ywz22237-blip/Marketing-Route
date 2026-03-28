@@ -2934,7 +2934,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           </div>
           <!-- 링크 CTA 토글 -->
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;padding:10px 14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;" onmouseenter="this.style.borderColor='#388bfd'" onmouseleave="this.style.borderColor=document.getElementById('tsns-link-toggle').checked?'#238636':'#30363d'">
-            <input type="checkbox" id="tsns-link-toggle" style="accent-color:#238636;width:15px;height:15px;flex-shrink:0;" onchange="this.closest('label').style.borderColor=this.checked?'#238636':'#30363d'" />
+            <input type="checkbox" id="tsns-link-toggle" style="accent-color:#238636;width:15px;height:15px;flex-shrink:0;" onchange="this.closest('label').style.borderColor=this.checked?'#238636':'#30363d'; tsnsApplyLinkToggle(this.checked)" />
             <div>
               <div style="font-size:13px;font-weight:600;color:#c9d1d9;">🔗 내 채널 링크 본문 하단에 자동 추가</div>
               <div style="font-size:12px;color:#484f58;margin-top:1px;">에이전시 설정에서 활성화한 채널 링크가 본문 마지막에 삽입됩니다</div>
@@ -3061,7 +3061,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <option>즉시 발행</option><option>예약 발행</option><option>검수 후 수동 발행</option>
           </select>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="goto('deploy')">🚀 배포로 보내기</button>
+        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="tsnsGotoDeploy()">🚀 배포로 보내기</button>
       </div>
     </div>
   </div>
@@ -3267,7 +3267,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <textarea class="field-input" id="isns-insta-tags" rows="3" placeholder="#마케팅 #콘텐츠 #브랜딩 (최대 30개)" style="resize:none;font-size:14px;"></textarea>
           <!-- 링크 CTA 토글 -->
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;padding:10px 14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;" onmouseenter="this.style.borderColor='#388bfd'" onmouseleave="this.style.borderColor=document.getElementById('isns-link-toggle').checked?'#238636':'#30363d'">
-            <input type="checkbox" id="isns-link-toggle" style="accent-color:#238636;width:15px;height:15px;flex-shrink:0;" onchange="this.closest('label').style.borderColor=this.checked?'#238636':'#30363d'" />
+            <input type="checkbox" id="isns-link-toggle" style="accent-color:#238636;width:15px;height:15px;flex-shrink:0;" onchange="this.closest('label').style.borderColor=this.checked?'#238636':'#30363d'; isnsApplyLinkToggle(this.checked)" />
             <div>
               <div style="font-size:13px;font-weight:600;color:#c9d1d9;">🔗 내 채널 링크 본문 하단에 자동 추가</div>
               <div style="font-size:12px;color:#484f58;margin-top:1px;">에이전시 설정에서 활성화한 채널 링크가 캡션 마지막에 삽입됩니다</div>
@@ -3472,7 +3472,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <label class="field-label">발행 방식</label>
           <select class="field-input"><option>즉시 발행</option><option>예약 발행</option><option>수동 발행</option></select>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="goto('deploy')">🚀 배포로 보내기</button>
+        <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="isnsGotoDeploy()">🚀 배포로 보내기</button>
       </div>
     </div>
   </div>
@@ -13225,6 +13225,71 @@ function _buildLinkCTA(forPlatform) {
   return '\n\n---\n📌 다른 채널에서도 만나요\n' + lines.join('\n');
 }
 
+// ── 텍스트형 SNS 링크 토글 (검수탭 실시간 반영) ──
+function tsnsApplyLinkToggle(checked) {
+  const platform = window._tsnsActivePlatform || _tsnsActivePlatform || 'linkedin';
+  const bodyId  = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+  const bodyEl  = document.getElementById(bodyId);
+  const revEl   = document.getElementById('tsns-review-body');
+  const cta     = _buildLinkCTA(platform);
+  if (!cta && checked) {
+    toast('에이전시 설정에서 채널 링크를 먼저 활성화해주세요', '#f59e0b');
+    document.getElementById('tsns-link-toggle').checked = false;
+    return;
+  }
+  const cur = revEl?.value || bodyEl?.value || '';
+  const base = cur.includes('\n\n---\n') ? cur.split('\n\n---\n')[0] : cur;
+  const next = checked ? base + cta : base;
+  if (bodyEl) bodyEl.value = next;
+  if (revEl)  revEl.value  = next;
+}
+
+// ── 이미지형 SNS 링크 토글 (검수탭 실시간 반영) ──
+function isnsApplyLinkToggle(checked) {
+  const platform = window._isnsActivePlatform || _isnsActivePlatform || 'instagram';
+  const isInsta  = platform === 'insta' || platform === 'instagram';
+  const bodyId   = isInsta ? 'isns-insta-caption' : 'isns-fb-body';
+  const bodyEl   = document.getElementById(bodyId);
+  const revEl    = document.getElementById('isns-review-caption');
+  const cta      = _buildLinkCTA(platform);
+  if (!cta && checked) {
+    toast('에이전시 설정에서 채널 링크를 먼저 활성화해주세요', '#f59e0b');
+    document.getElementById('isns-link-toggle').checked = false;
+    return;
+  }
+  const cur = revEl?.value || bodyEl?.value || '';
+  const base = cur.includes('\n\n---\n') ? cur.split('\n\n---\n')[0] : cur;
+  const next = checked ? base + cta : base;
+  if (bodyEl) bodyEl.value = next;
+  if (revEl)  revEl.value  = next;
+}
+
+// ── 텍스트형 SNS 배포로 보내기 ───────────────────
+function tsnsGotoDeploy() {
+  const platform = window._tsnsActivePlatform || _tsnsActivePlatform || 'linkedin';
+  const revEl    = document.getElementById('tsns-review-body');
+  const bodyId   = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+  const content  = revEl?.value || document.getElementById(bodyId)?.value || '';
+  const title    = document.getElementById('tsns-topic')?.value || `${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠`;
+  if (content) saveDraft({ type: platform, platform, title, content });
+  goto('deploy');
+  setTimeout(() => { switchDeployTab('deploy'); dpSelectChannel('text-sns'); }, 80);
+}
+
+// ── 이미지형 SNS 배포로 보내기 ───────────────────
+function isnsGotoDeploy() {
+  const platform  = window._isnsActivePlatform || _isnsActivePlatform || 'instagram';
+  const isInsta   = platform === 'insta' || platform === 'instagram';
+  const revEl     = document.getElementById('isns-review-caption');
+  const bodyId    = isInsta ? 'isns-insta-caption' : 'isns-fb-body';
+  const content   = revEl?.value || document.getElementById(bodyId)?.value || '';
+  const title     = document.getElementById('isns-topic')?.value || '이미지형 SNS 콘텐츠';
+  const draftType = isInsta ? 'instagram' : 'facebook';
+  if (content) saveDraft({ type: draftType, platform: draftType, title, content });
+  goto('deploy');
+  setTimeout(() => { switchDeployTab('deploy'); dpSelectChannel('image-sns'); }, 80);
+}
+
 function _updateLinkToggleLabel(type) {
   const cb = document.getElementById(`${type}-link-toggle`);
   const pl = _getPlatformLinks();
@@ -14036,9 +14101,11 @@ async function generateTSNS(platform) {
     if (bodyEl) bodyEl.value = tsnsBody;
     const previewId = platform === 'linkedin' ? 'tsns-li-preview' : 'tsns-th-preview';
     const preview = document.getElementById(previewId);
-    if (preview) preview.textContent = body;
+    if (preview) preview.textContent = tsnsBody;
     const reviewEl = document.getElementById('tsns-review-body');
-    if (reviewEl) reviewEl.value = body;
+    if (reviewEl) reviewEl.value = tsnsBody;
+    // 드래프트 자동 저장
+    saveDraft({ type: platform, platform, title: topic || `${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠`, content: tsnsBody });
     toast(`${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠 생성 완료!`, '#4ade80');
     setTimeout(_refreshTsnsChecklist, 100);
   } catch(e) {
@@ -14101,11 +14168,14 @@ async function generateISNS(platform) {
     if (tagsId) { const t = document.getElementById(tagsId); if (t) t.value = tags; }
     const previewId = isInsta ? 'isns-insta-preview' : 'isns-fb-preview';
     const preview = document.getElementById(previewId);
-    if (preview) preview.textContent = body;
+    if (preview) preview.textContent = isnsBody;
     const rc = document.getElementById('isns-review-caption');
     const rt = document.getElementById('isns-review-tags');
-    if (rc) rc.value = body;
+    if (rc) rc.value = isnsBody;
     if (rt) rt.value = tags;
+    // 드래프트 자동 저장
+    const isnsDraftType = isInsta ? 'instagram' : 'facebook';
+    saveDraft({ type: isnsDraftType, platform: isnsDraftType, title: topic || '이미지형 SNS 콘텐츠', content: isnsBody });
     toast('이미지형 SNS 콘텐츠 생성 완료!', '#4ade80');
     setTimeout(_refreshIsnsChecklist, 100);
   } catch(e) {
