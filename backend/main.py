@@ -1376,6 +1376,203 @@ JSON 형식으로만 반환:
 }
 
 
+# ── 카드뉴스 파이프라인 ──────────────────────────────────────────────────────
+
+def _sheets_service(service_account_json: str):
+    """Service Account JSON 문자열 → Google Sheets service 객체"""
+    import json as _json
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    creds_dict = _json.loads(service_account_json)
+    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    return build("sheets", "v4", credentials=creds, cache_discovery=False)
+
+
+def _ensure_sheet_header(service, spreadsheet_id: str, sheet_title: str = "카드뉴스"):
+    """시트 존재 확인 + 헤더 행 작성 (없으면 새 시트 생성)"""
+    sheets = service.spreadsheets()
+    meta = sheets.get(spreadsheetId=spreadsheet_id).execute()
+    existing = [s["properties"]["title"] for s in meta["sheets"]]
+
+    if sheet_title not in existing:
+        sheets.batchUpdate(spreadsheetId=spreadsheet_id, body={
+            "requests": [{"addSheet": {"properties": {"title": sheet_title}}}]
+        }).execute()
+
+    headers = [["슬라이드번호", "타입", "제목", "본문", "해시태그", "CTA", "생성일시", "상태", "이미지URL"]]
+    sheets.values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_title}!A1:I1",
+        valueInputOption="RAW",
+        body={"values": headers}
+    ).execute()
+
+
+def _append_slides_to_sheet(service, spreadsheet_id: str, slides: list,
+                             hashtags: list, cta: str, topic: str, sheet_title: str = "카드뉴스"):
+    """슬라이드 데이터를 시트에 행별 추가"""
+    from datetime import datetime
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    ht  = " ".join(hashtags) if hashtags else ""
+    rows = []
+    for s in slides:
+        rows.append([
+            s.get("index", ""),
+            s.get("type", "content") if "type" in s else ("cover" if s.get("index") == 1 else ("cta" if s.get("is_cta") else "content")),
+            s.get("title", ""),
+            s.get("body", ""),
+            ht if s.get("is_cta") else "",
+            cta if s.get("is_cta") else "",
+            now,
+            "pending",
+            "",
+        ])
+
+    service.spreadsheets().values().append(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_title}!A:I",
+        valueInputOption="RAW",
+        insertDataOption="INSERT_ROWS",
+        body={"values": rows}
+    ).execute()
+    return len(rows)
+
+
+@app.post("/cardnews/save-to-sheet")
+async def cardnews_save_to_sheet(body: dict):
+    """
+    카드뉴스 슬라이드 데이터를 Google Sheets에 저장
+    body: { slides, hashtags, cta, topic, spreadsheet_id, service_account_json }
+    """
+    slides   = body.get("slides", [])
+    hashtags = body.get("hashtags", [])
+    cta      = body.get("cta", "")
+    topic    = body.get("topic", "")
+    sheet_id = body.get("spreadsheet_id", "")
+    sa_json  = body.get("service_account_json", "")
+
+    if not sheet_id:
+        raise HTTPException(status_code=400, detail="spreadsheet_id가 필요합니다.")
+    if not sa_json:
+        raise HTTPException(status_code=400, detail="service_account_json이 필요합니다.")
+    if not slides:
+        raise HTTPException(status_code=400, detail="저장할 슬라이드가 없습니다.")
+
+    try:
+        service    = _sheets_service(sa_json)
+        _ensure_sheet_header(service, sheet_id)
+        saved_rows = _append_slides_to_sheet(service, sheet_id, slides, hashtags, cta, topic)
+        sheet_url  = f"https://docs.google.com/spreadsheets/d/{sheet_id}"
+        return {
+            "success":    True,
+            "saved_rows": saved_rows,
+            "sheet_url":  sheet_url,
+            "sheet_id":   sheet_id,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"구글시트 저장 실패: {str(e)}")
+
+
+@app.post("/cardnews/pipeline")
+async def cardnews_pipeline(body: dict):
+    """
+    카드뉴스 전체 자동화 파이프라인
+    STEP 1: AI 문구 생성 → STEP 2: 구글시트 저장 → STEP 3: 이미지 렌더링(예정)
+    body: {
+        topic, slide_count, api_keys, agency_profile, tier,
+        spreadsheet_id, service_account_json,
+        steps: ["generate","sheet","image"]   ← 실행할 단계 목록
+    }
+    """
+    import re as re_mod
+
+    topic      = body.get("topic", "").strip()
+    slide_count= body.get("slide_count", 6)
+    api_keys   = body.get("api_keys", {})
+    agency     = body.get("agency_profile", {})
+    tier       = body.get("tier", "tier1")
+    sheet_id   = body.get("spreadsheet_id", "")
+    sa_json    = body.get("service_account_json", "")
+    steps      = body.get("steps", ["generate", "sheet"])  # image는 Phase 2에 추가
+
+    if not topic:
+        raise HTTPException(status_code=400, detail="topic이 필요합니다.")
+
+    result = {
+        "topic": topic,
+        "steps_done": [],
+        "steps_failed": [],
+        "step_generate": None,
+        "step_sheet": None,
+        "step_image": None,
+    }
+
+    # ── STEP 1: AI 카드뉴스 생성 ──────────────────────────────────
+    if "generate" in steps:
+        try:
+            ag_name  = agency.get("agency_name", "") if isinstance(agency, dict) else ""
+            industry = agency.get("industry", "")     if isinstance(agency, dict) else ""
+            tone     = agency.get("tone_and_manner", "전문적이고 신뢰감 있는") if isinstance(agency, dict) else "전문적이고 신뢰감 있는"
+            target   = agency.get("target_audience", "") if isinstance(agency, dict) else ""
+
+            prompt = _CARD_NEWS_PROMPT.format(
+                topic=topic, slide_count=slide_count,
+                ag_name=ag_name, industry=industry, tone=tone, target=target
+            )
+            raw  = await _llm_generate(prompt, api_keys, tier)
+            m    = re_mod.search(r'\{.*\}', raw, re_mod.DOTALL)
+            data = jsonlib.loads(m.group()) if m else {}
+
+            slides    = data.get("slides", [])
+            hashtags  = data.get("hashtags", [])
+            cta_text  = data.get("cta", "")
+            hook      = data.get("hook_title", topic)
+
+            result["step_generate"] = {
+                "status": "done",
+                "hook_title": hook,
+                "slides": slides,
+                "hashtags": hashtags,
+                "cta": cta_text,
+                "slide_count": len(slides),
+            }
+            result["steps_done"].append("generate")
+        except Exception as e:
+            result["step_generate"] = {"status": "error", "error": str(e)}
+            result["steps_failed"].append("generate")
+            return result  # STEP 1 실패 시 중단
+
+    # ── STEP 2: 구글시트 저장 ─────────────────────────────────────
+    if "sheet" in steps and result["step_generate"] and result["step_generate"].get("status") == "done":
+        if not sheet_id or not sa_json:
+            result["step_sheet"] = {"status": "skipped", "reason": "spreadsheet_id 또는 service_account_json 없음"}
+        else:
+            try:
+                gen      = result["step_generate"]
+                service  = _sheets_service(sa_json)
+                _ensure_sheet_header(service, sheet_id)
+                saved    = _append_slides_to_sheet(
+                    service, sheet_id,
+                    gen["slides"], gen["hashtags"], gen["cta"], topic
+                )
+                result["step_sheet"] = {
+                    "status": "done",
+                    "saved_rows": saved,
+                    "sheet_url": f"https://docs.google.com/spreadsheets/d/{sheet_id}",
+                }
+                result["steps_done"].append("sheet")
+            except Exception as e:
+                result["step_sheet"] = {"status": "error", "error": str(e)}
+                result["steps_failed"].append("sheet")
+
+    # ── STEP 3: 이미지 렌더링 (Phase 2 — 추후 구현) ───────────────
+    if "image" in steps:
+        result["step_image"] = {"status": "pending", "message": "이미지 렌더링은 Phase 2에서 구현됩니다."}
+
+    return result
+
+
 @app.post("/sns/generate", response_model=SNSResult)
 async def generate_sns(req: SNSRequest):
     """SNS 플랫폼별 전용 콘텐츠 생성 (링크드인/인스타그램/쓰레드)"""

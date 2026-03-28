@@ -26,3 +26,8 @@ pydantic==2.9.2
 
 # 유틸
 python-slugify==8.0.4
+
+# Google API (Sheets 연동)
+google-auth==2.29.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.127.0

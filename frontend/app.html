@@ -3483,35 +3483,99 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
      PAGE: 카드뉴스
 ══════════════════════════════════════════════════ -->
 <div class="page" id="page-cardnews">
-  <div style="margin-bottom:20px;">
-    <h2 style="font-size:20px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">카드뉴스</h2>
-    <p style="font-size:14px;color:#8b949e;margin:0;">최대 10장 슬라이드 · AI 장수 추천 · 인스타그램 · 링크드인 카드 최적화</p>
-  </div>
 
-  <!-- SEO 브리프 배너 -->
-  <div id="cardnews-seo-banner" style="display:none;margin-bottom:16px;padding:12px 16px;background:rgba(124,58,237,0.08);border:1px solid #7c3aed30;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
+  <!-- 헤더 -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
     <div>
-      <span style="font-size:14px;color:#a78bfa;font-weight:600;">🔍 SEO 기획 결과 있음</span>
-      <span id="cardnews-seo-topic-preview" style="font-size:14px;color:#8b949e;margin-left:8px;"></span>
+      <h2 style="font-size:20px;font-weight:700;color:#f0f6fc;margin:0 0 4px;">🃏 카드뉴스 자동화</h2>
+      <p style="font-size:14px;color:#8b949e;margin:0;">원고 입력 → AI 문구 생성 → 구글시트 저장 → 이미지 렌더링</p>
     </div>
-    <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;" onclick="loadSEOBrief('cardnews')">불러오기 →</button>
+    <div id="cardnews-seo-banner" style="display:none;padding:8px 14px;background:rgba(124,58,237,0.08);border:1px solid #7c3aed30;border-radius:8px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:13px;color:#a78bfa;font-weight:600;">🔍 SEO 브리프 있음</span>
+      <span id="cardnews-seo-topic-preview" style="font-size:13px;color:#8b949e;"></span>
+      <button class="btn btn-ghost" style="font-size:12px;padding:3px 10px;" onclick="loadSEOBrief('cardnews')">적용 →</button>
+    </div>
   </div>
 
+  <!-- ① 실행 방식 선택 -->
+  <div class="card" style="margin-bottom:16px;background:rgba(31,111,235,0.04);border-color:#1f6feb25;">
+    <div style="font-size:13px;font-weight:700;color:#c9d1d9;margin-bottom:12px;">⚡ 실행 방식 선택</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div id="cn-mode-auto" onclick="selectCardNewsMode('auto')"
+           style="padding:16px;border-radius:10px;border:2px solid #1f6feb;background:#1f6feb15;cursor:pointer;transition:all .15s;">
+        <div style="font-size:20px;margin-bottom:6px;">🚀</div>
+        <div style="font-size:15px;font-weight:700;color:#60a5fa;margin-bottom:4px;">전체 자동 실행</div>
+        <div style="font-size:13px;color:#8b949e;line-height:1.6;">버튼 하나로 생성 → 시트 저장까지 자동 처리. 중간 확인 없이 빠르게 완료.</div>
+      </div>
+      <div id="cn-mode-step" onclick="selectCardNewsMode('step')"
+           style="padding:16px;border-radius:10px;border:2px solid #30363d;background:transparent;cursor:pointer;transition:all .15s;">
+        <div style="font-size:20px;margin-bottom:6px;">🔍</div>
+        <div style="font-size:15px;font-weight:700;color:#c9d1d9;margin-bottom:4px;">단계별 확인</div>
+        <div style="font-size:13px;color:#8b949e;line-height:1.6;">각 단계 결과를 보고 직접 확인 후 다음 단계로 진행. 수정이 필요할 때 유용.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 파이프라인 진행 표시 -->
+  <div class="card" id="cn-pipeline-bar" style="margin-bottom:16px;display:none;">
+    <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;align-items:center;gap:0;">
+
+      <!-- STEP 1 -->
+      <div id="cn-step-1-block" style="text-align:center;padding:10px 8px;">
+        <div id="cn-step-1-icon" style="width:36px;height:36px;border-radius:50%;background:#21262d;border:2px solid #30363d;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:17px;">1</div>
+        <div style="font-size:13px;font-weight:700;color:#c9d1d9;">AI 문구 생성</div>
+        <div id="cn-step-1-status" style="font-size:12px;color:#484f58;margin-top:2px;">대기중</div>
+      </div>
+      <div id="cn-arrow-1" style="color:#30363d;font-size:20px;text-align:center;">→</div>
+
+      <!-- STEP 2 -->
+      <div id="cn-step-2-block" style="text-align:center;padding:10px 8px;">
+        <div id="cn-step-2-icon" style="width:36px;height:36px;border-radius:50%;background:#21262d;border:2px solid #30363d;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:17px;">2</div>
+        <div style="font-size:13px;font-weight:700;color:#c9d1d9;">구글시트 저장</div>
+        <div id="cn-step-2-status" style="font-size:12px;color:#484f58;margin-top:2px;">대기중</div>
+      </div>
+      <div id="cn-arrow-2" style="color:#30363d;font-size:20px;text-align:center;">→</div>
+
+      <!-- STEP 3 -->
+      <div id="cn-step-3-block" style="text-align:center;padding:10px 8px;">
+        <div id="cn-step-3-icon" style="width:36px;height:36px;border-radius:50%;background:#21262d;border:2px solid #30363d;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:17px;">3</div>
+        <div style="font-size:13px;font-weight:700;color:#c9d1d9;">이미지 렌더링</div>
+        <div id="cn-step-3-status" style="font-size:12px;color:#484f58;margin-top:2px;">준비중</div>
+      </div>
+      <div id="cn-arrow-3" style="color:#30363d;font-size:20px;text-align:center;">→</div>
+
+      <!-- STEP 4 -->
+      <div id="cn-step-4-block" style="text-align:center;padding:10px 8px;">
+        <div id="cn-step-4-icon" style="width:36px;height:36px;border-radius:50%;background:#21262d;border:2px solid #30363d;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:17px;">4</div>
+        <div style="font-size:13px;font-weight:700;color:#c9d1d9;">배포 준비</div>
+        <div id="cn-step-4-status" style="font-size:12px;color:#484f58;margin-top:2px;">대기중</div>
+      </div>
+
+    </div>
+
+    <!-- 단계별 모드: 다음 단계 버튼 -->
+    <div id="cn-step-next-area" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #21262d;text-align:center;">
+      <button id="cn-step-next-btn" class="btn btn-primary" style="padding:8px 32px;" onclick="runNextPipelineStep()">다음 단계 실행 →</button>
+      <div id="cn-step-next-hint" style="font-size:12px;color:#484f58;margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <!-- ③ 메인 작업 영역 -->
   <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
 
     <!-- 입력 패널 -->
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div class="card">
-        <label class="field-label">주제</label>
-        <textarea class="field-input" id="card-topic" rows="3" placeholder="예: 2026 마케팅 트렌드 TOP 5" style="margin-bottom:10px;"></textarea>
+        <label class="field-label">원고 / 주제</label>
+        <textarea class="field-input" id="card-topic" rows="4" placeholder="예: 2026 마케팅 트렌드 TOP 5&#10;&#10;또는 긴 원고를 붙여넣으면 AI가 요약해서 카드뉴스로 재구성합니다." style="margin-bottom:10px;"></textarea>
 
-        <!-- AI 추천 버튼 -->
-        <button onclick="planCardNews()" style="width:100%;margin-bottom:12px;padding:8px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid #7c3aed50;background:rgba(124,58,237,0.12);color:#a78bfa;transition:all .15s;" onmouseover="this.style.background='rgba(124,58,237,0.2)'" onmouseout="this.style.background='rgba(124,58,237,0.12)'">
-          ✨ AI 장수 추천 받기
+        <!-- AI 장수 추천 -->
+        <button onclick="planCardNews()" style="width:100%;margin-bottom:10px;padding:8px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid #7c3aed50;background:rgba(124,58,237,0.12);color:#a78bfa;transition:all .15s;" onmouseover="this.style.background='rgba(124,58,237,0.2)'" onmouseout="this.style.background='rgba(124,58,237,0.12)'">
+          ✨ AI 장수 추천
         </button>
 
         <!-- AI 추천 결과 -->
-        <div id="card-plan-result" style="display:none;margin-bottom:12px;padding:10px;background:#0d1117;border-radius:8px;border:1px solid #30363d;">
+        <div id="card-plan-result" style="display:none;margin-bottom:10px;padding:10px;background:#0d1117;border-radius:8px;border:1px solid #30363d;">
           <div style="font-size:12px;color:#a78bfa;font-weight:700;margin-bottom:6px;">AI 추천</div>
           <div id="card-plan-count" style="font-size:20px;font-weight:700;color:#f0f6fc;margin-bottom:4px;"></div>
           <div id="card-plan-reason" style="font-size:13px;color:#8b949e;line-height:1.6;margin-bottom:8px;"></div>
@@ -3519,28 +3583,49 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <button onclick="applyCardPlan()" style="margin-top:8px;width:100%;padding:5px;border-radius:6px;font-size:13px;cursor:pointer;border:none;background:#7c3aed30;color:#a78bfa;">이 구성으로 적용</button>
         </div>
 
-        <!-- 슬라이드 수 슬라이더 -->
+        <!-- 슬라이드 수 -->
         <label class="field-label" style="display:flex;justify-content:space-between;">
           <span>슬라이드 수</span>
-          <span id="card-count-display" style="color:#60a5fa;font-weight:700;">5장</span>
+          <span id="card-count-display" style="color:#60a5fa;font-weight:700;">6장</span>
         </label>
-        <input type="range" id="card-slide-count" min="3" max="10" value="5"
+        <input type="range" id="card-slide-count" min="3" max="10" value="6"
           style="width:100%;accent-color:#1f6feb;margin-bottom:6px;"
           oninput="document.getElementById('card-count-display').textContent=this.value+'장'" />
         <div style="display:flex;justify-content:space-between;font-size:12px;color:#484f58;margin-bottom:14px;">
-          <span>3장</span><span>6~7장 (권장)</span><span>10장</span>
+          <span>3장</span><span>6~7장 권장</span><span>10장</span>
         </div>
 
-        <button class="btn btn-primary" style="width:100%;" onclick="generateCardNews()">🃏 카드뉴스 생성</button>
+        <!-- 구글시트 설정 (접힘) -->
+        <div style="border-top:1px solid #21262d;padding-top:12px;margin-bottom:12px;">
+          <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:6px;">
+            <span style="font-size:13px;color:#8b949e;font-weight:600;">📊 구글시트 연동</span>
+            <span style="font-size:12px;color:#484f58;">▾</span>
+          </div>
+          <div style="display:none;">
+            <label class="field-label">Spreadsheet ID</label>
+            <input type="text" id="cn-sheet-id" class="field-input" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" style="font-size:12px;margin-bottom:8px;" />
+            <label class="field-label">Service Account JSON</label>
+            <textarea id="cn-sa-json" class="field-input" rows="3" placeholder='{"type":"service_account","project_id":"..."}' style="font-size:11px;font-family:monospace;"></textarea>
+            <div style="font-size:12px;color:#484f58;margin-top:4px;line-height:1.5;">
+              시트가 없으면 자동 생성됩니다. Service Account에 편집 권한을 부여하세요.
+            </div>
+          </div>
+        </div>
+
+        <!-- 실행 버튼 -->
+        <button id="cn-run-btn" class="btn btn-primary" style="width:100%;padding:10px;" onclick="runCardNewsPipeline()">
+          🚀 카드뉴스 자동화 실행
+        </button>
+        <div id="cn-mode-hint" style="font-size:12px;color:#484f58;text-align:center;margin-top:6px;">실행 방식을 먼저 선택하세요</div>
       </div>
 
-      <!-- 슬라이드 수 가이드 -->
+      <!-- 장수 가이드 -->
       <div class="card" style="font-size:13px;color:#8b949e;line-height:1.8;">
         <div style="font-weight:600;color:#c9d1d9;margin-bottom:6px;">장수별 추천 용도</div>
         <div>3~4장 — 단일 핵심 메시지</div>
         <div>5~6장 — 일반 정보 콘텐츠</div>
-        <div>7~8장 — 튜토리얼/단계 안내</div>
-        <div>9~10장 — 심층 분석/인포그래픽</div>
+        <div>7~8장 — 튜토리얼 / 단계 안내</div>
+        <div>9~10장 — 심층 분석 / 인포그래픽</div>
       </div>
     </div>
 
@@ -3548,27 +3633,39 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
     <div>
       <div id="card-loading" style="display:none;text-align:center;padding:60px;">
         <div style="width:28px;height:28px;border:2px solid #388bfd;border-top-color:transparent;border-radius:50%;display:inline-block;" class="spin"></div>
-        <p style="color:#8b949e;font-size:14px;margin-top:12px;">카드뉴스 생성 중...</p>
+        <p id="card-loading-msg" style="color:#8b949e;font-size:14px;margin-top:12px;">처리 중...</p>
       </div>
+
       <div id="card-empty" style="text-align:center;padding:80px;color:#484f58;">
         <div style="font-size:40px;margin-bottom:12px;">🃏</div>
-        <p>주제를 입력하고 생성 버튼을 눌러주세요.</p>
-        <p style="font-size:13px;margin-top:4px;">AI 장수 추천을 먼저 받으면 더 좋아요!</p>
+        <p style="font-size:15px;">실행 방식을 선택하고 시작하세요.</p>
+        <p style="font-size:13px;margin-top:4px;">AI 장수 추천 → 원고 입력 → 자동화 실행</p>
       </div>
-      <!-- 결과: 헤더 + 그리드 -->
+
+      <!-- 결과 영역 -->
       <div id="card-result-area" style="display:none;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div>
             <span id="card-result-title" style="font-size:16px;font-weight:700;color:#f0f6fc;"></span>
             <span id="card-result-count" style="font-size:13px;color:#8b949e;margin-left:8px;"></span>
           </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;" onclick="addCardSlide()">＋ 슬라이드 추가</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;" onclick="addCardSlide()">＋ 슬라이드</button>
             <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;" onclick="copyCardText()">전체 복사</button>
+            <button id="cn-save-sheet-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;" onclick="saveCardNewsToSheet()">📊 시트에 저장</button>
           </div>
         </div>
+
+        <!-- 시트 저장 결과 배너 -->
+        <div id="cn-sheet-result" style="display:none;padding:10px 14px;background:#238636 18;border:1px solid #23863640;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <span style="font-size:13px;font-weight:600;color:#22c55e;">✅ 구글시트 저장 완료</span>
+            <span id="cn-sheet-rows" style="font-size:13px;color:#8b949e;margin-left:8px;"></span>
+          </div>
+          <a id="cn-sheet-link" href="#" target="_blank" style="font-size:13px;color:#60a5fa;">시트 열기 →</a>
+        </div>
+
         <div id="card-slides-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
-        <!-- 해시태그 & CTA -->
         <div id="card-footer" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
       </div>
     </div>
@@ -8510,6 +8607,293 @@ function renderSNSPageResult(platform, post, cfg) {
   toast(`${cfg.label} 콘텐츠 생성 완료!`, 'green');
   // 드래프트 자동 저장
   saveDraft({ type: platform, platform, title: post.title || document.getElementById(`${platform}-topic`)?.value || `${cfg.label} 콘텐츠`, content: post.body || '' });
+}
+
+// ── 카드뉴스 파이프라인 오케스트레이션 ───────────────────────────
+
+let _cnMode        = null;          // 'auto' | 'step'
+let _cnCurrentStep = 0;             // 현재 진행 단계
+let _cnStepResults = {};            // 단계별 결과 저장
+const _CN_STEPS    = ['generate', 'sheet', 'image', 'deploy'];
+const _CN_STEP_LABELS = {
+  generate: 'AI 문구 생성',
+  sheet:    '구글시트 저장',
+  image:    '이미지 렌더링',
+  deploy:   '배포 준비',
+};
+
+function selectCardNewsMode(mode) {
+  _cnMode = mode;
+  const autoEl = document.getElementById('cn-mode-auto');
+  const stepEl = document.getElementById('cn-mode-step');
+  const runBtn = document.getElementById('cn-run-btn');
+  const hint   = document.getElementById('cn-mode-hint');
+
+  if (mode === 'auto') {
+    autoEl.style.borderColor = '#1f6feb'; autoEl.style.background = '#1f6feb15';
+    stepEl.style.borderColor = '#30363d'; stepEl.style.background = 'transparent';
+    autoEl.querySelector('div:nth-child(2)').style.color = '#60a5fa';
+    stepEl.querySelector('div:nth-child(2)').style.color = '#c9d1d9';
+    runBtn.textContent = '🚀 전체 자동 실행';
+    hint.textContent   = '생성 → 시트 저장을 자동으로 연속 실행합니다';
+  } else {
+    stepEl.style.borderColor = '#1f6feb'; stepEl.style.background = '#1f6feb15';
+    autoEl.style.borderColor = '#30363d'; autoEl.style.background = 'transparent';
+    stepEl.querySelector('div:nth-child(2)').style.color = '#60a5fa';
+    autoEl.querySelector('div:nth-child(2)').style.color = '#c9d1d9';
+    runBtn.textContent = '🔍 STEP 1부터 시작';
+    hint.textContent   = '각 단계 결과 확인 후 직접 다음 단계로 진행합니다';
+  }
+  document.getElementById('cn-pipeline-bar').style.display = '';
+  _resetPipelineUI();
+}
+
+function _resetPipelineUI() {
+  _cnCurrentStep = 0;
+  _cnStepResults = {};
+  for (let i = 1; i <= 4; i++) {
+    _setCnStepState(i, 'idle');
+  }
+  document.getElementById('cn-step-next-area').style.display = 'none';
+}
+
+function _setCnStepState(stepNum, state, extra) {
+  // state: 'idle' | 'running' | 'done' | 'error' | 'skip'
+  const icon   = document.getElementById(`cn-step-${stepNum}-icon`);
+  const status = document.getElementById(`cn-step-${stepNum}-status`);
+  const arrow  = document.getElementById(`cn-arrow-${stepNum}`);
+  if (!icon) return;
+
+  const cfg = {
+    idle:    { bg:'#21262d', border:'#30363d', color:'#8b949e', label:'대기중',  emoji: String(stepNum) },
+    running: { bg:'#1f6feb20', border:'#1f6feb', color:'#60a5fa', label:'실행중…', emoji:'⏳' },
+    done:    { bg:'#23863620', border:'#238636', color:'#22c55e', label:'완료',   emoji:'✅' },
+    error:   { bg:'#da363320', border:'#da3633', color:'#f87171', label:'오류',   emoji:'❌' },
+    skip:    { bg:'#21262d', border:'#484f58',  color:'#484f58', label:'건너뜀',  emoji:'—'  },
+  }[state] || {};
+
+  icon.style.background   = cfg.bg;
+  icon.style.borderColor  = cfg.border;
+  icon.style.color        = cfg.color;
+  icon.textContent        = cfg.emoji;
+  status.style.color      = cfg.color;
+  status.textContent      = extra || cfg.label;
+  if (arrow) arrow.style.color = state === 'done' ? '#238636' : '#30363d';
+}
+
+async function runCardNewsPipeline() {
+  if (!_cnMode) { toast('실행 방식을 먼저 선택하세요.', 'orange'); return; }
+  const topic = document.getElementById('card-topic').value.trim();
+  if (!topic)  { toast('원고 또는 주제를 입력하세요.', 'orange'); return; }
+
+  _resetPipelineUI();
+  document.getElementById('cn-step-next-area').style.display = 'none';
+  document.getElementById('card-empty').style.display   = 'none';
+  document.getElementById('card-result-area').style.display = 'none';
+
+  if (_cnMode === 'auto') {
+    await _runPipelineAuto(topic);
+  } else {
+    await _runPipelineStep(topic, 'generate');
+  }
+}
+
+async function _runPipelineAuto(topic) {
+  const slideCount = parseInt(document.getElementById('card-slide-count').value) || 6;
+  const sheetId    = document.getElementById('cn-sheet-id').value.trim();
+  const saJson     = document.getElementById('cn-sa-json').value.trim();
+  const steps      = sheetId && saJson ? ['generate','sheet'] : ['generate'];
+
+  _showCnLoading('파이프라인 자동 실행 중...');
+  _setCnStepState(1, 'running');
+
+  try {
+    const res  = await fetch(`${API}/cardnews/pipeline`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic, slide_count: slideCount,
+        api_keys: getKeys(), agency_profile: agencyProfile,
+        spreadsheet_id: sheetId, service_account_json: saJson,
+        steps,
+      })
+    });
+    const data = await res.json();
+    _cnStepResults = data;
+
+    // STEP 1 결과
+    const gen = data.step_generate;
+    if (gen?.status === 'done') {
+      _setCnStepState(1, 'done', `${gen.slide_count}장`);
+      renderCardSlides({ slides: gen.slides, hashtags: gen.hashtags, cta: gen.cta, hook_title: gen.hook_title, topic });
+    } else {
+      _setCnStepState(1, 'error', gen?.error?.slice(0, 30));
+    }
+
+    // STEP 2 결과
+    const sheet = data.step_sheet;
+    if (!sheet) {
+      _setCnStepState(2, 'skip', '시트 설정 없음');
+    } else if (sheet.status === 'done') {
+      _setCnStepState(2, 'done', `${sheet.saved_rows}행 저장`);
+      _showSheetResult(sheet);
+    } else if (sheet.status === 'skipped') {
+      _setCnStepState(2, 'skip', '설정 없음');
+    } else {
+      _setCnStepState(2, 'error', sheet.error?.slice(0, 30));
+    }
+
+    // STEP 3, 4 — 준비중
+    _setCnStepState(3, 'skip', '준비중');
+    _setCnStepState(4, 'skip', '대기중');
+
+    _hideCnLoading();
+
+    // 결과 저장
+    if (gen?.status === 'done') {
+      const cardText = (gen.slides || []).map((s,i) => `[${i+1}] ${s.title}\n${s.body}`).join('\n\n');
+      saveDraft({ type:'cardnews', platform:'cardnews', title: gen.hook_title || topic, content: cardText });
+      toast('✅ 자동화 완료!', 'green');
+    }
+  } catch(e) {
+    _hideCnLoading();
+    _setCnStepState(1, 'error');
+    toast('파이프라인 오류: ' + e.message, 'red');
+  }
+}
+
+async function _runPipelineStep(topic, stepKey) {
+  _cnCurrentStep = _CN_STEPS.indexOf(stepKey) + 1;
+  const stepNum  = _cnCurrentStep;
+  const slideCount = parseInt(document.getElementById('card-slide-count').value) || 6;
+  const sheetId    = document.getElementById('cn-sheet-id').value.trim();
+  const saJson     = document.getElementById('cn-sa-json').value.trim();
+
+  _setCnStepState(stepNum, 'running');
+  document.getElementById('cn-step-next-area').style.display = 'none';
+
+  if (stepKey === 'generate') {
+    _showCnLoading('STEP 1: AI 문구 생성 중...');
+    try {
+      const res  = await fetch(`${API}/cardnews/pipeline`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic, slide_count: slideCount,
+          api_keys: getKeys(), agency_profile: agencyProfile,
+          steps: ['generate'],
+        })
+      });
+      const data = await res.json();
+      _cnStepResults = { ...(_cnStepResults || {}), ...data };
+      const gen = data.step_generate;
+
+      if (gen?.status === 'done') {
+        _setCnStepState(1, 'done', `${gen.slide_count}장 생성`);
+        renderCardSlides({ slides: gen.slides, hashtags: gen.hashtags, cta: gen.cta, hook_title: gen.hook_title, topic });
+        _hideCnLoading();
+        _showStepNextBtn('sheet', 'STEP 2: 구글시트에 저장', topic);
+      } else {
+        _setCnStepState(1, 'error', gen?.error?.slice(0, 30));
+        _hideCnLoading();
+        toast('STEP 1 실패: ' + (gen?.error || '알 수 없는 오류'), 'red');
+      }
+    } catch(e) {
+      _setCnStepState(1, 'error');
+      _hideCnLoading();
+      toast('STEP 1 오류: ' + e.message, 'red');
+    }
+
+  } else if (stepKey === 'sheet') {
+    if (!sheetId || !saJson) {
+      _setCnStepState(2, 'skip', '설정 없음');
+      toast('구글시트 설정(Spreadsheet ID, Service Account JSON)을 입력하세요.', 'orange');
+      _showStepNextBtn('image', 'STEP 3: 이미지 렌더링 (준비중)', topic);
+      return;
+    }
+    _showCnLoading('STEP 2: 구글시트 저장 중...');
+    const gen = _cnStepResults?.step_generate;
+    try {
+      const res  = await fetch(`${API}/cardnews/save-to-sheet`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          slides: gen?.slides || [],
+          hashtags: gen?.hashtags || [],
+          cta: gen?.cta || '',
+          topic,
+          spreadsheet_id: sheetId,
+          service_account_json: saJson,
+        })
+      });
+      const data = await res.json();
+      _cnStepResults.step_sheet = data;
+      _setCnStepState(2, 'done', `${data.saved_rows}행 저장`);
+      _showSheetResult(data);
+      _hideCnLoading();
+      _showStepNextBtn('image', 'STEP 3: 이미지 렌더링 (준비중)', topic);
+      toast('✅ 구글시트 저장 완료!', 'green');
+    } catch(e) {
+      _setCnStepState(2, 'error');
+      _hideCnLoading();
+      toast('STEP 2 오류: ' + e.message, 'red');
+    }
+
+  } else if (stepKey === 'image') {
+    _setCnStepState(3, 'skip', '준비중 (Phase 2)');
+    toast('이미지 렌더링은 다음 단계에서 구현됩니다.', 'orange');
+    _showStepNextBtn('deploy', 'STEP 4: 배포 준비', topic);
+
+  } else if (stepKey === 'deploy') {
+    _setCnStepState(4, 'skip', '준비중');
+    toast('배포 연동은 이미지 렌더링 이후 구현됩니다.', 'orange');
+    document.getElementById('cn-step-next-area').style.display = 'none';
+  }
+}
+
+function _showStepNextBtn(nextStep, label, topic) {
+  const area = document.getElementById('cn-step-next-area');
+  const btn  = document.getElementById('cn-step-next-btn');
+  const hint = document.getElementById('cn-step-next-hint');
+  area.style.display  = '';
+  btn.textContent     = `▶ ${label}`;
+  btn.dataset.nextstep = nextStep;
+  btn.dataset.topic    = topic;
+  hint.textContent    = '결과를 확인한 후 다음 단계를 실행하세요.';
+}
+
+function runNextPipelineStep() {
+  const btn   = document.getElementById('cn-step-next-btn');
+  const next  = btn.dataset.nextstep;
+  const topic = btn.dataset.topic;
+  if (next) _runPipelineStep(topic, next);
+}
+
+function _showCnLoading(msg) {
+  document.getElementById('card-loading').style.display = '';
+  const m = document.getElementById('card-loading-msg');
+  if (m) m.textContent = msg || '처리 중...';
+}
+
+function _hideCnLoading() {
+  document.getElementById('card-loading').style.display = 'none';
+}
+
+function _showSheetResult(data) {
+  const banner = document.getElementById('cn-sheet-result');
+  const rows   = document.getElementById('cn-sheet-rows');
+  const link   = document.getElementById('cn-sheet-link');
+  if (!banner) return;
+  banner.style.display = 'flex';
+  if (rows) rows.textContent = `${data.saved_rows}행 저장됨`;
+  if (link) { link.href = data.sheet_url; link.textContent = '구글시트 열기 →'; }
+}
+
+async function saveCardNewsToSheet() {
+  const topic  = document.getElementById('card-topic').value.trim();
+  const sheetId = document.getElementById('cn-sheet-id').value.trim();
+  const saJson  = document.getElementById('cn-sa-json').value.trim();
+  if (!sheetId || !saJson) { toast('구글시트 ID와 Service Account JSON을 입력하세요.', 'orange'); return; }
+  const gen = _cnStepResults?.step_generate;
+  if (!gen) { toast('먼저 카드뉴스를 생성하세요.', 'orange'); return; }
+  await _runPipelineStep(topic, 'sheet');
 }
 
 // ── 카드뉴스 AI 장수 추천 ─────────────────────────────────────
