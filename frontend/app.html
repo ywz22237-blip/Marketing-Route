@@ -707,6 +707,19 @@
         <input type="password" class="key-input" id="key-serp" placeholder="..." oninput="onKeyChange(this,'serp_api_key')" />
         <p style="font-size:12px;color:#484f58;margin:4px 0 0;">가입 시 100회 무료 · 이후 $50/월</p>
       </div>
+      <div class="key-group">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div>
+            <label class="field-label">imgbb API Key <span style="font-weight:400;color:#484f58;">— Instagram 이미지 호스팅</span></label>
+            <div style="display:flex;gap:4px;margin-bottom:6px;">
+              <span style="font-size:11px;padding:1px 6px;border-radius:3px;background:#e65c0020;color:#f97316;">인스타그램</span>
+            </div>
+          </div>
+          <a href="https://api.imgbb.com/" target="_blank" style="font-size:12px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
+        </div>
+        <input type="password" class="key-input" id="key-imgbb" placeholder="..." oninput="onKeyChange(this,'imgbb_api_key')" />
+        <p style="font-size:12px;color:#484f58;margin:4px 0 0;">무료 · Instagram 포스팅 시 이미지 공개 URL 변환용</p>
+      </div>
     </div>
   </div>
 
@@ -720,42 +733,6 @@
     <!-- 채널별 연결 현황 -->
     <div id="plt-status-overview" style="margin-bottom:24px;"></div>
 
-    <!-- Make.com 웹훅 -->
-    <div style="margin-bottom:24px;">
-      <h3 style="font-size:13px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #21262d;">🔗 Make.com 웹훅 URL <span style="font-size:12px;color:#484f58;font-weight:400;text-transform:none;letter-spacing:0;">— 자동배포에 사용 · 월 1,000회 무료</span></h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div>
-          <label class="field-label" style="display:flex;align-items:center;gap:6px;">
-            <span class="tag plat-linkedin" style="font-size:11px;padding:1px 6px;">링크드인</span> LinkedIn 웹훅
-          </label>
-          <input type="text" class="key-input" id="key-wh-linkedin" placeholder="https://hook.eu1.make.com/..." oninput="onKeyChange(this,'make_webhook_linkedin')" />
-        </div>
-        <div>
-          <label class="field-label" style="display:flex;align-items:center;gap:6px;">
-            <span class="tag plat-instagram" style="font-size:11px;padding:1px 6px;">인스타</span> Instagram 웹훅
-          </label>
-          <input type="text" class="key-input" id="key-wh-instagram" placeholder="https://hook.eu1.make.com/..." oninput="onKeyChange(this,'make_webhook_instagram')" />
-        </div>
-        <div>
-          <label class="field-label" style="display:flex;align-items:center;gap:6px;">
-            <span class="tag" style="font-size:11px;padding:1px 6px;background:#1877f220;color:#60a5fa;border:1px solid #1877f240;">페이스북</span> Facebook 웹훅
-          </label>
-          <input type="text" class="key-input" id="key-wh-facebook" placeholder="https://hook.eu1.make.com/..." oninput="onKeyChange(this,'make_webhook_facebook')" />
-        </div>
-        <div>
-          <label class="field-label" style="display:flex;align-items:center;gap:6px;">
-            <span class="tag plat-youtube" style="font-size:11px;padding:1px 6px;">유튜브</span> YouTube 웹훅
-          </label>
-          <input type="text" class="key-input" id="key-wh-youtube" placeholder="https://hook.eu1.make.com/..." oninput="onKeyChange(this,'make_webhook_youtube')" />
-        </div>
-        <div>
-          <label class="field-label" style="display:flex;align-items:center;gap:6px;">
-            <span class="tag" style="font-size:11px;padding:1px 6px;background:#21759b20;color:#60a5fa;border:1px solid #21759b40;">워드프레스</span> WordPress 웹훅
-          </label>
-          <input type="text" class="key-input" id="key-wh-wordpress" placeholder="https://hook.eu1.make.com/..." oninput="onKeyChange(this,'make_webhook_wordpress')" />
-        </div>
-      </div>
-    </div>
 
     <!-- 블로그 플랫폼 -->
     <div style="margin-bottom:24px;">
@@ -842,6 +819,8 @@
             <div><label class="field-label">App ID</label><input type="text" class="key-input" id="plt-meta-app-id" placeholder="..." oninput="onPlatformKeyChange('meta','app_id',this.value)" /></div>
             <div><label class="field-label">App Secret</label><input type="password" class="key-input" id="plt-meta-app-secret" placeholder="..." oninput="onPlatformKeyChange('meta','app_secret',this.value)" /></div>
             <div><label class="field-label">Page Access Token</label><input type="password" class="key-input" id="plt-meta-access-token" placeholder="EAAxxxxx..." oninput="onPlatformKeyChange('meta','access_token',this.value)" /></div>
+            <div><label class="field-label">Facebook Page ID</label><input type="text" class="key-input" id="plt-meta-page-id" placeholder="숫자 페이지 ID" oninput="onPlatformKeyChange('meta','page_id',this.value)" /></div>
+            <div><label class="field-label">Instagram Account ID</label><input type="text" class="key-input" id="plt-meta-ig-account-id" placeholder="IG 비즈니스 계정 숫자 ID" oninput="onPlatformKeyChange('meta','ig_account_id',this.value)" /></div>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
             <button class="api-test-btn" style="flex:1;" onclick="testPlatform('meta')">연결 테스트</button>
@@ -6202,19 +6181,27 @@ function renderCurrentStatus() {
   const k = getKeys();
 
   const has = key => !!(k[key] && k[key].trim());
-  const hasAnyWebhook = ['make_webhook_linkedin','make_webhook_instagram','make_webhook_facebook','make_webhook_youtube','make_webhook_wordpress'].some(has);
+  const plt = loadPlatformConnections();
+  const hasPlt = (fn) => { try { return !!fn(plt); } catch { return false; } };
+  const hasAnyDeploy = [
+    () => plt.linkedin?.access_token,
+    () => plt.meta?.access_token && plt.meta?.page_id,
+    () => plt.meta?.access_token && plt.meta?.ig_account_id,
+    () => plt.threads?.access_token,
+    () => plt.wordpress?.app_password,
+  ].some(hasPlt);
 
   // 채널별 배포 가능 여부
   const channels = [
-    { label:'티스토리',    key:'make_webhook_wordpress',  always: has('gemini_api_key') },
-    { label:'워드프레스',  key:'make_webhook_wordpress',  always: has('gemini_api_key') },
-    { label:'네이버블로그',key:'make_webhook_wordpress',  always: has('gemini_api_key') },
-    { label:'링크드인',    key:'make_webhook_linkedin',   always: has('gemini_api_key') },
-    { label:'쓰레드',      key:'make_webhook_linkedin',   always: has('gemini_api_key') },
-    { label:'인스타그램',  key:'make_webhook_instagram',  always: has('gemini_api_key') },
-    { label:'페이스북',    key:'make_webhook_facebook',   always: has('gemini_api_key') },
-    { label:'유튜브',      key:'make_webhook_youtube',    always: has('groq_api_key')   },
-    { label:'틱톡',        key:'make_webhook_youtube',    always: has('groq_api_key')   },
+    { label:'티스토리',    pltFn: p => p.wordpress?.app_password, always: has('gemini_api_key') },
+    { label:'워드프레스',  pltFn: p => p.wordpress?.app_password, always: has('gemini_api_key') },
+    { label:'네이버블로그',pltFn: p => p.naver?.client_id,        always: has('gemini_api_key') },
+    { label:'링크드인',    pltFn: p => p.linkedin?.access_token,  always: has('gemini_api_key') },
+    { label:'쓰레드',      pltFn: p => p.threads?.access_token,   always: has('gemini_api_key') },
+    { label:'인스타그램',  pltFn: p => p.meta?.access_token && p.meta?.ig_account_id, always: has('gemini_api_key') },
+    { label:'페이스북',    pltFn: p => p.meta?.access_token && p.meta?.page_id,       always: has('gemini_api_key') },
+    { label:'유튜브',      pltFn: p => p.youtube?.client_id,      always: has('groq_api_key')   },
+    { label:'틱톡',        pltFn: p => p.tiktok?.access_token,    always: has('groq_api_key')   },
   ];
 
   // 기능별 가능 여부
@@ -6227,16 +6214,16 @@ function renderCurrentStatus() {
     { label:'대본 생성',      ok: has('groq_api_key') },
     { label:'음성 (TTS)',      ok: has('google_tts_api_key') },
     { label:'고품질 이미지',  ok: has('hf_api_token') },
-    { label:'자동배포',       ok: hasAnyWebhook },
+    { label:'자동배포',       ok: hasAnyDeploy },
     { label:'트렌드 분석',    ok: has('data_go_kr_key') },
     { label:'실시간 구글트렌드', ok: has('serp_api_key') },
   ];
 
   const chBadge = (ch) => {
-    const webhook = has(ch.key);
-    if (webhook) return `<span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#23863615;color:#4ade80;border:1px solid #23863630;" title="Make.com 웹훅 연결됨 — 자동배포 가능">🚀 ${ch.label}</span>`;
-    if (ch.always) return `<span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#1f6feb15;color:#60a5fa;border:1px solid #1f6feb30;" title="콘텐츠 생성 가능 — 웹훅 미설정 (수동배포)">✍️ ${ch.label}</span>`;
-    return `<span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#21262d;color:#484f58;border:1px solid #30363d;" title="API 키 미설정">✗ ${ch.label}</span>`;
+    const connected = hasPlt(ch.pltFn);
+    if (connected) return `<span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#23863615;color:#4ade80;border:1px solid #23863630;" title="직접 API 연결됨 — 자동배포 가능">🚀 ${ch.label}</span>`;
+    if (ch.always) return `<span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#1f6feb15;color:#60a5fa;border:1px solid #1f6feb30;" title="콘텐츠 생성 가능 — API 미연결 (수동배포)">✍️ ${ch.label}</span>`;
+    return `<span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#21262d;color:#484f58;border:1px solid #30363d;" title="API 미설정">✗ ${ch.label}</span>`;
   };
 
   const ftBadge = (f) => f.ok
@@ -6265,11 +6252,7 @@ const KEY_FIELD_MAP = {
   'hf_api_token':          'key-hf',
   'data_go_kr_key':        'key-datagokr',
   'serp_api_key':          'key-serp',
-  'make_webhook_linkedin': 'key-wh-linkedin',
-  'make_webhook_instagram': 'key-wh-instagram',
-  'make_webhook_facebook':  'key-wh-facebook',
-  'make_webhook_youtube':   'key-wh-youtube',
-  'make_webhook_wordpress': 'key-wh-wordpress',
+  'imgbb_api_key':         'key-imgbb',
 };
 
 function getKeys() {
@@ -6306,15 +6289,15 @@ const PLT_STORE = 'osmu_platform_connections';
 
 // 채널별 연결 현황 카드
 const _PLT_CHANNELS = [
-  { id:'tistory',   label:'티스토리',    icon:'assets/icons/tistory.svg',    webhookKey:'make_webhook_wordpress', pltKeys:['tistory'],   team:'팀원1', deprecated:true },
-  { id:'wordpress', label:'WordPress',   icon:'assets/icons/wordpress.svg',  webhookKey:'make_webhook_wordpress', pltKeys:['wordpress'], team:'팀원1' },
-  { id:'naver',     label:'네이버블로그',icon:'assets/icons/naver-blog.svg', webhookKey:'make_webhook_wordpress', pltKeys:['naver'],     team:'팀원1', deprecated:true },
-  { id:'linkedin',  label:'LinkedIn',    icon:'assets/icons/linkedin.svg',   webhookKey:'make_webhook_linkedin',  pltKeys:['linkedin'],  team:'팀원2' },
-  { id:'threads',   label:'Threads',     icon:'assets/icons/threads.svg',    webhookKey:'make_webhook_linkedin',  pltKeys:['threads'],   team:'팀원2' },
-  { id:'instagram', label:'Instagram',   icon:'assets/icons/instagram.svg',  webhookKey:'make_webhook_instagram', pltKeys:['meta'],      team:'팀원3' },
-  { id:'facebook',  label:'Facebook',    icon:'assets/icons/facebook.svg',   webhookKey:'make_webhook_facebook',  pltKeys:['meta'],      team:'팀원3' },
-  { id:'youtube',   label:'YouTube',     icon:'assets/icons/youtube.svg',    webhookKey:'make_webhook_youtube',   pltKeys:['youtube'],   team:'팀원4' },
-  { id:'tiktok',    label:'TikTok',      icon:'assets/icons/tiktok.svg',     webhookKey:'make_webhook_youtube',   pltKeys:['tiktok'],    team:'팀원4' },
+  { id:'tistory',   label:'티스토리',    icon:'assets/icons/tistory.svg',    pltKeys:['tistory'],   team:'팀원1', deprecated:true },
+  { id:'wordpress', label:'WordPress',   icon:'assets/icons/wordpress.svg',  pltKeys:['wordpress'], team:'팀원1' },
+  { id:'naver',     label:'네이버블로그',icon:'assets/icons/naver-blog.svg', pltKeys:['naver'],     team:'팀원1', deprecated:true },
+  { id:'linkedin',  label:'LinkedIn',    icon:'assets/icons/linkedin.svg',   pltKeys:['linkedin'],  team:'팀원2' },
+  { id:'threads',   label:'Threads',     icon:'assets/icons/threads.svg',    pltKeys:['threads'],   team:'팀원2' },
+  { id:'instagram', label:'Instagram',   icon:'assets/icons/instagram.svg',  pltKeys:['meta'],      team:'팀원3' },
+  { id:'facebook',  label:'Facebook',    icon:'assets/icons/facebook.svg',   pltKeys:['meta'],      team:'팀원3' },
+  { id:'youtube',   label:'YouTube',     icon:'assets/icons/youtube.svg',    pltKeys:['youtube'],   team:'팀원4' },
+  { id:'tiktok',    label:'TikTok',      icon:'assets/icons/tiktok.svg',     pltKeys:['tiktok'],    team:'팀원4' },
 ];
 
 function renderPlatformStatus() {
@@ -6323,22 +6306,24 @@ function renderPlatformStatus() {
   const keys = getKeys();
   const plt  = loadPlatformConnections();
 
-  const hasWebhook = wk => !!(keys[wk] && keys[wk].trim());
   const hasPlatform = ids => ids.some(id => {
     const p = plt[id] || {};
     return Object.values(p).some(v => v && v.toString().trim());
   });
+  const canDeploy = ch => {
+    const checker = _PLT_KEY_CHECK[ch.id];
+    try { return !!(checker && checker(plt)); } catch { return false; }
+  };
 
   const cards = _PLT_CHANNELS.map(ch => {
-    const wh  = hasWebhook(ch.webhookKey);
-    const api = hasPlatform(ch.pltKeys);
+    const api     = hasPlatform(ch.pltKeys);
+    const deploy  = canDeploy(ch);
 
     let statusLabel, statusBg, statusColor, statusBorder;
-    if (ch.deprecated)   { statusLabel='서비스종료'; statusBg='#f8717115'; statusColor='#f87171'; statusBorder='#f8717140'; }
-    else if (wh && api)       { statusLabel='완전연결'; statusBg='#23863615'; statusColor='#4ade80'; statusBorder='#23863640'; }
-    else if (wh && !api) { statusLabel='웹훅만';   statusBg='#1f6feb15'; statusColor='#60a5fa'; statusBorder='#1f6feb40'; }
-    else if (!wh && api) { statusLabel='API만';    statusBg='#f59e0b15'; statusColor='#fbbf24'; statusBorder='#f59e0b40'; }
-    else                 { statusLabel='미연결';   statusBg='#21262d';   statusColor='#484f58'; statusBorder='#30363d';   }
+    if (ch.deprecated)  { statusLabel='서비스종료'; statusBg='#f8717115'; statusColor='#f87171'; statusBorder='#f8717140'; }
+    else if (deploy)    { statusLabel='배포가능';  statusBg='#23863615'; statusColor='#4ade80'; statusBorder='#23863640'; }
+    else if (api)       { statusLabel='부분연결';  statusBg='#f59e0b15'; statusColor='#fbbf24'; statusBorder='#f59e0b40'; }
+    else                { statusLabel='미연결';   statusBg='#21262d';   statusColor='#484f58'; statusBorder='#30363d';   }
 
     const dot = (ok, label) => `<span style="display:flex;align-items:center;gap:4px;font-size:12px;color:${ok?'#8b949e':'#484f58'};">
       <span style="width:6px;height:6px;border-radius:50%;background:${ok?'#4ade80':'#30363d'};flex-shrink:0;"></span>${label}
@@ -6356,8 +6341,8 @@ function renderPlatformStatus() {
         <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${statusBg};color:${statusColor};border:1px solid ${statusBorder};font-weight:600;white-space:nowrap;">${statusLabel}</span>
       </div>
       <div style="display:flex;gap:12px;">
-        ${dot(wh,  '웹훅')}
-        ${dot(api, 'API키')}
+        ${dot(api,    'API키')}
+        ${dot(deploy, '배포준비')}
       </div>
     </div>`;
   });
@@ -6366,9 +6351,8 @@ function renderPlatformStatus() {
     <p style="font-size:12px;color:#8b949e;margin:0 0 10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">채널별 연결 현황</p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">${cards.join('')}</div>
     <div style="display:flex;gap:16px;margin-top:8px;">
-      <span style="font-size:12px;color:#4ade80;">● 완전연결</span>
-      <span style="font-size:12px;color:#60a5fa;">● 웹훅만</span>
-      <span style="font-size:12px;color:#fbbf24;">● API만</span>
+      <span style="font-size:12px;color:#4ade80;">● 배포가능</span>
+      <span style="font-size:12px;color:#fbbf24;">● 부분연결</span>
       <span style="font-size:12px;color:#484f58;">● 미연결</span>
       <span style="font-size:12px;color:#f87171;">● 서비스종료</span>
     </div>`;
@@ -6716,7 +6700,7 @@ function initPlatformConnectionsUI() {
     naver:     [['client-id','client_id'],['client-secret','client_secret']],
     tistory:   [['access-token','access_token'],['blog-name','blog_name']],
     wordpress: [['site-url','site_url'],['username','username'],['app-password','app_password']],
-    meta:      [['app-id','app_id'],['app-secret','app_secret'],['access-token','access_token']],
+    meta:      [['app-id','app_id'],['app-secret','app_secret'],['access-token','access_token'],['page-id','page_id'],['ig-account-id','ig_account_id']],
     linkedin:  [['client-id','client_id'],['client-secret','client_secret'],['access-token','access_token']],
     threads:   [['access-token','access_token'],['user-id','user_id']],
     youtube:   [['client-id','client_id'],['client-secret','client_secret'],['channel-id','channel_id']],
@@ -11304,33 +11288,20 @@ function _dpFormat(d, platform) {
   return `${title}\n\n${content}`.trim();
 }
 
-// ── 배포 메서드 판별 (webhook → platform key → manual) ────────
-const _WH_KEY_MAP = {
-  linkedin:  'make_webhook_linkedin',
-  threads:   'make_webhook_linkedin',
-  instagram: 'make_webhook_instagram',
-  youtube:   'make_webhook_youtube',
-  tiktok:    'make_webhook_youtube',
-  facebook:  'make_webhook_facebook',
-  naver:     'make_webhook_wordpress',
-  tistory:   'make_webhook_wordpress',
-  wordpress: 'make_webhook_wordpress',
-};
+// ── 배포 메서드 판별 (platform key → manual) ────────
 const _PLT_KEY_CHECK = {
   linkedin:  p => p.linkedin?.access_token,
-  threads:   p => p.threads?.access_token,
-  instagram: p => p.meta?.access_token,
+  threads:   p => p.threads?.access_token && p.threads?.user_id,
+  instagram: p => p.meta?.access_token && p.meta?.ig_account_id,
+  facebook:  p => p.meta?.access_token && p.meta?.page_id,
   youtube:   p => p.youtube?.client_id,
   tiktok:    p => p.tiktok?.access_token,
   naver:     p => p.naver?.client_id,
   tistory:   p => p.tistory?.access_token,
-  wordpress: p => p.wordpress?.app_password,
+  wordpress: p => p.wordpress?.app_password && p.wordpress?.site_url,
 };
 
 function _dpGetMethod(platform) {
-  const keys = getKeys();
-  const whKey = _WH_KEY_MAP[platform];
-  if (whKey && keys[whKey]) return { method: 'webhook', url: keys[whKey] };
   const plt = loadPlatformConnections();
   const checker = _PLT_KEY_CHECK[platform];
   if (checker && checker(plt)) return { method: 'api', platform };
@@ -11350,30 +11321,56 @@ async function dpAutoSend(draftId, platform, taId) {
   if (btn) { btn.disabled = true; btn.textContent = '전송 중…'; }
 
   try {
-    if (m.method === 'webhook') {
-      const res = await fetch(m.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          platform, content,
-          title: d?.title || '',
-          tags:  d?.tags  || [],
-          draft_id: draftId,
-          sent_at: new Date().toISOString(),
-        }),
+    if (m.method === 'api') {
+      const plt  = loadPlatformConnections();
+      const keys = getKeys();
+      let endpoint = '';
+      let body = {};
+
+      if (platform === 'linkedin') {
+        endpoint = `${API}/publish/linkedin`;
+        body = { access_token: plt.linkedin.access_token, content, title: d?.title || '' };
+      } else if (platform === 'facebook') {
+        endpoint = `${API}/publish/facebook`;
+        body = { page_access_token: plt.meta.access_token, page_id: plt.meta.page_id, content, title: d?.title || '' };
+      } else if (platform === 'threads') {
+        endpoint = `${API}/publish/threads`;
+        body = { access_token: plt.threads.access_token, user_id: plt.threads.user_id, content };
+      } else if (platform === 'instagram') {
+        endpoint = `${API}/publish/instagram`;
+        const images = Array.isArray(d?.images) ? d.images : [];
+        body = { access_token: plt.meta.access_token, ig_account_id: plt.meta.ig_account_id,
+                 caption: content, image_b64_list: images, imgbb_api_key: keys.imgbb_api_key || '' };
+      } else if (platform === 'wordpress' || platform === 'tistory' || platform === 'naver') {
+        endpoint = `${API}/publish/wordpress`;
+        body = { site_url: plt.wordpress.site_url, username: plt.wordpress.username,
+                 app_password: plt.wordpress.app_password, title: d?.title || '', content };
+      } else {
+        dpCopy(taId);
+        if (btn) { btn.disabled = false; btn.textContent = '🔗 API 배포'; }
+        toast('이 플랫폼은 아직 직접 배포를 지원하지 않습니다. 콘텐츠를 복사했습니다.', 'orange');
+        return;
+      }
+
+      const res = await fetch(endpoint, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      const result = await res.json();
       dpMarkDone(draftId, platform);
-      if (btn) { btn.textContent = '✅ 전송 완료'; btn.style.background = '#238636'; }
+      if (btn) { btn.textContent = '✅ 배포 완료'; btn.style.background = '#238636'; }
+      toast(`✅ ${platform} 배포 완료!${result.post_url ? ' → ' + result.post_url : ''}`, 'green');
     } else {
-      // API direct — 현재 백엔드 구현 전, 복사 fallback
       dpCopy(taId);
-      if (btn) { btn.disabled = false; btn.textContent = '🔗 API 배포'; }
-      alert('직접 API 배포는 준비 중입니다. 콘텐츠가 복사되었습니다.');
+      if (btn) { btn.disabled = false; btn.textContent = '✓ 배포 완료'; }
     }
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = '❌ 재시도'; btn.style.background = '#da3633'; }
-    alert('웹훅 전송 실패: ' + e.message);
+    toast('배포 실패: ' + e.message, 'red');
   }
 }
 

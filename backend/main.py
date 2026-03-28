@@ -1376,6 +1376,280 @@ JSON 형식으로만 반환:
 }
 
 
+# ── 카드뉴스 이미지 렌더러 ───────────────────────────────────────────────────
+
+_FONT_DIR = os.path.join(os.path.dirname(__file__), "assets", "fonts")
+
+_CN_THEMES = {
+    "dark": {
+        "bg":       (13,  17,  23),
+        "header_bg":(21,  27,  34),
+        "title":    (240, 246, 252),
+        "body":     (201, 209, 217),
+        "brand":    (139, 148, 158),
+        "badge_fg": (240, 246, 252),
+    },
+    "light": {
+        "bg":       (255, 255, 255),
+        "header_bg":(241, 245, 249),
+        "title":    (15,  23,  42),
+        "body":     (51,  65,  85),
+        "brand":    (100, 116, 139),
+        "badge_fg": (15,  23,  42),
+    },
+    "vivid": {      # brand_color 배경
+        "bg":       None,
+        "header_bg":None,
+        "title":    (255, 255, 255),
+        "body":     (230, 230, 230),
+        "brand":    (210, 210, 210),
+        "badge_fg": (255, 255, 255),
+    },
+    "gradient": {   # brand_color → 어두운 그라디언트
+        "bg":       None,
+        "header_bg":None,
+        "title":    (255, 255, 255),
+        "body":     (230, 230, 230),
+        "brand":    (210, 210, 210),
+        "badge_fg": (255, 255, 255),
+    },
+}
+
+_CN_DIMS = {
+    "1:1":  (1080, 1080),
+    "4:5":  (1080, 1350),
+    "9:16": (1080, 1920),
+}
+
+
+def _cn_font(size: int, bold: bool = False):
+    from PIL import ImageFont
+    suffix  = "-Bold" if bold else "-Regular"
+    bundled = os.path.join(_FONT_DIR, f"NanumGothic{suffix}.ttf")
+    win_map = {True: "C:/Windows/Fonts/malgunbd.ttf", False: "C:/Windows/Fonts/malgun.ttf"}
+    linux   = f"/usr/share/fonts/truetype/nanum/NanumGothic{'Bold' if bold else ''}.ttf"
+    for path in [bundled, win_map[bold], linux]:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except Exception:
+                pass
+    return ImageFont.load_default()
+
+
+def _hex_to_rgb(hex_color: str) -> tuple:
+    h = hex_color.lstrip("#")
+    if len(h) != 6:
+        return (31, 111, 235)
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+
+def _darken(rgb: tuple, factor: float = 0.6) -> tuple:
+    return tuple(max(0, int(c * factor)) for c in rgb)
+
+
+def _lighten(rgb: tuple, factor: float = 0.2) -> tuple:
+    return tuple(min(255, int(c + (255 - c) * factor)) for c in rgb)
+
+
+def _draw_gradient_bg(img, color_top: tuple, color_bottom: tuple):
+    from PIL import ImageDraw
+    W, H = img.size
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        t  = y / H
+        r  = int(color_top[0] + (color_bottom[0] - color_top[0]) * t)
+        g  = int(color_top[1] + (color_bottom[1] - color_top[1]) * t)
+        b  = int(color_top[2] + (color_bottom[2] - color_top[2]) * t)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+
+def _wrap_text_px(text: str, font, max_width: int, draw) -> list:
+    """픽셀 너비 기준 자동 줄바꿈 (한글 포함)"""
+    lines, current = [], ""
+    for char in text:
+        test = current + char
+        w    = draw.textbbox((0, 0), test, font=font)[2]
+        if w > max_width and current:
+            lines.append(current)
+            current = char
+        else:
+            current = test
+    if current:
+        lines.append(current)
+    return lines
+
+
+def _render_single_slide(slide: dict, design: dict, slide_total: int,
+                          hashtags: list, cta: str) -> bytes:
+    from PIL import Image, ImageDraw
+    import io
+
+    ratio      = design.get("ratio", "1:1")
+    theme_name = design.get("theme", "dark")
+    brand_hex  = design.get("brand_color", "#1f6feb")
+    brand_name = design.get("brand_name", "")
+    W, H       = _CN_DIMS.get(ratio, (1080, 1080))
+    brand_rgb  = _hex_to_rgb(brand_hex)
+    theme      = _CN_THEMES.get(theme_name, _CN_THEMES["dark"])
+
+    is_cta  = slide.get("is_cta", False) or slide.get("type") == "cta"
+    idx     = slide.get("index", 1)
+    title   = slide.get("title", "")
+    body    = slide.get("body", "")
+
+    PAD = int(W * 0.072)   # 좌우 여백 72px (1080 기준)
+
+    # ── 배경 ────────────────────────────────────────────────
+    if is_cta:
+        img  = Image.new("RGB", (W, H), brand_rgb)
+        draw = ImageDraw.Draw(img)
+    elif theme_name == "gradient":
+        img  = Image.new("RGB", (W, H))
+        _draw_gradient_bg(img, brand_rgb, _darken(brand_rgb, 0.35))
+        draw = ImageDraw.Draw(img)
+    elif theme_name == "vivid":
+        img  = Image.new("RGB", (W, H), brand_rgb)
+        draw = ImageDraw.Draw(img)
+    else:
+        img  = Image.new("RGB", (W, H), theme["bg"])
+        draw = ImageDraw.Draw(img)
+
+    tc   = theme["title"]
+    bc   = theme["body"]
+    brdc = theme["brand"]
+    bgc  = theme["badge_fg"]
+
+    # ── 헤더바 (상단) ────────────────────────────────────────
+    HEADER_H = int(H * 0.075)
+    if not is_cta:
+        header_bg = theme.get("header_bg") or _darken(brand_rgb, 0.55)
+        draw.rectangle([(0, 0), (W, HEADER_H)], fill=header_bg)
+        f_brand = _cn_font(int(H * 0.026), bold=False)
+        bname   = brand_name or ""
+        if bname:
+            draw.text((PAD, HEADER_H // 2), bname,
+                      font=f_brand, fill=brdc, anchor="lm")
+        # 슬라이드 번호 (우상단)
+        badge_txt = f"{idx:02d} / {slide_total:02d}"
+        draw.text((W - PAD, HEADER_H // 2), badge_txt,
+                  font=f_brand, fill=bgc, anchor="rm")
+
+    # ── 브랜드 컬러 강조선 ────────────────────────────────────
+    if not is_cta:
+        bar_y = HEADER_H + int(H * 0.06)
+        draw.rectangle([(PAD, bar_y), (PAD + int(W * 0.08), bar_y + int(H * 0.006))],
+                       fill=brand_rgb)
+
+    # ── 제목 ─────────────────────────────────────────────────
+    if is_cta:
+        # CTA: 중앙 정렬
+        f_title  = _cn_font(int(H * 0.056), bold=True)
+        f_body   = _cn_font(int(H * 0.034), bold=False)
+        f_hash   = _cn_font(int(H * 0.028), bold=False)
+        f_brand2 = _cn_font(int(H * 0.026), bold=False)
+        cta_text = cta or title or "저장하고 팔로우하세요!"
+        lines_c  = _wrap_text_px(cta_text, f_title, W - PAD * 2, draw)
+        total_h  = len(lines_c) * int(H * 0.07)
+        y_start  = (H - total_h) // 2 - int(H * 0.06)
+        for line in lines_c:
+            draw.text((W // 2, y_start), line, font=f_title,
+                      fill=(255, 255, 255), anchor="mm")
+            y_start += int(H * 0.07)
+        # 해시태그
+        if hashtags:
+            ht_text  = "  ".join(hashtags[:6])
+            ht_lines = _wrap_text_px(ht_text, f_hash, W - PAD * 2, draw)
+            hy = y_start + int(H * 0.04)
+            for line in ht_lines:
+                draw.text((W // 2, hy), line, font=f_hash,
+                          fill=(230, 230, 230), anchor="mm")
+                hy += int(H * 0.04)
+        # 브랜드
+        if brand_name:
+            draw.text((W // 2, H - int(H * 0.08)), brand_name,
+                      font=f_brand2, fill=(200, 200, 200), anchor="mm")
+    else:
+        title_y  = HEADER_H + int(H * 0.1)
+        f_title  = _cn_font(int(H * 0.048), bold=True)
+        f_body   = _cn_font(int(H * 0.032), bold=False)
+        LINE_H_T = int(H * 0.062)
+        LINE_H_B = int(H * 0.044)
+        # 제목 줄바꿈
+        t_lines = _wrap_text_px(title, f_title, W - PAD * 2, draw)
+        y = title_y
+        for line in t_lines[:3]:
+            draw.text((PAD, y), line, font=f_title, fill=tc)
+            y += LINE_H_T
+
+        # 본문
+        y += int(H * 0.03)
+        b_lines = _wrap_text_px(body, f_body, W - PAD * 2, draw)
+        for line in b_lines[:7]:
+            draw.text((PAD, y), line, font=f_body, fill=bc)
+            y += LINE_H_B
+
+    # ── 하단 인디케이터 (점) ────────────────────────────────────
+    if not is_cta and slide_total > 1:
+        DOT_R  = int(W * 0.007)
+        DOT_SP = int(W * 0.022)
+        dot_y  = H - int(H * 0.045)
+        total_w = slide_total * DOT_SP
+        x_start = (W - total_w) // 2
+        for i in range(slide_total):
+            cx = x_start + i * DOT_SP + DOT_SP // 2
+            color = brand_rgb if (i + 1 == idx) else _darken(brand_rgb, 0.4)
+            r     = DOT_R + 1 if (i + 1 == idx) else DOT_R
+            draw.ellipse([(cx - r, dot_y - r), (cx + r, dot_y + r)], fill=color)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
+@app.post("/cardnews/render-images")
+async def cardnews_render_images(body: dict):
+    """
+    카드뉴스 슬라이드 → PNG 이미지 일괄 렌더링
+    body: { slides, hashtags, cta, design: {ratio, theme, brand_color, brand_name} }
+    """
+    import asyncio, base64
+
+    slides   = body.get("slides", [])
+    hashtags = body.get("hashtags", [])
+    cta      = body.get("cta", "")
+    design   = body.get("design", {})
+
+    if not slides:
+        raise HTTPException(status_code=400, detail="slides가 비어있습니다.")
+
+    total = len(slides)
+
+    def render_one(slide):
+        raw = _render_single_slide(slide, design, total, hashtags, cta)
+        return {
+            "index":     slide.get("index", 0),
+            "image_b64": base64.b64encode(raw).decode(),
+            "width":     _CN_DIMS.get(design.get("ratio","1:1"), (1080,1080))[0],
+            "height":    _CN_DIMS.get(design.get("ratio","1:1"), (1080,1080))[1],
+        }
+
+    loop    = asyncio.get_event_loop()
+    results = await asyncio.gather(*[
+        loop.run_in_executor(None, render_one, s) for s in slides
+    ])
+
+    W, H = _CN_DIMS.get(design.get("ratio","1:1"), (1080,1080))
+    return {
+        "images": list(results),
+        "total":  total,
+        "ratio":  design.get("ratio", "1:1"),
+        "theme":  design.get("theme", "dark"),
+        "width":  W,
+        "height": H,
+    }
+
+
 # ── 카드뉴스 파이프라인 ──────────────────────────────────────────────────────
 
 def _sheets_service(service_account_json: str):
@@ -1566,9 +1840,30 @@ async def cardnews_pipeline(body: dict):
                 result["step_sheet"] = {"status": "error", "error": str(e)}
                 result["steps_failed"].append("sheet")
 
-    # ── STEP 3: 이미지 렌더링 (Phase 2 — 추후 구현) ───────────────
-    if "image" in steps:
-        result["step_image"] = {"status": "pending", "message": "이미지 렌더링은 Phase 2에서 구현됩니다."}
+    # ── STEP 3: 이미지 렌더링 ─────────────────────────────────────
+    if "image" in steps and result["step_generate"] and result["step_generate"].get("status") == "done":
+        try:
+            gen    = result["step_generate"]
+            design = body.get("design", {})
+            render_result = await cardnews_render_images({
+                "slides":   gen["slides"],
+                "hashtags": gen["hashtags"],
+                "cta":      gen["cta"],
+                "design":   design,
+            })
+            result["step_image"] = {
+                "status": "done",
+                "images": render_result["images"],
+                "total":  render_result["total"],
+                "ratio":  render_result["ratio"],
+                "theme":  render_result["theme"],
+            }
+            result["steps_done"].append("image")
+
+            # 구글시트 이미지 컬럼 업데이트 (시트 저장 완료된 경우 건너뜀 — URL 없이 base64만)
+        except Exception as e:
+            result["step_image"] = {"status": "error", "error": str(e)}
+            result["steps_failed"].append("image")
 
     return result
 
@@ -3173,3 +3468,182 @@ async def agency_sampling_analyze(body: dict):
         "total_crawled": sum(1 for r in url_results if r["status"] != "error"),
         "total_urls":   len(url_results),
     }
+
+
+# ── 소셜 직접 배포 ────────────────────────────────────────────────
+
+import base64 as _b64lib
+
+class _PublishLinkedInReq(BaseModel):
+    access_token: str
+    content: str
+    title: str = ""
+
+class _PublishFacebookReq(BaseModel):
+    page_access_token: str
+    page_id: str
+    content: str
+    title: str = ""
+    link: str = ""
+
+class _PublishThreadsReq(BaseModel):
+    access_token: str
+    user_id: str
+    content: str
+
+class _PublishInstagramReq(BaseModel):
+    access_token: str
+    ig_account_id: str
+    caption: str
+    image_urls: list[str] = []
+    image_b64_list: list[str] = []
+    imgbb_api_key: str = ""
+
+class _PublishWordPressReq(BaseModel):
+    site_url: str
+    username: str
+    app_password: str
+    title: str
+    content: str
+    status: str = "publish"
+
+
+async def _imgbb_upload(b64: str, api_key: str) -> str:
+    import httpx as _hx
+    async with _hx.AsyncClient(timeout=30) as c:
+        r = await c.post("https://api.imgbb.com/1/upload",
+                         data={"key": api_key, "image": b64})
+        if r.status_code != 200:
+            raise ValueError(f"imgbb 업로드 실패: {r.text[:200]}")
+        return r.json()["data"]["url"]
+
+
+@app.post("/publish/linkedin")
+async def publish_linkedin(body: _PublishLinkedInReq):
+    import httpx as _hx
+    token = body.access_token
+    async with _hx.AsyncClient(timeout=15) as c:
+        ru = await c.get("https://api.linkedin.com/v2/userinfo",
+                         headers={"Authorization": f"Bearer {token}"})
+        if ru.status_code != 200:
+            raise HTTPException(400, f"LinkedIn 토큰 오류: {ru.text[:200]}")
+        author_urn = ru.json().get("sub", "")
+        if not author_urn:
+            raise HTTPException(400, "LinkedIn 사용자 ID 조회 실패")
+
+        text = f"{body.title}\n\n{body.content}".strip() if body.title else body.content
+        payload = {
+            "author": author_urn,
+            "lifecycleState": "PUBLISHED",
+            "specificContent": {
+                "com.linkedin.ugc.ShareContent": {
+                    "shareCommentary": {"text": text},
+                    "shareMediaCategory": "NONE"
+                }
+            },
+            "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
+        }
+        rp = await c.post("https://api.linkedin.com/v2/ugcPosts",
+                          json=payload,
+                          headers={
+                              "Authorization": f"Bearer {token}",
+                              "Content-Type": "application/json",
+                              "X-Restli-Protocol-Version": "2.0.0"
+                          })
+        if rp.status_code not in (200, 201):
+            raise HTTPException(rp.status_code, f"LinkedIn 포스팅 실패: {rp.text[:300]}")
+        post_id = rp.headers.get("x-restli-id") or rp.json().get("id", "")
+        return {"status": "done", "post_id": post_id, "platform": "linkedin"}
+
+
+@app.post("/publish/facebook")
+async def publish_facebook(body: _PublishFacebookReq):
+    import httpx as _hx
+    text = f"{body.title}\n\n{body.content}".strip() if body.title else body.content
+    payload: dict = {"message": text, "access_token": body.page_access_token}
+    if body.link:
+        payload["link"] = body.link
+    async with _hx.AsyncClient(timeout=15) as c:
+        r = await c.post(f"https://graph.facebook.com/v19.0/{body.page_id}/feed",
+                         data=payload)
+        if r.status_code != 200:
+            raise HTTPException(r.status_code, f"Facebook 포스팅 실패: {r.text[:300]}")
+        return {"status": "done", "post_id": r.json().get("id", ""), "platform": "facebook"}
+
+
+@app.post("/publish/threads")
+async def publish_threads(body: _PublishThreadsReq):
+    import httpx as _hx
+    token, uid = body.access_token, body.user_id
+    async with _hx.AsyncClient(timeout=15) as c:
+        r1 = await c.post(f"https://graph.threads.net/v1.0/{uid}/threads",
+                          data={"media_type": "TEXT", "text": body.content, "access_token": token})
+        if r1.status_code != 200:
+            raise HTTPException(r1.status_code, f"Threads 미디어 생성 실패: {r1.text[:300]}")
+        creation_id = r1.json().get("id")
+        r2 = await c.post(f"https://graph.threads.net/v1.0/{uid}/threads_publish",
+                          data={"creation_id": creation_id, "access_token": token})
+        if r2.status_code != 200:
+            raise HTTPException(r2.status_code, f"Threads 발행 실패: {r2.text[:300]}")
+        return {"status": "done", "post_id": r2.json().get("id", ""), "platform": "threads"}
+
+
+@app.post("/publish/instagram")
+async def publish_instagram(body: _PublishInstagramReq):
+    import httpx as _hx
+    token, ig_id = body.access_token, body.ig_account_id
+    image_urls = list(body.image_urls)
+    if body.image_b64_list and body.imgbb_api_key:
+        for b64 in body.image_b64_list:
+            url = await _imgbb_upload(b64, body.imgbb_api_key)
+            image_urls.append(url)
+    if not image_urls:
+        raise HTTPException(400, "Instagram 포스팅에는 이미지가 필요합니다")
+
+    async with _hx.AsyncClient(timeout=60) as c:
+        if len(image_urls) == 1:
+            r = await c.post(f"https://graph.facebook.com/v19.0/{ig_id}/media",
+                             data={"image_url": image_urls[0], "caption": body.caption,
+                                   "access_token": token})
+            if r.status_code != 200:
+                raise HTTPException(r.status_code, f"Instagram 미디어 생성 실패: {r.text[:300]}")
+            creation_id = r.json().get("id")
+        else:
+            item_ids = []
+            for url in image_urls[:10]:
+                ri = await c.post(f"https://graph.facebook.com/v19.0/{ig_id}/media",
+                                  data={"image_url": url, "is_carousel_item": "true",
+                                        "access_token": token})
+                if ri.status_code == 200:
+                    item_ids.append(ri.json().get("id"))
+            if not item_ids:
+                raise HTTPException(500, "carousel 아이템 생성 실패")
+            rc = await c.post(f"https://graph.facebook.com/v19.0/{ig_id}/media",
+                              data={"media_type": "CAROUSEL", "caption": body.caption,
+                                    "children": ",".join(item_ids), "access_token": token})
+            if rc.status_code != 200:
+                raise HTTPException(rc.status_code, f"Carousel 컨테이너 생성 실패: {rc.text[:300]}")
+            creation_id = rc.json().get("id")
+
+        rp = await c.post(f"https://graph.facebook.com/v19.0/{ig_id}/media_publish",
+                          data={"creation_id": creation_id, "access_token": token})
+        if rp.status_code != 200:
+            raise HTTPException(rp.status_code, f"Instagram 발행 실패: {rp.text[:300]}")
+        return {"status": "done", "post_id": rp.json().get("id", ""), "platform": "instagram"}
+
+
+@app.post("/publish/wordpress")
+async def publish_wordpress(body: _PublishWordPressReq):
+    import httpx as _hx
+    site = body.site_url.rstrip("/")
+    creds = _b64lib.b64encode(f"{body.username}:{body.app_password}".encode()).decode()
+    async with _hx.AsyncClient(timeout=15) as c:
+        r = await c.post(f"{site}/wp-json/wp/v2/posts",
+                         json={"title": body.title, "content": body.content, "status": body.status},
+                         headers={"Authorization": f"Basic {creds}",
+                                  "Content-Type": "application/json"})
+        if r.status_code not in (200, 201):
+            raise HTTPException(r.status_code, f"WordPress 포스팅 실패: {r.text[:300]}")
+        d = r.json()
+        return {"status": "done", "post_id": str(d.get("id", "")),
+                "post_url": d.get("link", ""), "platform": "wordpress"}
