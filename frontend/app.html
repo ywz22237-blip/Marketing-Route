@@ -121,6 +121,8 @@
     .review-card { background:#21262d;border:1px solid #30363d;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s; }
     .review-card:hover { border-color:#388bfd; }
     .review-card.selected { border-color:#388bfd;background:#1f6feb10; }
+    .rv-chip { background:#21262d;border:1px solid #30363d;border-radius:20px;color:#8b949e;font-size:12px;padding:3px 10px;cursor:pointer;transition:all .15s;font-family:inherit; }
+    .rv-chip:hover { border-color:#388bfd;color:#388bfd;background:#1f6feb10; }
     .review-status-draft    { font-size:12px;padding:2px 8px;border-radius:20px;background:#8b949e20;color:#8b949e;border:1px solid #8b949e30; }
     .review-status-approved { font-size:12px;padding:2px 8px;border-radius:20px;background:#22c55e20;color:#4ade80;border:1px solid #22c55e30; }
     .cross-link-row { display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;background:#161b22;border:1px solid #30363d;margin-bottom:6px; }
@@ -5275,32 +5277,92 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
             <button onclick="deleteCurrentDraft()" class="btn btn-ghost" style="font-size:13px;padding:5px 10px;">🗑 삭제</button>
           </div>
         </div>
-        <!-- 제목 -->
-        <div class="card" style="margin-bottom:10px;">
-          <label class="field-label">제목</label>
-          <input type="text" class="field-input" id="rv-title" style="margin-bottom:0;" oninput="updateDraftField('title', this.value)" />
+
+        <!-- 탭 -->
+        <div style="display:flex;gap:2px;margin-bottom:14px;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:3px;">
+          <button id="rvtab2-edit" onclick="switchReviewDetailTab('edit')"
+            style="flex:1;padding:7px 4px;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:#1f6feb;color:#fff;transition:all .15s;">
+            ✏️ 검수
+          </button>
+          <button id="rvtab2-replan" onclick="switchReviewDetailTab('replan')"
+            style="flex:1;padding:7px 4px;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:#484f58;transition:all .15s;">
+            🔄 기획 다시 해보자
+          </button>
         </div>
-        <!-- 본문 -->
-        <div class="card" style="margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <label class="field-label" style="margin:0;">본문</label>
-            <button onclick="copyEl('rv-content')" style="font-size:12px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#8b949e;">📋 복사</button>
+
+        <!-- ── 검수 탭 ── -->
+        <div id="rvpanel2-edit">
+          <!-- 제목 -->
+          <div class="card" style="margin-bottom:10px;">
+            <label class="field-label">제목</label>
+            <input type="text" class="field-input" id="rv-title" style="margin-bottom:0;" oninput="updateDraftField('title', this.value)" />
           </div>
-          <textarea class="field-input" id="rv-content" rows="12" style="font-size:14px;line-height:1.7;" oninput="updateDraftField('content', this.value)"></textarea>
+          <!-- 본문 -->
+          <div class="card" style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <label class="field-label" style="margin:0;">본문</label>
+              <div style="display:flex;gap:6px;">
+                <button onclick="rvTempSave()" style="font-size:12px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#8b949e;">💾 임시저장</button>
+                <button onclick="copyEl('rv-content')" style="font-size:12px;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#8b949e;">📋 복사</button>
+              </div>
+            </div>
+            <textarea class="field-input" id="rv-content" rows="12" style="font-size:14px;line-height:1.7;" oninput="updateDraftField('content', this.value)"></textarea>
+          </div>
+          <!-- 크로스 링크 -->
+          <div class="card" style="margin-bottom:10px;">
+            <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">🔗 크로스 링크 삽입</div>
+            <p style="font-size:13px;color:#484f58;margin:0 0 10px;">체크하면 본문 하단에 해당 플랫폼 링크가 자동 추가됩니다.</p>
+            <div id="rv-cross-links"></div>
+            <button onclick="applyCrossLinks()" class="btn btn-ghost" style="font-size:13px;width:100%;margin-top:8px;">🔗 링크 본문에 적용</button>
+          </div>
+          <!-- 메모 -->
+          <div class="card">
+            <label class="field-label">메모</label>
+            <textarea class="field-input" id="rv-memo" rows="2" placeholder="검수 메모, 수정사항 등" oninput="updateDraftField('memo', this.value)"></textarea>
+            <div style="font-size:12px;color:#484f58;margin-top:6px;" id="rv-created-at"></div>
+          </div>
         </div>
-        <!-- 크로스 링크 -->
-        <div class="card" style="margin-bottom:10px;">
-          <div style="font-size:14px;font-weight:700;color:#f0f6fc;margin-bottom:4px;">🔗 크로스 링크 삽입</div>
-          <p style="font-size:13px;color:#484f58;margin:0 0 10px;">체크하면 본문 하단에 해당 플랫폼 링크가 자동 추가됩니다.</p>
-          <div id="rv-cross-links"></div>
-          <button onclick="applyCrossLinks()" class="btn btn-ghost" style="font-size:13px;width:100%;margin-top:8px;">🔗 링크 본문에 적용</button>
+
+        <!-- ── 기획 다시 해보자 탭 ── -->
+        <div id="rvpanel2-replan" style="display:none;">
+          <!-- 현재 본문 미리보기 -->
+          <div class="card" style="margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:600;color:#8b949e;margin-bottom:6px;">📄 현재 본문 (요약)</div>
+            <div id="rv-replan-preview" style="font-size:13px;color:#484f58;line-height:1.6;background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:10px;max-height:80px;overflow:hidden;"></div>
+          </div>
+          <!-- 빠른 지시 칩 -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            <span style="font-size:12px;color:#484f58;align-self:center;">빠른 지시:</span>
+            <button onclick="rvAddChip('더 짧고 간결하게')"         class="rv-chip">더 짧게</button>
+            <button onclick="rvAddChip('더 전문적이고 격식 있게')"  class="rv-chip">전문적으로</button>
+            <button onclick="rvAddChip('더 캐주얼하고 친근하게')"   class="rv-chip">캐주얼하게</button>
+            <button onclick="rvAddChip('핵심 키워드를 더 강조해서')" class="rv-chip">키워드 강조</button>
+            <button onclick="rvAddChip('마지막에 강력한 CTA를 추가해서')" class="rv-chip">CTA 추가</button>
+            <button onclick="rvAddChip('해시태그를 최적화해서')"    class="rv-chip">해시태그</button>
+          </div>
+          <!-- 수정 지시 입력 -->
+          <div class="card" style="margin-bottom:12px;">
+            <label class="field-label">수정 지시사항</label>
+            <textarea class="field-input" id="rv-replan-instruction" rows="4"
+              placeholder="예: 도입부를 질문으로 시작하고, 전체 톤을 더 캐주얼하게 바꿔줘. 해시태그는 5개로 줄여줘."></textarea>
+          </div>
+          <!-- 재작성 버튼 -->
+          <button id="rv-replan-btn" onclick="rvReplan()" class="btn btn-primary" style="width:100%;font-size:14px;padding:10px;">
+            🔄 AI 재작성
+          </button>
+          <!-- 결과 -->
+          <div id="rv-replan-result" style="display:none;margin-top:14px;">
+            <div class="card" style="margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div style="font-size:14px;font-weight:700;color:#3fb950;">✨ 재작성 결과</div>
+                <button onclick="rvApplyReplan()" class="btn btn-success" style="font-size:13px;padding:4px 12px;">검수 탭에 적용</button>
+              </div>
+              <textarea id="rv-replan-output" rows="12" readonly
+                style="width:100%;background:#0d1117;border:1px solid #21262d;border-radius:8px;color:#c9d1d9;padding:12px;font-size:14px;line-height:1.7;font-family:inherit;resize:vertical;"></textarea>
+            </div>
+          </div>
         </div>
-        <!-- 메모 -->
-        <div class="card">
-          <label class="field-label">메모</label>
-          <textarea class="field-input" id="rv-memo" rows="2" placeholder="검수 메모, 수정사항 등" oninput="updateDraftField('memo', this.value)"></textarea>
-          <div style="font-size:12px;color:#484f58;margin-top:6px;" id="rv-created-at"></div>
-        </div>
+
       </div>
     </div>
   </div>
@@ -10626,6 +10688,102 @@ function confirmAddDraft() {
   closeAddDraftModal();
   renderReviewList();
   toast('콘텐츠 등록 완료', 'green');
+}
+
+// ── 검수 상세 탭 전환 ─────────────────────────────
+function switchReviewDetailTab(tab) {
+  const tabs = ['edit', 'replan'];
+  tabs.forEach(t => {
+    const btn   = document.getElementById(`rvtab2-${t}`);
+    const panel = document.getElementById(`rvpanel2-${t}`);
+    const active = t === tab;
+    if (btn)   { btn.style.background = active ? '#1f6feb' : 'transparent'; btn.style.color = active ? '#fff' : '#484f58'; }
+    if (panel) { panel.style.display  = active ? '' : 'none'; }
+  });
+  // 기획 탭 진입 시 미리보기 업데이트
+  if (tab === 'replan') _rvUpdateReplanPreview();
+}
+
+function _rvUpdateReplanPreview() {
+  const ta      = document.getElementById('rv-content');
+  const preview = document.getElementById('rv-replan-preview');
+  if (!ta || !preview) return;
+  const text = ta.value.replace(/<[^>]*>/g, '').trim();
+  preview.textContent = text.slice(0, 200) + (text.length > 200 ? '…' : '');
+}
+
+// ── 임시저장 ──────────────────────────────────────
+function rvTempSave() {
+  if (!_currentDraftId) return;
+  const list = getDrafts();
+  const d = list.find(x => x.id === _currentDraftId);
+  if (d) {
+    d.title   = document.getElementById('rv-title').value;
+    d.content = document.getElementById('rv-content').value;
+    d.memo    = document.getElementById('rv-memo').value;
+    saveDrafts(list);
+  }
+  toast('💾 임시저장 완료', 'green');
+}
+
+// ── 빠른 지시 칩 ─────────────────────────────────
+function rvAddChip(text) {
+  const ta = document.getElementById('rv-replan-instruction');
+  if (!ta) return;
+  ta.value = ta.value ? ta.value.trimEnd() + ' ' + text : text;
+  ta.focus();
+}
+
+// ── AI 재작성 ─────────────────────────────────────
+async function rvReplan() {
+  if (!_currentDraftId) return;
+  const instruction = (document.getElementById('rv-replan-instruction')?.value || '').trim();
+  if (!instruction) { toast('수정 지시사항을 입력하세요', 'orange'); return; }
+
+  const d = getDrafts().find(x => x.id === _currentDraftId);
+  if (!d) return;
+
+  const btn = document.getElementById('rv-replan-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 재작성 중…'; }
+  document.getElementById('rv-replan-result').style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/seo/edit-source`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_document: d.content || '',
+        instruction,
+        api_keys: getKeys(),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const result = data.revised_content || data.content || '';
+    document.getElementById('rv-replan-output').value = result;
+    document.getElementById('rv-replan-result').style.display = '';
+    toast('✨ 재작성 완료!', 'green');
+  } catch(e) {
+    toast('재작성 실패: ' + e.message, 'red');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 AI 재작성'; }
+  }
+}
+
+// ── 재작성 결과 검수 탭에 적용 ───────────────────
+function rvApplyReplan() {
+  const output = document.getElementById('rv-replan-output')?.value || '';
+  if (!output) return;
+  const contentTa = document.getElementById('rv-content');
+  if (contentTa) {
+    contentTa.value = output;
+    updateDraftField('content', output);
+  }
+  switchReviewDetailTab('edit');
+  toast('✅ 검수 탭에 적용됐습니다', 'green');
 }
 
 // ══════════════════════════════════════════════════
