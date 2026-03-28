@@ -1376,44 +1376,12 @@ JSON 형식으로만 반환:
 }
 
 
-# ── 카드뉴스 이미지 렌더러 ───────────────────────────────────────────────────
+# ── 카드뉴스 이미지 렌더러 (Playwright HTML→PNG) ────────────────────────────
+
+import base64 as _b64m
+from pathlib import Path as _FPath
 
 _FONT_DIR = os.path.join(os.path.dirname(__file__), "assets", "fonts")
-
-_CN_THEMES = {
-    "dark": {
-        "bg":       (13,  17,  23),
-        "header_bg":(21,  27,  34),
-        "title":    (240, 246, 252),
-        "body":     (201, 209, 217),
-        "brand":    (139, 148, 158),
-        "badge_fg": (240, 246, 252),
-    },
-    "light": {
-        "bg":       (255, 255, 255),
-        "header_bg":(241, 245, 249),
-        "title":    (15,  23,  42),
-        "body":     (51,  65,  85),
-        "brand":    (100, 116, 139),
-        "badge_fg": (15,  23,  42),
-    },
-    "vivid": {      # brand_color 배경
-        "bg":       None,
-        "header_bg":None,
-        "title":    (255, 255, 255),
-        "body":     (230, 230, 230),
-        "brand":    (210, 210, 210),
-        "badge_fg": (255, 255, 255),
-    },
-    "gradient": {   # brand_color → 어두운 그라디언트
-        "bg":       None,
-        "header_bg":None,
-        "title":    (255, 255, 255),
-        "body":     (230, 230, 230),
-        "brand":    (210, 210, 210),
-        "badge_fg": (255, 255, 255),
-    },
-}
 
 _CN_DIMS = {
     "1:1":  (1080, 1080),
@@ -1421,200 +1389,248 @@ _CN_DIMS = {
     "9:16": (1080, 1920),
 }
 
+# ── 폰트 캐시 (base64) ───────────────────────────────────────────────────────
+_CN_FONT_CACHE: dict = {}
 
-def _cn_font(size: int, bold: bool = False):
-    from PIL import ImageFont
-    suffix  = "-Bold" if bold else "-Regular"
-    bundled = os.path.join(_FONT_DIR, f"NanumGothic{suffix}.ttf")
-    win_map = {True: "C:/Windows/Fonts/malgunbd.ttf", False: "C:/Windows/Fonts/malgun.ttf"}
-    linux   = f"/usr/share/fonts/truetype/nanum/NanumGothic{'Bold' if bold else ''}.ttf"
-    for path in [bundled, win_map[bold], linux]:
-        if os.path.exists(path):
+def _get_cn_fonts() -> dict:
+    """NanumGothic TTF → base64 (최초 1회만 읽어 캐시)"""
+    if _CN_FONT_CACHE:
+        return _CN_FONT_CACHE
+    fdir = _FPath(__file__).parent / "assets" / "fonts"
+    for key, fname in [("r", "NanumGothic-Regular.ttf"), ("b", "NanumGothic-Bold.ttf")]:
+        try:
+            _CN_FONT_CACHE[key] = _b64m.b64encode((fdir / fname).read_bytes()).decode()
+        except Exception:
+            _CN_FONT_CACHE[key] = ""
+    return _CN_FONT_CACHE
+
+
+def _hex_darken(h: str, factor: float = 0.38) -> str:
+    """hex 색상을 factor 만큼 어둡게"""
+    h = h.lstrip("#")
+    if len(h) != 6:
+        return "#0d1117"
+    r = max(0, int(int(h[0:2], 16) * (1 - factor)))
+    g = max(0, int(int(h[2:4], 16) * (1 - factor)))
+    b = max(0, int(int(h[4:6], 16) * (1 - factor)))
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def _cn_slide_html(slide: dict, design: dict, slide_total: int,
+                   hashtags: list, cta: str) -> str:
+    """슬라이드 1장 → HTML 문자열 (Playwright로 PNG 캡처용)"""
+    fonts    = _get_cn_fonts()
+    ratio    = design.get("ratio", "1:1")
+    theme    = design.get("theme", "dark")
+    brand    = design.get("brand_color", "#1f6feb")
+    bname    = design.get("brand_name", "")
+    W, H     = _CN_DIMS.get(ratio, (1080, 1080))
+    is_cta   = slide.get("is_cta", False) or slide.get("type") == "cta"
+    idx      = slide.get("index", 1)
+    brand_dk = _hex_darken(brand)
+
+    def esc(s: str) -> str:
+        return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    title_e = esc(slide.get("title", ""))
+    body_e  = esc(slide.get("body",  ""))
+
+    # ── 폰트 CSS ─────────────────────────────────────────────
+    fc = ""
+    if fonts.get("r"):
+        fc += (f"@font-face{{font-family:'NG';"
+               f"src:url('data:font/truetype;base64,{fonts['r']}') format('truetype');"
+               f"font-weight:400;}}")
+    if fonts.get("b"):
+        fc += (f"@font-face{{font-family:'NG';"
+               f"src:url('data:font/truetype;base64,{fonts['b']}') format('truetype');"
+               f"font-weight:700;}}")
+
+    # ── 테마 설정 ─────────────────────────────────────────────
+    T = {
+        "dark":     {"bg": f"background-color:#0f1117",
+                     "hbg": "#161928",
+                     "tc": "#ffffff", "bc": "rgba(255,255,255,.82)",
+                     "xc": "rgba(255,255,255,.5)", "dc": "rgba(255,255,255,.28)"},
+        "light":    {"bg": "background-color:#f4f6fb",
+                     "hbg": "#ffffff",
+                     "tc": "#1a1a2e", "bc": "#4a4a6a",
+                     "xc": "#999999", "dc": "rgba(0,0,0,.18)"},
+        "vivid":    {"bg": f"background-color:{brand}",
+                     "hbg": "rgba(0,0,0,.2)",
+                     "tc": "#ffffff", "bc": "rgba(255,255,255,.9)",
+                     "xc": "rgba(255,255,255,.7)", "dc": "rgba(255,255,255,.35)"},
+        "gradient": {"bg": f"background:linear-gradient(145deg,{brand},{brand_dk})",
+                     "hbg": "rgba(0,0,0,.12)",
+                     "tc": "#ffffff", "bc": "rgba(255,255,255,.88)",
+                     "xc": "rgba(255,255,255,.65)", "dc": "rgba(255,255,255,.32)"},
+    }
+    t = T.get(theme, T["dark"])
+
+    pad  = int(W * 0.07)
+    hh   = int(H * 0.072)   # header height
+
+    # ── CTA 슬라이드 ──────────────────────────────────────────
+    if is_cta:
+        cta_e  = esc(cta or slide.get("title", "") or "저장하고 팔로우하세요!")
+        tags   = "  ".join(hashtags[:6]) if hashtags else ""
+        tags_h = (f'<div style="margin-top:{int(H*.028)}px;font-size:{int(H*.026)}px;'
+                  f'color:rgba(255,255,255,.72);word-break:break-word;">{esc(tags)}</div>'
+                  ) if tags else ""
+        bname_h = (f'<div style="position:absolute;bottom:{int(H*.06)}px;width:100%;'
+                   f'text-align:center;font-size:{int(H*.022)}px;'
+                   f'color:rgba(255,255,255,.5);">{esc(bname)}</div>'
+                   ) if bname else ""
+        c1 = int(W * .65); c2 = int(W * .48)
+        content = f"""
+<div style="position:absolute;inset:0;
+     background:linear-gradient(145deg,{brand},{brand_dk});overflow:hidden;">
+  <div style="position:absolute;top:-{int(H*.18)}px;right:-{int(W*.15)}px;
+       width:{c1}px;height:{c1}px;border-radius:50%;
+       background:rgba(255,255,255,.07);"></div>
+  <div style="position:absolute;bottom:-{int(H*.12)}px;left:-{int(W*.12)}px;
+       width:{c2}px;height:{c2}px;border-radius:50%;
+       background:rgba(255,255,255,.05);"></div>
+  <div style="position:absolute;top:50%;left:50%;
+       transform:translate(-50%,-55%);width:{int(W*.86)}px;text-align:center;">
+    <div style="font-family:'NG',sans-serif;font-weight:700;
+         font-size:{int(H*.052)}px;color:#fff;line-height:1.42;">{cta_e}</div>
+    {tags_h}
+  </div>
+  {bname_h}
+</div>"""
+
+    # ── 일반 슬라이드 (커버 포함) ────────────────────────────
+    else:
+        # 본문 HTML: 줄별로 파싱
+        body_parts = []
+        for line in slide.get("body", "").split("\n"):
+            l = line.strip()
+            if not l:
+                continue
+            if l.startswith("• ") or l.startswith("- "):
+                inner = esc(l[2:])
+                body_parts.append(
+                    f'<div style="display:flex;gap:10px;margin-bottom:{int(H*.01)}px;">'
+                    f'<span style="color:{brand};flex-shrink:0;margin-top:2px;">•</span>'
+                    f'<span>{inner}</span></div>')
+            else:
+                body_parts.append(
+                    f'<div style="margin-bottom:{int(H*.012)}px;">{esc(l)}</div>')
+        body_inner = "".join(body_parts)
+
+        # 진행 점 (dots)
+        dots = ""
+        if slide_total > 1:
+            dot_items = []
+            for i in range(1, slide_total + 1):
+                if i == idx:
+                    dot_items.append(
+                        f'<span style="width:12px;height:12px;border-radius:50%;'
+                        f'background:{brand};display:inline-block;"></span>')
+                else:
+                    dot_items.append(
+                        f'<span style="width:8px;height:8px;border-radius:50%;'
+                        f'background:{t["dc"]};display:inline-block;'
+                        f'align-self:center;"></span>')
+            dots = (f'<div style="position:absolute;bottom:{int(H*.04)}px;'
+                    f'left:0;right:0;display:flex;justify-content:center;'
+                    f'align-items:center;gap:8px;">{"".join(dot_items)}</div>')
+
+        # 커버(1번)와 내용 슬라이드의 레이아웃 차이
+        is_cover = (idx == 1)
+        if is_cover:
+            title_top = int(H * .22)
+            title_fs  = int(H * .056)
+            body_top  = int(H * .46)
+            header_html = ""
+            accent_bar  = (f'<div style="position:absolute;top:{int(H*.175)}px;'
+                           f'left:{pad}px;width:{int(W*.1)}px;height:{int(H*.005)}px;'
+                           f'background:{brand};border-radius:3px;"></div>')
+            # 커버 장식 원
+            deco = (f'<div style="position:absolute;top:-{int(H*.12)}px;'
+                    f'right:-{int(W*.1)}px;width:{int(W*.58)}px;height:{int(W*.58)}px;'
+                    f'border-radius:50%;background:{brand};opacity:.1;"></div>'
+                    f'<div style="position:absolute;bottom:{int(H*.08)}px;'
+                    f'left:-{int(W*.08)}px;width:{int(W*.38)}px;height:{int(W*.38)}px;'
+                    f'border-radius:50%;background:{brand};opacity:.07;"></div>')
+        else:
+            title_top = int(H * .135)
+            title_fs  = int(H * .046)
+            body_top  = int(H * .30)
+            header_html = (
+                f'<div style="position:absolute;top:0;left:0;right:0;height:{hh}px;'
+                f'background:{t["hbg"]};display:flex;align-items:center;'
+                f'padding:0 {pad}px;">'
+                f'<span style="flex:1;font-family:\'NG\',sans-serif;'
+                f'font-size:{int(H*.023)}px;color:{brand};font-weight:400;">'
+                f'{esc(bname)}</span>'
+                f'<span style="font-family:\'NG\',sans-serif;'
+                f'font-size:{int(H*.022)}px;color:{t["xc"]};font-weight:400;">'
+                f'{idx:02d}&nbsp;/&nbsp;{slide_total:02d}</span></div>')
+            accent_bar = (f'<div style="position:absolute;top:{int(H*.108)}px;'
+                          f'left:{pad}px;width:{int(W*.08)}px;height:{int(H*.0048)}px;'
+                          f'background:{brand};border-radius:3px;"></div>')
+            deco = ""
+
+        content = f"""
+<div style="position:absolute;inset:0;{t['bg']};overflow:hidden;">
+  {deco}
+  {header_html}
+  {accent_bar}
+  <div style="position:absolute;top:{title_top}px;left:{pad}px;right:{pad}px;
+       font-family:'NG',sans-serif;font-weight:700;font-size:{title_fs}px;
+       color:{t['tc']};line-height:1.38;">{title_e}</div>
+  <div style="position:absolute;top:{body_top}px;left:{pad}px;right:{pad}px;
+       bottom:{int(H*.12)}px;font-family:'NG',sans-serif;font-weight:400;
+       font-size:{int(H*.029)}px;color:{t['bc']};line-height:1.72;
+       overflow:hidden;">{body_inner}</div>
+  {dots}
+</div>"""
+
+    return (f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+            f'{fc}'
+            f'*{{margin:0;padding:0;box-sizing:border-box;}}'
+            f'html,body{{width:{W}px;height:{H}px;overflow:hidden;background:transparent;}}'
+            f'</style></head><body>{content}</body></html>')
+
+
+# ── Playwright 브라우저 싱글턴 ─────────────────────────────────────────────
+_PW_BROWSER = None
+_PW_PLAYWRIGHT = None
+_PW_LOCK = None
+
+
+async def _get_pw_browser():
+    global _PW_BROWSER, _PW_PLAYWRIGHT, _PW_LOCK
+    import asyncio
+    if _PW_LOCK is None:
+        _PW_LOCK = asyncio.Lock()
+    async with _PW_LOCK:
+        if _PW_BROWSER and _PW_BROWSER.is_connected():
+            return _PW_BROWSER
+        # 기존 인스턴스 정리
+        if _PW_PLAYWRIGHT is not None:
             try:
-                return ImageFont.truetype(path, size)
+                await _PW_PLAYWRIGHT.__aexit__(None, None, None)
             except Exception:
                 pass
-    return ImageFont.load_default()
-
-
-def _hex_to_rgb(hex_color: str) -> tuple:
-    h = hex_color.lstrip("#")
-    if len(h) != 6:
-        return (31, 111, 235)
-    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
-
-
-def _darken(rgb: tuple, factor: float = 0.6) -> tuple:
-    return tuple(max(0, int(c * factor)) for c in rgb)
-
-
-def _lighten(rgb: tuple, factor: float = 0.2) -> tuple:
-    return tuple(min(255, int(c + (255 - c) * factor)) for c in rgb)
-
-
-def _draw_gradient_bg(img, color_top: tuple, color_bottom: tuple):
-    from PIL import ImageDraw
-    W, H = img.size
-    draw = ImageDraw.Draw(img)
-    for y in range(H):
-        t  = y / H
-        r  = int(color_top[0] + (color_bottom[0] - color_top[0]) * t)
-        g  = int(color_top[1] + (color_bottom[1] - color_top[1]) * t)
-        b  = int(color_top[2] + (color_bottom[2] - color_top[2]) * t)
-        draw.line([(0, y), (W, y)], fill=(r, g, b))
-
-
-def _wrap_text_px(text: str, font, max_width: int, draw) -> list:
-    """픽셀 너비 기준 자동 줄바꿈 (한글 포함)"""
-    lines, current = [], ""
-    for char in text:
-        test = current + char
-        w    = draw.textbbox((0, 0), test, font=font)[2]
-        if w > max_width and current:
-            lines.append(current)
-            current = char
-        else:
-            current = test
-    if current:
-        lines.append(current)
-    return lines
-
-
-def _render_single_slide(slide: dict, design: dict, slide_total: int,
-                          hashtags: list, cta: str) -> bytes:
-    from PIL import Image, ImageDraw
-    import io
-
-    ratio      = design.get("ratio", "1:1")
-    theme_name = design.get("theme", "dark")
-    brand_hex  = design.get("brand_color", "#1f6feb")
-    brand_name = design.get("brand_name", "")
-    W, H       = _CN_DIMS.get(ratio, (1080, 1080))
-    brand_rgb  = _hex_to_rgb(brand_hex)
-    theme      = _CN_THEMES.get(theme_name, _CN_THEMES["dark"])
-
-    is_cta  = slide.get("is_cta", False) or slide.get("type") == "cta"
-    idx     = slide.get("index", 1)
-    title   = slide.get("title", "")
-    body    = slide.get("body", "")
-
-    PAD = int(W * 0.072)   # 좌우 여백 72px (1080 기준)
-
-    # ── 배경 ────────────────────────────────────────────────
-    if is_cta:
-        img  = Image.new("RGB", (W, H), brand_rgb)
-        draw = ImageDraw.Draw(img)
-    elif theme_name == "gradient":
-        img  = Image.new("RGB", (W, H))
-        _draw_gradient_bg(img, brand_rgb, _darken(brand_rgb, 0.35))
-        draw = ImageDraw.Draw(img)
-    elif theme_name == "vivid":
-        img  = Image.new("RGB", (W, H), brand_rgb)
-        draw = ImageDraw.Draw(img)
-    else:
-        img  = Image.new("RGB", (W, H), theme["bg"])
-        draw = ImageDraw.Draw(img)
-
-    tc   = theme["title"]
-    bc   = theme["body"]
-    brdc = theme["brand"]
-    bgc  = theme["badge_fg"]
-
-    # ── 헤더바 (상단) ────────────────────────────────────────
-    HEADER_H = int(H * 0.075)
-    if not is_cta:
-        header_bg = theme.get("header_bg") or _darken(brand_rgb, 0.55)
-        draw.rectangle([(0, 0), (W, HEADER_H)], fill=header_bg)
-        f_brand = _cn_font(int(H * 0.026), bold=False)
-        bname   = brand_name or ""
-        if bname:
-            draw.text((PAD, HEADER_H // 2), bname,
-                      font=f_brand, fill=brdc, anchor="lm")
-        # 슬라이드 번호 (우상단)
-        badge_txt = f"{idx:02d} / {slide_total:02d}"
-        draw.text((W - PAD, HEADER_H // 2), badge_txt,
-                  font=f_brand, fill=bgc, anchor="rm")
-
-    # ── 브랜드 컬러 강조선 ────────────────────────────────────
-    if not is_cta:
-        bar_y = HEADER_H + int(H * 0.06)
-        draw.rectangle([(PAD, bar_y), (PAD + int(W * 0.08), bar_y + int(H * 0.006))],
-                       fill=brand_rgb)
-
-    # ── 제목 ─────────────────────────────────────────────────
-    if is_cta:
-        # CTA: 중앙 정렬
-        f_title  = _cn_font(int(H * 0.056), bold=True)
-        f_body   = _cn_font(int(H * 0.034), bold=False)
-        f_hash   = _cn_font(int(H * 0.028), bold=False)
-        f_brand2 = _cn_font(int(H * 0.026), bold=False)
-        cta_text = cta or title or "저장하고 팔로우하세요!"
-        lines_c  = _wrap_text_px(cta_text, f_title, W - PAD * 2, draw)
-        total_h  = len(lines_c) * int(H * 0.07)
-        y_start  = (H - total_h) // 2 - int(H * 0.06)
-        for line in lines_c:
-            draw.text((W // 2, y_start), line, font=f_title,
-                      fill=(255, 255, 255), anchor="mm")
-            y_start += int(H * 0.07)
-        # 해시태그
-        if hashtags:
-            ht_text  = "  ".join(hashtags[:6])
-            ht_lines = _wrap_text_px(ht_text, f_hash, W - PAD * 2, draw)
-            hy = y_start + int(H * 0.04)
-            for line in ht_lines:
-                draw.text((W // 2, hy), line, font=f_hash,
-                          fill=(230, 230, 230), anchor="mm")
-                hy += int(H * 0.04)
-        # 브랜드
-        if brand_name:
-            draw.text((W // 2, H - int(H * 0.08)), brand_name,
-                      font=f_brand2, fill=(200, 200, 200), anchor="mm")
-    else:
-        title_y  = HEADER_H + int(H * 0.1)
-        f_title  = _cn_font(int(H * 0.048), bold=True)
-        f_body   = _cn_font(int(H * 0.032), bold=False)
-        LINE_H_T = int(H * 0.062)
-        LINE_H_B = int(H * 0.044)
-        # 제목 줄바꿈
-        t_lines = _wrap_text_px(title, f_title, W - PAD * 2, draw)
-        y = title_y
-        for line in t_lines[:3]:
-            draw.text((PAD, y), line, font=f_title, fill=tc)
-            y += LINE_H_T
-
-        # 본문
-        y += int(H * 0.03)
-        b_lines = _wrap_text_px(body, f_body, W - PAD * 2, draw)
-        for line in b_lines[:7]:
-            draw.text((PAD, y), line, font=f_body, fill=bc)
-            y += LINE_H_B
-
-    # ── 하단 인디케이터 (점) ────────────────────────────────────
-    if not is_cta and slide_total > 1:
-        DOT_R  = int(W * 0.007)
-        DOT_SP = int(W * 0.022)
-        dot_y  = H - int(H * 0.045)
-        total_w = slide_total * DOT_SP
-        x_start = (W - total_w) // 2
-        for i in range(slide_total):
-            cx = x_start + i * DOT_SP + DOT_SP // 2
-            color = brand_rgb if (i + 1 == idx) else _darken(brand_rgb, 0.4)
-            r     = DOT_R + 1 if (i + 1 == idx) else DOT_R
-            draw.ellipse([(cx - r, dot_y - r), (cx + r, dot_y + r)], fill=color)
-
-    buf = io.BytesIO()
-    img.save(buf, format="PNG", optimize=True)
-    return buf.getvalue()
+        from playwright.async_api import async_playwright
+        _PW_PLAYWRIGHT = async_playwright()
+        pw = await _PW_PLAYWRIGHT.__aenter__()
+        _PW_BROWSER = await pw.chromium.launch(
+            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+                  "--disable-setuid-sandbox"]
+        )
+        return _PW_BROWSER
 
 
 @app.post("/cardnews/render-images")
 async def cardnews_render_images(body: dict):
     """
-    카드뉴스 슬라이드 → PNG 이미지 일괄 렌더링
+    카드뉴스 슬라이드 → PNG 이미지 (Playwright HTML→Screenshot)
     body: { slides, hashtags, cta, design: {ratio, theme, brand_color, brand_name} }
     """
-    import asyncio, base64
-
     slides   = body.get("slides", [])
     hashtags = body.get("hashtags", [])
     cta      = body.get("cta", "")
@@ -1624,29 +1640,42 @@ async def cardnews_render_images(body: dict):
         raise HTTPException(status_code=400, detail="slides가 비어있습니다.")
 
     total = len(slides)
+    ratio = design.get("ratio", "1:1")
+    W, H  = _CN_DIMS.get(ratio, (1080, 1080))
 
-    def render_one(slide):
-        raw = _render_single_slide(slide, design, total, hashtags, cta)
-        return {
-            "index":     slide.get("index", 0),
-            "image_b64": base64.b64encode(raw).decode(),
-            "width":     _CN_DIMS.get(design.get("ratio","1:1"), (1080,1080))[0],
-            "height":    _CN_DIMS.get(design.get("ratio","1:1"), (1080,1080))[1],
-        }
+    browser = await _get_pw_browser()
+    ctx = await browser.new_context(
+        viewport={"width": W, "height": H},
+        device_scale_factor=2,   # 레티나 2× → 고화질
+    )
 
-    loop    = asyncio.get_event_loop()
-    results = await asyncio.gather(*[
-        loop.run_in_executor(None, render_one, s) for s in slides
-    ])
+    results = []
+    try:
+        for slide in slides:
+            html      = _cn_slide_html(slide, design, total, hashtags, cta)
+            page      = await ctx.new_page()
+            await page.set_content(html, wait_until="networkidle")
+            img_bytes = await page.screenshot(
+                type="png", full_page=False,
+                clip={"x": 0, "y": 0, "width": W, "height": H},
+            )
+            await page.close()
+            results.append({
+                "index":     slide.get("index", 0),
+                "image_b64": _b64m.b64encode(img_bytes).decode(),
+                "width":     W * 2,   # device_scale_factor=2
+                "height":    H * 2,
+            })
+    finally:
+        await ctx.close()
 
-    W, H = _CN_DIMS.get(design.get("ratio","1:1"), (1080,1080))
     return {
-        "images": list(results),
+        "images": results,
         "total":  total,
-        "ratio":  design.get("ratio", "1:1"),
+        "ratio":  ratio,
         "theme":  design.get("theme", "dark"),
-        "width":  W,
-        "height": H,
+        "width":  W * 2,
+        "height": H * 2,
     }
 
 

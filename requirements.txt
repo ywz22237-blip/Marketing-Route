@@ -22,6 +22,9 @@ python-dotenv==1.0.1
 aiofiles==24.1.0
 Pillow==10.4.0
 
+# 카드뉴스 HTML→PNG 렌더러
+playwright==1.48.0
+
 # 데이터 모델
 pydantic==2.9.2
 
