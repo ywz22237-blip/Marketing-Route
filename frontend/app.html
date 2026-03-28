@@ -15137,21 +15137,23 @@ async function pipe_runAll() {
     }
   }
 
-  // ② 텍스트 SNS (블로그 결과 활용)
+  // ② 텍스트 SNS — LinkedIn · Threads 각각 생성
   if (cts.includes('text_sns')) {
     _pipe_setBadge('text', 'running', '생성 중');
     _pipe_setMsg('text', 'LinkedIn · Threads 포스트 생성 중...');
     try {
       const blogBody = _pipeData.blog?.body || topic;
-      const res = await fetch(`${API}/sns/generate`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ topic, blog_body: blogBody, platforms:['linkedin','threads'], tier: selectedTier, api_keys: keys, agency_profile: agencyProfile })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      _pipeData.text_sns = data;
+      const base = { topic, seo_summary: blogBody.slice(0,300), tier: selectedTier, api_keys: keys, agency_profile: agencyProfile };
+      const [liRes, thRes] = await Promise.all([
+        fetch(`${API}/sns/generate`, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ ...base, platform:'linkedin' }) }),
+        fetch(`${API}/sns/generate`, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ ...base, platform:'threads' }) }),
+      ]);
+      const [liData, thData] = await Promise.all([liRes.json(), thRes.json()]);
+      _pipeData.text_sns = { linkedin: liData, threads: thData };
       _pipe_setBadge('text', 'done', '완료 ✓');
-      _pipe_setMsg('text', '포스트 생성 완료');
+      _pipe_setMsg('text', 'LinkedIn · Threads 포스트 완료');
     } catch(e) {
       anyFail = true;
       _pipe_setBadge('text', 'fail', '실패');
@@ -15246,16 +15248,100 @@ function pipe_initStep3() {
   }).join('');
 }
 
-// ── 단일 플랫폼 배포 (API 연결 전 UI 스켈레톤) ─────────
+// ── 단일 플랫폼 배포 ────────────────────────────────────
 async function pipe_deploySingle(platform) {
-  const btn = document.getElementById(`pipe-dc-${platform}-btn`);
+  const btn      = document.getElementById(`pipe-dc-${platform}-btn`);
   const statusEl = document.getElementById(`pipe-dc-${platform}-status`);
+  const plt      = loadPlatformConnections();
+
   if (btn) { btn.disabled = true; btn.textContent = '⏳ 배포 중...'; }
-  // TODO: 실제 배포 API 연결
-  await new Promise(r => setTimeout(r, 1200));
-  if (statusEl) statusEl.innerHTML = '<span style="color:#4ade80;font-weight:600;">✓ 배포 완료</span>';
-  if (btn) { btn.textContent = '✓ 완료'; btn.style.background = '#22c55e'; }
-  toast(`${platform} 배포 완료 (API 연결 후 실제 동작)`, 'green');
+  if (statusEl) statusEl.textContent = '배포 중...';
+
+  try {
+    let endpoint = '', body = {};
+
+    // ── WordPress ──────────────────────────────────────
+    if (platform === 'wordpress') {
+      const wp = plt.wordpress || {};
+      if (!wp.site_url || !wp.username || !wp.app_password)
+        throw new Error('WordPress 자격증명 없음 → API 설정에서 입력하세요');
+      const blog = _pipeData.blog;
+      if (!blog?.title) throw new Error('블로그 콘텐츠가 없습니다');
+      endpoint = `${API}/publish/wordpress`;
+      body = { site_url: wp.site_url, username: wp.username, app_password: wp.app_password,
+               title: blog.title, content: blog.body || blog.content || '', status: 'publish' };
+    }
+
+    // ── LinkedIn ───────────────────────────────────────
+    else if (platform === 'linkedin') {
+      const li = plt.linkedin || {};
+      if (!li.access_token) throw new Error('LinkedIn Access Token 없음 → API 설정에서 입력하세요');
+      const post = _pipeData.text_sns?.linkedin?.post || {};
+      if (!post.body) throw new Error('LinkedIn 포스트 콘텐츠가 없습니다');
+      endpoint = `${API}/publish/linkedin`;
+      body = { access_token: li.access_token, title: post.title || '', content: post.body };
+    }
+
+    // ── Threads ────────────────────────────────────────
+    else if (platform === 'threads') {
+      const th = plt.threads || {};
+      if (!th.access_token || !th.user_id) throw new Error('Threads 자격증명 없음 → API 설정에서 입력하세요');
+      const post = _pipeData.text_sns?.threads?.post || {};
+      if (!post.body) throw new Error('Threads 포스트 콘텐츠가 없습니다');
+      endpoint = `${API}/publish/threads`;
+      body = { access_token: th.access_token, user_id: th.user_id,
+               content: post.body.slice(0, 500) };
+    }
+
+    // ── Instagram ──────────────────────────────────────
+    else if (platform === 'instagram') {
+      const meta = plt.meta || {};
+      if (!meta.access_token || !meta.ig_account_id) throw new Error('Instagram 자격증명 없음 → API 설정에서 입력하세요');
+      const imgData = _pipeData.image_sns;
+      if (!imgData?.images?.length) throw new Error('카드뉴스 이미지가 없습니다');
+      const caption = (imgData.hashtags || []).map(h => `#${h}`).join(' ');
+      endpoint = `${API}/publish/instagram`;
+      body = { access_token: meta.access_token, ig_account_id: meta.ig_account_id,
+               caption, image_b64_list: imgData.images.map(i => i.image_b64),
+               imgbb_api_key: getKeys().imgbb_api_key || '' };
+    }
+
+    // ── Facebook ───────────────────────────────────────
+    else if (platform === 'facebook') {
+      const meta = plt.meta || {};
+      if (!meta.access_token || !meta.page_id) throw new Error('Facebook 자격증명 없음 → API 설정에서 입력하세요');
+      const post = _pipeData.text_sns?.linkedin?.post || _pipeData.text_sns?.threads?.post || {};
+      endpoint = `${API}/publish/facebook`;
+      body = { page_access_token: meta.access_token, page_id: meta.page_id,
+               title: post.title || '', content: post.body || '' };
+    }
+
+    else { throw new Error(`${platform} 배포는 아직 지원되지 않습니다`); }
+
+    // ── API 호출 ───────────────────────────────────────
+    const res = await fetch(endpoint, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    const result = await res.json();
+
+    // ── 성공 ──────────────────────────────────────────
+    const linkHtml = result.post_url
+      ? `<a href="${result.post_url}" target="_blank" style="color:#60a5fa;font-size:11px;margin-left:6px;">보기 →</a>` : '';
+    if (statusEl) statusEl.innerHTML =
+      `<span style="color:#4ade80;font-weight:600;">✓ 배포 완료</span>${linkHtml}`;
+    if (btn) { btn.textContent = '✓ 완료'; btn.style.background = '#22c55e'; }
+    toast(`✅ ${platform} 배포 완료!`, 'green');
+
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = `<span style="color:#f87171;">❌ ${e.message}</span>`;
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 재시도'; btn.style.background = '#f8717140'; btn.style.color='#f87171'; btn.style.border='1px solid #f8717160'; }
+    toast(`${platform} 배포 실패: ${e.message}`, 'red');
+  }
 }
 
 // ── 전체 배포 ─────────────────────────────────────────
