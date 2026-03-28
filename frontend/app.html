@@ -10882,11 +10882,11 @@ function _dpRenderChannelList() {
           <div style="font-size:14px;font-weight:600;color:#f0f6fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_escHtml(d.title||'(제목 없음)')}</div>
           <div style="font-size:12px;color:#484f58;margin-top:2px;">${(d.created_at||'').slice(0,10)}</div>
         </div>
-        ${statusBadge}
-      </div>
-      <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #21262d;">
-        <button onclick="loadDeployPanel('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #388bfd;background:rgba(56,139,253,.1);color:#388bfd;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🚀 수정</button>
-        <button onclick="dpDeleteDraft('${d.id}')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='#f85149';this.style.borderColor='#f85149'" onmouseout="this.style.color='#8b949e';this.style.borderColor='#30363d'">🗑 삭제</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          ${statusBadge}
+          <button onclick="loadDeployPanel('${d.id}')" style="padding:4px 10px;border-radius:6px;border:1px solid #388bfd;background:rgba(56,139,253,.1);color:#388bfd;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;">🚀 배포</button>
+          <button onclick="dpDeleteDraft('${d.id}')" style="padding:4px 8px;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#8b949e;font-size:12px;cursor:pointer;font-family:inherit;" onmouseover="this.style.color='#f85149';this.style.borderColor='#f85149'" onmouseout="this.style.color='#8b949e';this.style.borderColor='#30363d'">🗑</button>
+        </div>
       </div>
     </div>`;
   }).join('');
