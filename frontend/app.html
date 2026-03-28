@@ -1487,7 +1487,7 @@
         <input type="file" id="agency-data-file" accept=".csv,.xlsx,.xls" multiple style="display:none;" onchange="onAgencyFileSelect(this)" />
       </label>
       <span id="agency-file-name" style="font-size:13px;color:#8b949e;">선택된 파일 없음</span>
-      <button id="agency-file-analyze-btn" onclick="analyzeAgencyFile()" style="display:none;" class="btn btn-primary" style="font-size:14px;">🤖 AI 분석</button>
+      <button id="agency-file-analyze-btn" onclick="analyzeAgencyFile()" style="display:none;font-size:14px;" class="btn btn-primary">🤖 AI 분석</button>
     </div>
 
     <div id="agency-file-loading" style="display:none;margin-top:12px;display:none;text-align:center;padding:20px;">
@@ -4947,7 +4947,7 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
         </div>
         <div class="dash-stat" onclick="goto('review');switchReviewTab('content');" style="margin:0;border-radius:0;border-right:none;padding:12px 8px;">
           <div style="font-size:11px;font-weight:800;color:#484f58;letter-spacing:.07em;margin-bottom:6px;">REVIEWING</div>
-          <div style="font-size:26px;font-weight:800;" id="dash-funnel-review" style="color:#fbbf24;">0</div>
+          <div style="font-size:26px;font-weight:800;color:#fbbf24;" id="dash-funnel-review">0</div>
           <div style="font-size:12px;color:#484f58;margin-top:3px;">검수 대기</div>
           <div id="dash-funnel-review-sub" style="font-size:11px;margin-top:4px;color:#484f58;"></div>
         </div>
@@ -6980,15 +6980,22 @@ async function startSampling(memberId) {
     });
 
     const samples = data.voice_samples || [];
-    statusEl.innerHTML += `<div style="font-size:13px;color:#22c55e;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #22c55e30;">
-      ✅ 학습 완료 — URL ${data.total_crawled}/${data.total_urls}개 성공, 글쓰기 샘플 ${samples.length}개 추출
-    </div>`;
 
-    if (samples.length) {
+    if (data.llm_error) {
+      // AI 추출 단계 실패
+      statusEl.innerHTML += `<div style="font-size:13px;color:#fb923c;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #fb923c30;">
+        ⚠️ AI 스타일 추출 실패: ${data.llm_error}
+      </div>`;
+    } else if (samples.length) {
+      statusEl.innerHTML += `<div style="font-size:13px;color:#22c55e;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #22c55e30;">
+        ✅ 학습 완료 — URL ${data.total_crawled}/${data.total_urls}개 성공, 글쓰기 샘플 ${samples.length}개 추출
+      </div>`;
       _samplingResults.push(...samples.map(s => ({ ...s, member: memberLabels[memberId] })));
       _renderSamplingResults();
     } else {
-      toast('크롤링은 완료됐지만 샘플 추출에 실패했습니다. API 키를 확인하세요.', 'orange');
+      statusEl.innerHTML += `<div style="font-size:13px;color:#fb923c;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #fb923c30;">
+        ⚠️ 크롤링 완료 (URL ${data.total_crawled}/${data.total_urls}개), 샘플 추출 결과 없음
+      </div>`;
     }
   } catch(e) {
     statusEl.innerHTML = `<div style="font-size:13px;color:#f87171;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #f8717130;">
@@ -10071,7 +10078,7 @@ function saveKpiGoals() {
   };
   localStorage.setItem(KPI_GOALS_KEY, JSON.stringify(g));
   updateKpiProgress();
-  _showToast('KPI 목표가 저장되었습니다 ✅');
+  toast('KPI 목표가 저장되었습니다', 'green');
 }
 
 function loadKpiGoals() {
@@ -10097,7 +10104,7 @@ function saveKpiActuals() {
     posts : document.getElementById('kpi-posts-actual-display')?.textContent || '0',
   };
   localStorage.setItem(KPI_ACTUALS_KEY, JSON.stringify(a));
-  _showToast('실적이 저장되었습니다 ✅');
+  toast('실적이 저장되었습니다', 'green');
 }
 
 // 배포 스케줄에서 발행 완료 수 자동 집계
@@ -10774,7 +10781,10 @@ async function loadReviewWorkflow() {
       sel2.value = jobs[0].job_id;
       onReviewJobChange(jobs[0].job_id);
     }
-  } catch(e) {}
+  } catch(e) {
+    const sel1 = document.getElementById('rv-job-select');
+    if (sel1) sel1.innerHTML = `<option value="">⚠ 서버 연결 실패: ${e.message}</option>`;
+  }
 }
 
 async function onReviewJobChange(jobId) {
@@ -12440,8 +12450,15 @@ async function runAutoFlowOnce() {
         try { localStorage.setItem('osmu_seo_result', JSON.stringify(seoData)); } catch {}
         updateSEOBanners(seoData);
         logEntry.generated.push('SEO 분석');
+      } else {
+        const errText = await seoRes.text().catch(() => seoRes.status);
+        logEntry.errors = logEntry.errors || [];
+        logEntry.errors.push(`SEO 분석 실패 (${seoRes.status}): ${String(errText).slice(0,120)}`);
       }
-    } catch {}
+    } catch(e) {
+      logEntry.errors = logEntry.errors || [];
+      logEntry.errors.push(`SEO 분석 오류: ${e.message}`);
+    }
 
     // ② 블로그
     if (cfg.content_types.includes('blog')) {
@@ -12460,13 +12477,21 @@ async function runAutoFlowOnce() {
           if (cfg.schedule_publish && bData.posts?.length) {
             _autoAddPublish({ type:'blog', title: bData.posts[0]?.title || keyword, platforms: blogPlatforms, hours_offset: 1 });
           }
+        } else {
+          logEntry.errors = logEntry.errors || [];
+          logEntry.errors.push(`블로그 생성 실패 (${bRes.status})`);
         }
-      } catch {}
+      } catch(e) {
+        logEntry.errors = logEntry.errors || [];
+        logEntry.errors.push(`블로그 생성 오류: ${e.message}`);
+      }
     }
 
     // ③ SNS (링크드인/인스타그램/쓰레드)
+    // text_sns → linkedin·threads, image_sns → instagram
+    const _snsCTMap = { linkedin:'text_sns', threads:'text_sns', instagram:'image_sns' };
     for (const platform of ['linkedin','instagram','threads']) {
-      if (!cfg.content_types.includes(platform)) continue;
+      if (!cfg.content_types.includes(_snsCTMap[platform])) continue;
       if (!cfg.platforms.includes(platform)) continue;
       try {
         const sRes = await fetch(`${API}/sns/generate`, {
@@ -12482,12 +12507,18 @@ async function runAutoFlowOnce() {
             const offsets = { linkedin:2, instagram:4, threads:6 };
             _autoAddPublish({ type: platform, title: post.title || keyword, platforms: [platform], hours_offset: offsets[platform] });
           }
+        } else {
+          logEntry.errors = logEntry.errors || [];
+          logEntry.errors.push(`${platform} 생성 실패 (${sRes.status})`);
         }
-      } catch {}
+      } catch(e) {
+        logEntry.errors = logEntry.errors || [];
+        logEntry.errors.push(`${platform} 생성 오류: ${e.message}`);
+      }
     }
 
-    // ④ 카드뉴스
-    if (cfg.content_types.includes('cardnews')) {
+    // ④ 카드뉴스 (image_sns 체크박스에 포함)
+    if (cfg.content_types.includes('image_sns')) {
       try {
         const cRes = await fetch(`${API}/cardnews/generate`, {
           method:'POST', headers:{'Content-Type':'application/json'},
@@ -12503,13 +12534,24 @@ async function runAutoFlowOnce() {
           if (cfg.schedule_publish) {
             _autoAddPublish({ type:'cardnews', title: cData.hook_title || keyword, platforms:['instagram'], hours_offset: 8 });
           }
+        } else {
+          logEntry.errors = logEntry.errors || [];
+          logEntry.errors.push(`카드뉴스 생성 실패 (${cRes.status})`);
         }
-      } catch {}
+      } catch(e) {
+        logEntry.errors = logEntry.errors || [];
+        logEntry.errors.push(`카드뉴스 생성 오류: ${e.message}`);
+      }
     }
 
     logEntry.status = 'done';
     logEntry.completed_at = new Date().toISOString();
-    toast(`✅ 자동화 완료: ${logEntry.generated.length}개 생성됨`, 'green');
+    const errCount = logEntry.errors?.length || 0;
+    if (errCount > 0) {
+      toast(`자동화 완료: ${logEntry.generated.length}개 생성, ⚠ ${errCount}개 단계 실패 (로그 확인)`, 'orange');
+    } else {
+      toast(`✅ 자동화 완료: ${logEntry.generated.length}개 생성됨`, 'green');
+    }
 
   } catch(e) {
     logEntry.status = 'failed';
@@ -12585,7 +12627,8 @@ function renderAutoLog() {
           <span style="font-size:12px;color:#484f58;margin-left:auto;">${log.started_at?.slice(0,16).replace('T',' ')} ${dur?'· '+dur:''}</span>
         </div>
         ${log.generated?.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${log.generated.map(g=>`<span class="tag" style="font-size:12px;">${g}</span>`).join('')}</div>` : ''}
-        ${log.error ? `<div style="font-size:13px;color:#f87171;margin-top:4px;">오류: ${log.error}</div>` : ''}
+        ${log.error ? `<div style="font-size:13px;color:#f87171;margin-top:4px;">❌ ${log.error}</div>` : ''}
+        ${log.errors?.length ? `<div style="margin-top:4px;">${log.errors.map(e=>`<div style="font-size:12px;color:#fb923c;padding:1px 0;">⚠ ${e}</div>`).join('')}</div>` : ''}
       </div>
     </div>`;
   }).join('');

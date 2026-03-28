@@ -3450,12 +3450,19 @@ async def agency_sampling_analyze(body: dict):
             )
 
     voice_samples: list[dict] = []
-    if combined_texts:
-        ag_name  = agency.get("agency_name", "")
-        ag_tone  = agency.get("tone_and_manner", "")
-        full_text = "\n\n---\n\n".join(combined_texts)[:8000]
+    llm_error: str | None = None
 
-        prompt = f"""당신은 콘텐츠 분석 전문가입니다. 아래 콘텐츠들을 분석하여 글쓰기 스타일 샘플 3~5개를 추출하세요.
+    if combined_texts:
+        # Gemini 키 사전 확인
+        gemini_key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+        if not gemini_key:
+            llm_error = "Gemini API 키가 없습니다. API 설정 → API Keys 탭에서 입력해주세요."
+        else:
+            ag_name  = agency.get("agency_name", "")
+            ag_tone  = agency.get("tone_and_manner", "")
+            full_text = "\n\n---\n\n".join(combined_texts)[:8000]
+
+            prompt = f"""당신은 콘텐츠 분석 전문가입니다. 아래 콘텐츠들을 분석하여 글쓰기 스타일 샘플 3~5개를 추출하세요.
 
 에이전시: {ag_name}
 팀원: {member_id}
@@ -3474,28 +3481,42 @@ async def agency_sampling_analyze(body: dict):
   ...
 ]}}"""
 
-        raw = await _llm_generate(prompt, api_keys)
-        try:
-            import re as re_mod
-            m = re_mod.search(r'\{.*\}', raw, re_mod.DOTALL)
-            if m:
-                parsed = jsonlib.loads(m.group())
-                for s in parsed.get("samples", []):
-                    note = s.get("pattern_note", "")
-                    text = s.get("excerpt", "").strip()
-                    plat = s.get("platform", "공통")
-                    if text:
-                        full = f"{text}\n\n💡 스타일 메모: {note}" if note else text
-                        voice_samples.append({"channel": plat, "text": full})
-        except Exception:
-            pass
+            raw = await _llm_generate(prompt, api_keys)
+
+            # _llm_generate가 오류를 {"error": "..."} 형태로 반환하는 경우 처리
+            if raw.startswith('{"error"'):
+                try:
+                    err_obj = jsonlib.loads(raw)
+                    llm_error = err_obj.get("error", "AI 호출 실패")
+                except Exception:
+                    llm_error = "AI 호출 실패 (응답 파싱 오류)"
+            else:
+                try:
+                    import re as re_mod
+                    m = re_mod.search(r'\{.*\}', raw, re_mod.DOTALL)
+                    if m:
+                        parsed = jsonlib.loads(m.group())
+                        for s in parsed.get("samples", []):
+                            note = s.get("pattern_note", "")
+                            text = s.get("excerpt", "").strip()
+                            plat = s.get("platform", "공통")
+                            if text:
+                                full = f"{text}\n\n💡 스타일 메모: {note}" if note else text
+                                voice_samples.append({"channel": plat, "text": full})
+                    else:
+                        llm_error = "AI 응답에서 JSON을 찾을 수 없습니다."
+                except Exception as parse_err:
+                    llm_error = f"AI 응답 파싱 실패: {str(parse_err)[:120]}"
+    elif not url_results or all(r["status"] == "error" for r in url_results):
+        llm_error = "크롤링된 본문이 없어 스타일 추출을 건너뜁니다."
 
     return {
-        "member_id":    member_id,
-        "url_results":  url_results,
+        "member_id":     member_id,
+        "url_results":   url_results,
         "voice_samples": voice_samples,
         "total_crawled": sum(1 for r in url_results if r["status"] != "error"),
-        "total_urls":   len(url_results),
+        "total_urls":    len(url_results),
+        "llm_error":     llm_error,
     }
 
 
