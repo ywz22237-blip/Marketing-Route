@@ -1105,6 +1105,15 @@
     </div>
   </div>
 
+  <!-- ── 에이전시 탭 네비게이션 ── -->
+  <div class="tab-nav" style="margin-bottom:20px;">
+    <button id="agency-tab-btn-settings" class="active" onclick="switchAgencyTab('settings')">⚙️ 에이전시 설정</button>
+    <button id="agency-tab-btn-sampling" onclick="switchAgencyTab('sampling')">🎯 샘플링</button>
+  </div>
+
+  <!-- ── 설정 패널 ── -->
+  <div id="agency-pane-settings">
+
   <!-- ── 페르소나 퀵셋업 ── -->
   <div class="card" style="margin-bottom:20px;background:rgba(31,111,235,0.04);border-color:#1f6feb25;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
@@ -1461,6 +1470,151 @@
     <span id="agency-save-status" style="font-size:12px;color:#8b949e;"></span>
     <span style="font-size:11px;color:#484f58;margin-left:auto;">저장된 설정은 SEO·기획·콘텐츠 생성에 자동 반영됩니다.</span>
   </div>
+
+  </div><!-- /agency-pane-settings -->
+
+  <!-- ══════════════════════════════════════════════════
+       샘플링 패널
+  ══════════════════════════════════════════════════ -->
+  <div id="agency-pane-sampling" style="display:none;">
+
+    <!-- 안내 배너 -->
+    <div style="background:rgba(31,111,235,0.06);border:1px solid #1f6feb30;border-radius:10px;padding:14px 18px;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:#60a5fa;margin-bottom:6px;">🎯 샘플링이란?</div>
+      <div style="font-size:12px;color:#c9d1d9;line-height:1.8;">
+        잘나가는 콘텐츠 URL을 팀원별로 최대 <strong>5개</strong> 입력하면,<br>
+        ① 해당 콘텐츠를 직접 학습하고 → ② 작성자의 채널 페이지 전체를 추가 학습합니다.<br>
+        학습된 글쓰기 스타일은 <strong>브랜드 보이스 샘플</strong>로 자동 추가됩니다.
+      </div>
+    </div>
+
+    <!-- 팀원 4명 카드 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+      <!-- 팀원1 — 블로그 -->
+      <div class="card" style="border-color:#60a5fa30;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#60a5fa;flex-shrink:0;"></div>
+            <span style="font-size:13px;font-weight:700;color:#f0f6fc;">팀원 1 — The Architect</span>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#60a5fa15;color:#60a5fa;border:1px solid #60a5fa30;">📝 블로그</span>
+        </div>
+        <p style="font-size:11px;color:#484f58;margin:0 0 14px;">티스토리·네이버·워드프레스 등 잘나가는 블로그 포스트 URL 최대 5개</p>
+        <div id="sampling-urls-1" style="display:flex;flex-direction:column;gap:6px;">
+          <div class="sampling-url-row" data-member="1">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#484f58;min-width:16px;">1</span>
+              <input type="url" class="field-input sampling-url-input" placeholder="https://..." style="flex:1;font-size:11px;" oninput="_detectSamplingPlatform(this)" />
+              <span class="sampling-platform-badge" style="font-size:10px;padding:2px 7px;border-radius:8px;background:#21262d;color:#484f58;white-space:nowrap;min-width:60px;text-align:center;">URL 입력</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:8px;width:100%;" onclick="_addSamplingUrlRow(1)">＋ URL 추가 (최대 5개)</button>
+        <div id="sampling-status-1" style="margin-top:10px;display:none;"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;flex:1;" onclick="startSampling(1)">🚀 학습 시작</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="_clearSamplingUrls(1)" title="초기화">↺</button>
+        </div>
+      </div>
+
+      <!-- 팀원2 — 텍스트형 SNS -->
+      <div class="card" style="border-color:#a78bfa30;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#a78bfa;flex-shrink:0;"></div>
+            <span style="font-size:13px;font-weight:700;color:#f0f6fc;">팀원 2 — The Connector</span>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#a78bfa15;color:#a78bfa;border:1px solid #a78bfa30;">💬 텍스트형 SNS</span>
+        </div>
+        <p style="font-size:11px;color:#484f58;margin:0 0 14px;">링크드인·쓰레드 등 잘나가는 게시물 URL 최대 5개</p>
+        <div id="sampling-urls-2" style="display:flex;flex-direction:column;gap:6px;">
+          <div class="sampling-url-row" data-member="2">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#484f58;min-width:16px;">1</span>
+              <input type="url" class="field-input sampling-url-input" placeholder="https://linkedin.com/posts/..." style="flex:1;font-size:11px;" oninput="_detectSamplingPlatform(this)" />
+              <span class="sampling-platform-badge" style="font-size:10px;padding:2px 7px;border-radius:8px;background:#21262d;color:#484f58;white-space:nowrap;min-width:60px;text-align:center;">URL 입력</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:8px;width:100%;" onclick="_addSamplingUrlRow(2)">＋ URL 추가 (최대 5개)</button>
+        <div id="sampling-status-2" style="margin-top:10px;display:none;"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;flex:1;" onclick="startSampling(2)">🚀 학습 시작</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="_clearSamplingUrls(2)" title="초기화">↺</button>
+        </div>
+      </div>
+
+      <!-- 팀원3 — 이미지형 SNS -->
+      <div class="card" style="border-color:#f472b630;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#f472b6;flex-shrink:0;"></div>
+            <span style="font-size:13px;font-weight:700;color:#f0f6fc;">팀원 3 — The Trendsetter</span>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#f472b615;color:#f472b6;border:1px solid #f472b630;">📷 이미지형 SNS</span>
+        </div>
+        <p style="font-size:11px;color:#484f58;margin:0 0 14px;">인스타그램·페이스북 등 잘나가는 게시물 URL 최대 5개</p>
+        <div id="sampling-urls-3" style="display:flex;flex-direction:column;gap:6px;">
+          <div class="sampling-url-row" data-member="3">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#484f58;min-width:16px;">1</span>
+              <input type="url" class="field-input sampling-url-input" placeholder="https://instagram.com/p/..." style="flex:1;font-size:11px;" oninput="_detectSamplingPlatform(this)" />
+              <span class="sampling-platform-badge" style="font-size:10px;padding:2px 7px;border-radius:8px;background:#21262d;color:#484f58;white-space:nowrap;min-width:60px;text-align:center;">URL 입력</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:8px;width:100%;" onclick="_addSamplingUrlRow(3)">＋ URL 추가 (최대 5개)</button>
+        <div id="sampling-status-3" style="margin-top:10px;display:none;"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;flex:1;" onclick="startSampling(3)">🚀 학습 시작</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="_clearSamplingUrls(3)" title="초기화">↺</button>
+        </div>
+      </div>
+
+      <!-- 팀원4 — 동영상 -->
+      <div class="card" style="border-color:#fb923c30;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#fb923c;flex-shrink:0;"></div>
+            <span style="font-size:13px;font-weight:700;color:#f0f6fc;">팀원 4 — The Viral Maker</span>
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#fb923c15;color:#fb923c;border:1px solid #fb923c30;">▶️ 동영상</span>
+        </div>
+        <p style="font-size:11px;color:#484f58;margin:0 0 14px;">유튜브·틱톡 등 잘나가는 영상 URL 최대 5개</p>
+        <div id="sampling-urls-4" style="display:flex;flex-direction:column;gap:6px;">
+          <div class="sampling-url-row" data-member="4">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#484f58;min-width:16px;">1</span>
+              <input type="url" class="field-input sampling-url-input" placeholder="https://youtube.com/watch?v=..." style="flex:1;font-size:11px;" oninput="_detectSamplingPlatform(this)" />
+              <span class="sampling-platform-badge" style="font-size:10px;padding:2px 7px;border-radius:8px;background:#21262d;color:#484f58;white-space:nowrap;min-width:60px;text-align:center;">URL 입력</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;margin-top:8px;width:100%;" onclick="_addSamplingUrlRow(4)">＋ URL 추가 (최대 5개)</button>
+        <div id="sampling-status-4" style="margin-top:10px;display:none;"></div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;flex:1;" onclick="startSampling(4)">🚀 학습 시작</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="_clearSamplingUrls(4)" title="초기화">↺</button>
+        </div>
+      </div>
+
+    </div><!-- /grid -->
+
+    <!-- 샘플링 결과 & 브랜드 보이스 적용 -->
+    <div id="sampling-results-panel" style="display:none;margin-top:20px;">
+      <div class="card">
+        <h3 style="font-size:13px;font-weight:700;color:#f0f6fc;margin:0 0 12px;">📋 학습 결과 — 브랜드 보이스 샘플 추가</h3>
+        <div id="sampling-results-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="margin-top:14px;display:flex;gap:10px;">
+          <button class="btn btn-success" style="flex:1;" onclick="applySamplingResults()">✅ 전체 샘플 브랜드 보이스에 추가</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('sampling-results-panel').style.display='none'">닫기</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /agency-pane-sampling -->
+
 </div>
 
 
@@ -6516,6 +6670,165 @@ function _loadAgencyFields(saved) {
   (saved.blog_platforms||[]).forEach(v => { const cb=document.querySelector(`.ag-blog[value="${v}"]`);  if(cb) cb.checked=true; });
   (saved.sns_platforms||[]).forEach(v  => { const cb=document.querySelector(`.ag-sns[value="${v}"]`);   if(cb) cb.checked=true; });
   (saved.video_platforms||[]).forEach(v => { const cb=document.querySelector(`.ag-video[value="${v}"]`); if(cb) cb.checked=true; });
+}
+
+// ── 샘플링 탭 ────────────────────────────────────────────────
+
+function switchAgencyTab(tab) {
+  ['settings','sampling'].forEach(t => {
+    document.getElementById(`agency-pane-${t}`).style.display  = t === tab ? '' : 'none';
+    const btn = document.getElementById(`agency-tab-btn-${t}`);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+}
+
+const _SAMPLING_PLATFORM_MAP = [
+  { pat: /tistory\.com/i,    label: '티스토리',    color: '#ff7a30' },
+  { pat: /blog\.naver\.com/i,label: '네이버 블로그',color: '#03c75a' },
+  { pat: /brunch\.co\.kr/i,  label: '브런치',      color: '#f59e0b' },
+  { pat: /linkedin\.com/i,   label: '링크드인',     color: '#60a5fa' },
+  { pat: /threads\.net/i,    label: '쓰레드',       color: '#c9d1d9' },
+  { pat: /instagram\.com/i,  label: '인스타그램',   color: '#f472b6' },
+  { pat: /facebook\.com/i,   label: '페이스북',     color: '#60a5fa' },
+  { pat: /youtube\.com|youtu\.be/i, label: '유튜브', color: '#f87171' },
+  { pat: /tiktok\.com/i,     label: '틱톡',         color: '#c9d1d9' },
+  { pat: /wordpress\.com|wp-content/i, label: '워드프레스', color: '#60a5fa' },
+];
+
+function _detectSamplingPlatform(input) {
+  const val   = input.value.trim();
+  const badge = input.closest('div').querySelector('.sampling-platform-badge');
+  if (!badge) return;
+  if (!val) { badge.textContent = 'URL 입력'; badge.style.background = '#21262d'; badge.style.color = '#484f58'; return; }
+  const match = _SAMPLING_PLATFORM_MAP.find(m => m.pat.test(val));
+  if (match) {
+    badge.textContent = match.label;
+    badge.style.background = match.color + '20';
+    badge.style.color = match.color;
+    badge.style.border = `1px solid ${match.color}40`;
+  } else {
+    badge.textContent = '기타 블로그';
+    badge.style.background = '#21262d';
+    badge.style.color = '#8b949e';
+    badge.style.border = '1px solid #30363d';
+  }
+}
+
+function _addSamplingUrlRow(memberId) {
+  const container = document.getElementById(`sampling-urls-${memberId}`);
+  const rows = container.querySelectorAll('.sampling-url-row');
+  if (rows.length >= 5) { toast('최대 5개까지 입력할 수 있습니다.', 'orange'); return; }
+  const idx = rows.length + 1;
+  const div = document.createElement('div');
+  div.className = 'sampling-url-row';
+  div.dataset.member = memberId;
+  div.innerHTML = `<div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:10px;color:#484f58;min-width:16px;">${idx}</span>
+    <input type="url" class="field-input sampling-url-input" placeholder="https://..." style="flex:1;font-size:11px;" oninput="_detectSamplingPlatform(this)" />
+    <span class="sampling-platform-badge" style="font-size:10px;padding:2px 7px;border-radius:8px;background:#21262d;color:#484f58;white-space:nowrap;min-width:60px;text-align:center;">URL 입력</span>
+    <button onclick="this.closest('.sampling-url-row').remove()" style="background:none;border:none;color:#484f58;cursor:pointer;font-size:14px;padding:0 2px;" title="삭제">×</button>
+  </div>`;
+  container.appendChild(div);
+}
+
+function _clearSamplingUrls(memberId) {
+  const container = document.getElementById(`sampling-urls-${memberId}`);
+  container.querySelectorAll('input.sampling-url-input').forEach(i => { i.value = ''; _detectSamplingPlatform(i); });
+  const status = document.getElementById(`sampling-status-${memberId}`);
+  if (status) { status.style.display = 'none'; status.innerHTML = ''; }
+}
+
+let _samplingResults = []; // 전체 결과 누적
+
+async function startSampling(memberId) {
+  const container = document.getElementById(`sampling-urls-${memberId}`);
+  const urls = [...container.querySelectorAll('input.sampling-url-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  if (!urls.length) { toast('URL을 1개 이상 입력하세요.', 'orange'); return; }
+
+  const statusEl = document.getElementById(`sampling-status-${memberId}`);
+  statusEl.style.display = '';
+  statusEl.innerHTML = `<div style="padding:10px;background:#0d1117;border-radius:8px;border:1px solid #30363d;">
+    <div style="font-size:11px;color:#60a5fa;margin-bottom:6px;">⏳ 크롤링 중... (${urls.length}개 URL)</div>
+    ${urls.map((u,i) => `<div id="sampling-url-prog-${memberId}-${i}" style="font-size:10px;color:#484f58;margin:2px 0;">
+      <span style="margin-right:6px;">🔄</span>${u.length > 60 ? u.slice(0,60)+'...' : u}
+    </div>`).join('')}
+  </div>`;
+
+  const memberLabels = { 1:'팀원1', 2:'팀원2', 3:'팀원3', 4:'팀원4' };
+  try {
+    const res = await fetch(`${API}/agency/sampling/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        urls,
+        member_id: memberLabels[memberId] || `팀원${memberId}`,
+        api_keys: getKeys(),
+        agency_profile: agencyProfile,
+      })
+    });
+    const data = await res.json();
+
+    // URL별 상태 업데이트
+    (data.url_results || []).forEach((r, i) => {
+      const el = document.getElementById(`sampling-url-prog-${memberId}-${i}`);
+      if (!el) return;
+      const icon = r.status === 'error' ? '❌' : r.status === 'author_crawled' ? '✅' : '✔';
+      const authorNote = r.author_url ? ` → 채널 페이지도 학습` : '';
+      el.innerHTML = `<span style="margin-right:6px;">${icon}</span><span style="color:${r.status==='error'?'#f87171':'#8b949e'}">${r.title || r.url}</span><span style="color:#484f58;">${authorNote}</span>`;
+    });
+
+    const samples = data.voice_samples || [];
+    statusEl.innerHTML += `<div style="font-size:11px;color:#22c55e;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #22c55e30;">
+      ✅ 학습 완료 — URL ${data.total_crawled}/${data.total_urls}개 성공, 글쓰기 샘플 ${samples.length}개 추출
+    </div>`;
+
+    if (samples.length) {
+      _samplingResults.push(...samples.map(s => ({ ...s, member: memberLabels[memberId] })));
+      _renderSamplingResults();
+    } else {
+      toast('크롤링은 완료됐지만 샘플 추출에 실패했습니다. API 키를 확인하세요.', 'orange');
+    }
+  } catch(e) {
+    statusEl.innerHTML = `<div style="font-size:11px;color:#f87171;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #f8717130;">
+      ❌ 오류: ${e.message}
+    </div>`;
+  }
+}
+
+function _renderSamplingResults() {
+  const panel = document.getElementById('sampling-results-panel');
+  const list  = document.getElementById('sampling-results-list');
+  if (!panel || !list) return;
+  panel.style.display = '';
+  list.innerHTML = _samplingResults.map((s, i) => `
+    <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px;position:relative;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:#1f6feb20;color:#60a5fa;">${s.channel}</span>
+        <span style="font-size:10px;color:#484f58;">${s.member}</span>
+        <button onclick="_removeSamplingResult(${i})" style="background:none;border:none;color:#484f58;cursor:pointer;font-size:13px;margin-left:auto;padding:0 2px;" title="제거">×</button>
+      </div>
+      <div style="font-size:12px;color:#c9d1d9;line-height:1.7;white-space:pre-wrap;max-height:120px;overflow-y:auto;">${s.text}</div>
+    </div>`).join('');
+}
+
+function _removeSamplingResult(idx) {
+  _samplingResults.splice(idx, 1);
+  if (_samplingResults.length) _renderSamplingResults();
+  else { document.getElementById('sampling-results-panel').style.display = 'none'; }
+}
+
+function applySamplingResults() {
+  if (!_samplingResults.length) return;
+  _samplingResults.forEach(s => {
+    _voiceCards.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), channel: s.channel, text: s.text });
+  });
+  _renderVoiceCards();
+  saveAgency();
+  _samplingResults = [];
+  document.getElementById('sampling-results-panel').style.display = 'none';
+  toast(`✅ ${_voiceCards.length}개 샘플이 브랜드 보이스에 추가됐습니다!`, 'green');
+  switchAgencyTab('settings');
 }
 
 // ── 브랜드 보이스 샘플 카드 시스템 ────────────────────────────

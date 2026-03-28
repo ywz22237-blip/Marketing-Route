@@ -2787,3 +2787,192 @@ async def generate_image(body: dict):
     picsum_url = f"https://picsum.photos/seed/{seed}/{width}/{height}"
     msg = "" if hf_token else "HF 토큰을 등록하면 AI 이미지 생성이 활성화됩니다"
     return {"image_url": picsum_url, "mime": "image/jpeg", "source": "picsum", "info": msg}
+
+
+# ── 샘플링: URL 크롤링 → 글쓰기 스타일 추출 ────────────────────────────────
+
+def _detect_platform_from_url(url: str) -> str:
+    """URL 패턴으로 플랫폼 자동 감지"""
+    u = url.lower()
+    if "tistory.com"  in u: return "티스토리"
+    if "blog.naver.com" in u: return "네이버 블로그"
+    if "brunch.co.kr"  in u: return "브런치"
+    if "linkedin.com"  in u: return "링크드인"
+    if "threads.net"   in u: return "쓰레드"
+    if "instagram.com" in u: return "인스타그램"
+    if "facebook.com"  in u: return "페이스북"
+    if "youtube.com" in u or "youtu.be" in u: return "유튜브"
+    if "tiktok.com"    in u: return "틱톡"
+    if "wordpress.com" in u or "wp-content" in u: return "워드프레스"
+    return "블로그"
+
+
+def _extract_author_url(url: str, soup) -> str | None:
+    """크롤링된 페이지에서 작성자 채널/프로필 URL 추정"""
+    from urllib.parse import urlparse, urljoin
+    p = urlparse(url)
+
+    # 티스토리: 포스트 URL → 블로그 루트
+    if "tistory.com" in p.netloc:
+        return f"{p.scheme}://{p.netloc}"
+
+    # 네이버 블로그: /username/postId → /username
+    if "blog.naver.com" in p.netloc:
+        parts = p.path.strip("/").split("/")
+        if len(parts) >= 1:
+            return f"https://blog.naver.com/{parts[0]}"
+
+    # 브런치: /@author/post → /@author
+    if "brunch.co.kr" in p.netloc:
+        parts = p.path.strip("/").split("/")
+        for part in parts:
+            if part.startswith("@"):
+                return f"https://brunch.co.kr/{part}"
+
+    # 링크드인: /posts/xxx → /in/username
+    if "linkedin.com" in p.netloc:
+        parts = p.path.strip("/").split("/")
+        if len(parts) >= 2 and parts[0] == "in":
+            return f"https://www.linkedin.com/in/{parts[1]}/recent-activity/all/"
+
+    # 쓰레드: /@user/post/id → /@user
+    if "threads.net" in p.netloc:
+        parts = p.path.strip("/").split("/")
+        for part in parts:
+            if part.startswith("@"):
+                return f"https://www.threads.net/{part}"
+
+    # 인스타그램: /p/postid/ → 메타 태그에서 작성자 찾기
+    if "instagram.com" in p.netloc:
+        author_meta = soup.find("meta", property="og:url")
+        if author_meta:
+            return None  # 인스타는 로그인 필요, 원본 URL만 사용
+        return None
+
+    # 유튜브: /watch?v=xxx → /channel 또는 /@username
+    if "youtube.com" in p.netloc:
+        canonical = soup.find("link", rel="canonical")
+        channel_link = soup.find("span", itemprop="author") or \
+                       soup.find("link", itemprop="url")
+        if channel_link and channel_link.get("href"):
+            return urljoin("https://www.youtube.com", channel_link["href"])
+        return None
+
+    # 일반 블로그: 루트 도메인
+    return f"{p.scheme}://{p.netloc}"
+
+
+@app.post("/agency/sampling/analyze")
+async def agency_sampling_analyze(body: dict):
+    """
+    샘플링: URL 목록 크롤링 → 작성자 페이지 크롤링 → 글쓰기 스타일 샘플 추출
+    body: { urls: [str], member_id: str, api_keys: dict, agency_profile: dict }
+    """
+    import asyncio
+    urls         = body.get("urls", [])
+    member_id    = body.get("member_id", "팀원")
+    api_keys     = body.get("api_keys", {})
+    agency       = body.get("agency_profile", {})
+
+    if not urls:
+        raise HTTPException(status_code=400, detail="URL을 1개 이상 입력하세요.")
+
+    url_results: list[dict] = []
+
+    async def analyze_one(url: str) -> dict:
+        result = {"url": url, "platform": _detect_platform_from_url(url),
+                  "status": "error", "title": "", "author_url": None,
+                  "body_preview": "", "author_body": ""}
+        try:
+            crawled = await _crawl_url(url)
+            result["title"]        = crawled.get("title", "")
+            result["body_preview"] = crawled.get("body_text", "")[:3000]
+            result["status"]       = "crawled"
+
+            # BeautifulSoup 재크롤로 작성자 URL 추정
+            import httpx
+            from bs4 import BeautifulSoup
+            headers = {"User-Agent": "Mozilla/5.0 Chrome/120"}
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+                r = await client.get(url, headers=headers)
+            soup = BeautifulSoup(r.text, "lxml")
+            author_url = _extract_author_url(url, soup)
+            result["author_url"] = author_url
+
+            # 작성자 채널 크롤링
+            if author_url and author_url != url:
+                try:
+                    author_crawled      = await _crawl_url(author_url)
+                    result["author_body"] = author_crawled.get("body_text", "")[:2000]
+                    result["status"] = "author_crawled"
+                except Exception:
+                    pass  # 작성자 페이지 실패해도 원본은 유지
+
+        except Exception as e:
+            result["error"] = str(e)
+        return result
+
+    # URL들 병렬 크롤링 (최대 5개)
+    tasks = [analyze_one(u) for u in urls[:5] if u.strip()]
+    url_results = await asyncio.gather(*tasks)
+
+    # 성공한 URL들의 텍스트만 모아 AI로 글쓰기 스타일 추출
+    combined_texts = []
+    for r in url_results:
+        if r["status"] in ("crawled", "author_crawled") and r.get("body_preview"):
+            combined_texts.append(
+                f"[{r['platform']}] {r['title']}\n{r['body_preview']}"
+            )
+        if r.get("author_body"):
+            combined_texts.append(
+                f"[{r['platform']} 채널 전체] {r['author_body']}"
+            )
+
+    voice_samples: list[dict] = []
+    if combined_texts:
+        ag_name  = agency.get("agency_name", "")
+        ag_tone  = agency.get("tone_and_manner", "")
+        full_text = "\n\n---\n\n".join(combined_texts)[:8000]
+
+        prompt = f"""당신은 콘텐츠 분석 전문가입니다. 아래 콘텐츠들을 분석하여 글쓰기 스타일 샘플 3~5개를 추출하세요.
+
+에이전시: {ag_name}
+팀원: {member_id}
+톤앤매너: {ag_tone}
+
+[분석할 콘텐츠]
+{full_text}
+
+규칙:
+- 각 샘플은 해당 플랫폼에서 가장 핵심적인 글쓰기 패턴을 보여주는 문단/섹션이어야 합니다
+- 각 샘플은 150~400자 내외로 원문을 그대로 발췌
+- 반드시 아래 JSON 형식으로만 응답 (설명 없이)
+
+{{"samples": [
+  {{"platform": "플랫폼명", "excerpt": "발췌한 텍스트", "pattern_note": "이 글의 특징 한줄 요약"}},
+  ...
+]}}"""
+
+        raw = await _llm_generate(prompt, api_keys)
+        try:
+            import re as re_mod
+            m = re_mod.search(r'\{.*\}', raw, re_mod.DOTALL)
+            if m:
+                parsed = jsonlib.loads(m.group())
+                for s in parsed.get("samples", []):
+                    note = s.get("pattern_note", "")
+                    text = s.get("excerpt", "").strip()
+                    plat = s.get("platform", "공통")
+                    if text:
+                        full = f"{text}\n\n💡 스타일 메모: {note}" if note else text
+                        voice_samples.append({"channel": plat, "text": full})
+        except Exception:
+            pass
+
+    return {
+        "member_id":    member_id,
+        "url_results":  url_results,
+        "voice_samples": voice_samples,
+        "total_crawled": sum(1 for r in url_results if r["status"] != "error"),
+        "total_urls":   len(url_results),
+    }
