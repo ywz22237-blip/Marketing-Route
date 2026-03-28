@@ -3662,6 +3662,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
             <button id="cn-save-sheet-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;" onclick="saveCardNewsToSheet()">📊 시트 저장</button>
             <button id="cn-render-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;border-color:#a78bfa;color:#a78bfa;" onclick="renderCardNewsImages()">🖼 이미지 생성</button>
             <button id="cn-dl-all-btn" class="btn btn-ghost" style="font-size:13px;padding:4px 12px;display:none;" onclick="downloadAllImages()">⬇ 전체 다운로드</button>
+            <button id="cn-deploy-btn" class="btn btn-primary" style="font-size:13px;padding:4px 14px;display:none;" onclick="switchCnView('deploy')">🚀 배포하기</button>
           </div>
         </div>
 
@@ -3674,16 +3675,22 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
           <a id="cn-sheet-link" href="#" target="_blank" style="font-size:13px;color:#60a5fa;">시트 열기 →</a>
         </div>
 
-        <!-- 보기 탭: 텍스트 / 이미지 -->
+        <!-- 보기 탭: 텍스트 / 이미지 / 배포 -->
         <div class="tab-nav" id="cn-view-tabs" style="margin-bottom:14px;">
-          <button id="cn-view-tab-text"  class="active" onclick="switchCnView('text')">📝 텍스트</button>
-          <button id="cn-view-tab-image" onclick="switchCnView('image')">🖼 이미지 미리보기</button>
+          <button id="cn-view-tab-text"   class="active" onclick="switchCnView('text')">📝 텍스트</button>
+          <button id="cn-view-tab-image"  onclick="switchCnView('image')">🖼 이미지 미리보기</button>
+          <button id="cn-view-tab-deploy" onclick="switchCnView('deploy')" style="display:none;">🚀 배포</button>
         </div>
 
         <!-- 텍스트 뷰 -->
         <div id="cn-view-text">
           <div id="card-slides-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
           <div id="card-footer" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- 배포 뷰 -->
+        <div id="cn-view-deploy" style="display:none;">
+          <div id="cn-deploy-panel"></div>
         </div>
 
         <!-- 이미지 뷰 -->
@@ -8686,10 +8693,13 @@ function _getCnDesign() {
 }
 
 function switchCnView(view) {
-  document.getElementById('cn-view-text').style.display  = view === 'text'  ? '' : 'none';
-  document.getElementById('cn-view-image').style.display = view === 'image' ? '' : 'none';
-  document.getElementById('cn-view-tab-text').classList.toggle('active',  view === 'text');
-  document.getElementById('cn-view-tab-image').classList.toggle('active', view === 'image');
+  document.getElementById('cn-view-text').style.display   = view === 'text'   ? '' : 'none';
+  document.getElementById('cn-view-image').style.display  = view === 'image'  ? '' : 'none';
+  document.getElementById('cn-view-deploy').style.display = view === 'deploy' ? '' : 'none';
+  document.getElementById('cn-view-tab-text').classList.toggle('active',   view === 'text');
+  document.getElementById('cn-view-tab-image').classList.toggle('active',  view === 'image');
+  document.getElementById('cn-view-tab-deploy').classList.toggle('active', view === 'deploy');
+  if (view === 'deploy') _buildCnDeployPanel();
 }
 
 async function renderCardNewsImages() {
@@ -8718,7 +8728,7 @@ async function renderCardNewsImages() {
 
     _setCnStepState(3, 'done', `${_cnImages.length}장`);
     _renderImageGrid(_cnImages, data.ratio);
-    switchCnView('image');
+    _showCnDeployTab();
 
     const dlBtn = document.getElementById('cn-dl-all-btn');
     if (dlBtn) dlBtn.style.display = '';
@@ -8777,6 +8787,129 @@ function downloadAllImages() {
     }, i * 200);
   });
   toast(`⬇ ${_cnImages.length}장 다운로드 시작`, 'green');
+}
+
+function _showCnDeployTab() {
+  const tab = document.getElementById('cn-view-tab-deploy');
+  const btn = document.getElementById('cn-deploy-btn');
+  if (tab) tab.style.display = '';
+  if (btn) btn.style.display = '';
+  switchCnView('deploy');
+}
+
+function _buildCnDeployPanel() {
+  const panel = document.getElementById('cn-deploy-panel');
+  if (!panel) return;
+  const plt   = loadPlatformConnections();
+  const keys  = getKeys();
+  const gen   = _cnStepResults?.step_generate;
+
+  const hasIG = !!(plt.meta?.access_token && plt.meta?.ig_account_id);
+  const hasFB = !!(plt.meta?.access_token && plt.meta?.page_id);
+  const hasImgbb = !!(keys.imgbb_api_key);
+
+  const caption = (() => {
+    if (!gen) return '';
+    const tags = (gen.hashtags || []).map(t => '#' + t).join(' ');
+    return [gen.hook_title || '', gen.cta || '', tags].filter(Boolean).join('\n\n');
+  })();
+
+  const pCard = (id, icon, label, enabled, reason) => `
+    <div style="background:#0d1117;border:1px solid ${enabled?'#30363d':'#21262d'};border-radius:10px;padding:16px;opacity:${enabled?1:0.5};">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="font-size:22px;">${icon}</span>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#f0f6fc;">${label}</div>
+          ${!enabled ? `<div style="font-size:12px;color:#f59e0b;">${reason}</div>` : ''}
+        </div>
+        ${enabled && _cnImages.length ? `<span style="margin-left:auto;font-size:12px;padding:2px 8px;border-radius:8px;background:#23863615;color:#4ade80;border:1px solid #23863630;">${id==='instagram'?'carousel '+_cnImages.length+'장':'이미지 포스트'}</span>` : ''}
+      </div>
+      <textarea id="cn-caption-${id}" style="width:100%;min-height:100px;background:#161b22;border:1px solid #30363d;border-radius:7px;color:#c9d1d9;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:10px;">${caption}</textarea>
+      <button ${enabled?`onclick="deployCardNews('${id}')"`:'disabled'}
+        style="width:100%;padding:8px;border-radius:7px;border:none;background:${enabled?'#1f6feb':'#21262d'};color:${enabled?'#fff':'#484f58'};font-size:14px;font-weight:700;cursor:${enabled?'pointer':'not-allowed'};font-family:inherit;">
+        ${enabled ? `🚀 ${label}에 배포` : '연결 설정 필요'}
+      </button>
+      <div id="cn-deploy-result-${id}" style="margin-top:8px;display:none;"></div>
+    </div>`;
+
+  const igReason = !plt.meta?.access_token ? '플랫폼 탭에서 Meta 토큰 입력 필요'
+                 : !plt.meta?.ig_account_id ? 'Instagram Account ID 입력 필요'
+                 : !hasImgbb ? 'API 키 탭에서 imgbb Key 입력 필요' : '';
+  const fbReason = !plt.meta?.access_token ? '플랫폼 탭에서 Meta 토큰 입력 필요'
+                 : !plt.meta?.page_id ? 'Facebook Page ID 입력 필요' : '';
+
+  if (!_cnImages.length) {
+    panel.innerHTML = `<div style="text-align:center;padding:40px;color:#8b949e;">
+      <div style="font-size:32px;margin-bottom:10px;">🖼</div>
+      <p style="font-size:14px;margin-bottom:16px;">이미지가 없습니다. 먼저 이미지를 생성하세요.</p>
+      <button class="btn btn-primary" onclick="renderCardNewsImages()">🖼 이미지 생성</button>
+    </div>`;
+    return;
+  }
+
+  panel.innerHTML = `
+    <p style="font-size:13px;color:#8b949e;margin:0 0 16px;">생성된 이미지 <strong style="color:#f0f6fc;">${_cnImages.length}장</strong>을 플랫폼에 직접 배포합니다. 캡션을 확인하고 배포하세요.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      ${pCard('instagram','📸','Instagram', hasIG && hasImgbb, igReason)}
+      ${pCard('facebook','📘','Facebook',   hasFB,             fbReason)}
+    </div>`;
+}
+
+async function deployCardNews(platform) {
+  const gen   = _cnStepResults?.step_generate;
+  const plt   = loadPlatformConnections();
+  const keys  = getKeys();
+  const caption = document.getElementById(`cn-caption-${platform}`)?.value || '';
+  const resultEl = document.getElementById(`cn-deploy-result-${platform}`);
+  const btn   = document.querySelector(`[onclick="deployCardNews('${platform}')"]`);
+
+  if (!_cnImages.length) { toast('이미지가 없습니다.', 'orange'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 배포 중...'; }
+  if (resultEl) { resultEl.style.display = 'none'; }
+
+  try {
+    let endpoint, body;
+    if (platform === 'instagram') {
+      endpoint = `${API}/publish/instagram`;
+      body = {
+        access_token:   plt.meta.access_token,
+        ig_account_id:  plt.meta.ig_account_id,
+        caption,
+        image_b64_list: _cnImages.map(img => img.image_b64),
+        imgbb_api_key:  keys.imgbb_api_key || '',
+      };
+    } else if (platform === 'facebook') {
+      endpoint = `${API}/publish/facebook`;
+      // Facebook: 첫 번째 이미지를 imgbb에 업로드 후 링크로 포스팅
+      body = {
+        page_access_token: plt.meta.access_token,
+        page_id:           plt.meta.page_id,
+        content:           caption,
+        title:             gen?.hook_title || '',
+      };
+    }
+
+    const res  = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+
+    _setCnStepState(4, 'done', `${platform} 배포 완료`);
+    if (resultEl) {
+      resultEl.style.display = '';
+      resultEl.innerHTML = `<div style="padding:8px 12px;background:#23863615;border:1px solid #23863640;border-radius:6px;font-size:13px;color:#22c55e;">
+        ✅ 배포 완료! Post ID: ${data.post_id || '-'}
+      </div>`;
+    }
+    toast(`✅ ${platform} 배포 완료!`, 'green');
+    if (btn) { btn.textContent = '✅ 배포 완료'; btn.style.background = '#238636'; }
+  } catch(e) {
+    if (resultEl) {
+      resultEl.style.display = '';
+      resultEl.innerHTML = `<div style="padding:8px 12px;background:#da363315;border:1px solid #da363340;border-radius:6px;font-size:13px;color:#f87171;">❌ ${e.message}</div>`;
+    }
+    if (btn) { btn.disabled = false; btn.textContent = `🚀 ${platform}에 배포`; }
+    toast('배포 실패: ' + e.message, 'red');
+  }
 }
 
 let _cnMode        = null;          // 'auto' | 'step'
@@ -8931,7 +9064,7 @@ async function _runPipelineAuto(topic) {
         _cnStepResults.step_image = { status: 'done', ...imgData };
         _setCnStepState(3, 'done', `${_cnImages.length}장`);
         _renderImageGrid(_cnImages, imgData.ratio);
-        switchCnView('image');
+        _showCnDeployTab();
         const dlBtn = document.getElementById('cn-dl-all-btn');
         if (dlBtn) dlBtn.style.display = '';
       } catch(imgErr) {
@@ -9073,9 +9206,10 @@ async function _runPipelineStep(topic, stepKey) {
     }
 
   } else if (stepKey === 'deploy') {
-    _setCnStepState(4, 'skip', '준비중');
-    toast('배포 연동은 이미지 렌더링 이후 구현됩니다.', 'orange');
+    _setCnStepState(4, 'running');
     document.getElementById('cn-step-next-area').style.display = 'none';
+    _showCnDeployTab();
+    _setCnStepState(4, 'done', '배포 준비 완료');
   }
 }
 
