@@ -3013,7 +3013,11 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
 
     <div style="display:flex;justify-content:space-between;margin-top:16px;">
       <button class="btn btn-ghost" onclick="switchTsnsTab('basic')">← 기본으로</button>
-      <button class="btn btn-primary" onclick="switchTsnsTab('review')">다음: 검수 →</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="tsns-autosave-label" style="display:none;font-size:12px;color:#484f58;"></span>
+        <button class="btn btn-ghost" style="font-size:13px;" onclick="saveTsnsDraft()">💾 임시저장</button>
+        <button class="btn btn-primary" onclick="switchTsnsTab('review')">다음: 검수 →</button>
+      </div>
     </div>
   </div>
 
@@ -3348,7 +3352,11 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
 
     <div style="display:flex;justify-content:space-between;margin-top:16px;">
       <button class="btn btn-ghost" onclick="switchIsnsTab('basic')">← 기본으로</button>
-      <button class="btn btn-primary" onclick="switchIsnsTab('cardnews')">다음: 카드뉴스 →</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="isns-autosave-label" style="display:none;font-size:12px;color:#484f58;"></span>
+        <button class="btn btn-ghost" style="font-size:13px;" onclick="saveIsnsDraft()">💾 임시저장</button>
+        <button class="btn btn-primary" onclick="switchIsnsTab('cardnews')">다음: 카드뉴스 →</button>
+      </div>
     </div>
   </div>
 
@@ -13850,6 +13858,22 @@ _renderPlanHistory();
   });
 })();
 
+// ── 텍스트형 SNS 자동저장 이벤트 리스너 ──────────────────────
+(function() {
+  ['tsns-linkedin-body','tsns-threads-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', _tsnsAutoSaveDebounced);
+  });
+})();
+
+// ── 이미지형 SNS 자동저장 이벤트 리스너 ──────────────────────
+(function() {
+  ['isns-insta-caption','isns-fb-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', _isnsAutoSaveDebounced);
+  });
+})();
+
 // ── SEO Phase1/2 탭 전환 ────────────────────────────────────
 
 const SEO_NEW_TABS = ['crawl','gap','meta','gsc'];
@@ -14237,6 +14261,72 @@ function regenerateTSNS() {
     const body = document.getElementById(bodyId)?.value || '';
     if (reviewEl) reviewEl.value = body;
   });
+}
+
+function saveTsnsDraft() {
+  const platform = _tsnsActivePlatform || 'linkedin';
+  const bodyId   = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+  const content  = document.getElementById(bodyId)?.value || '';
+  const topic    = document.getElementById('tsns-topic')?.value || `${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠`;
+  if (!content.trim()) { toast('저장할 내용이 없습니다.', 'orange'); return; }
+  saveDraft({ type: platform, platform, title: topic, content });
+  const label = document.getElementById('tsns-autosave-label');
+  const now   = new Date();
+  const hhmm  = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  if (label) { label.textContent = `저장됨 ${hhmm}`; label.style.display = ''; }
+  toast('임시저장 완료', '#4ade80');
+}
+
+let _tsnsSaveTimer = null;
+function _tsnsAutoSaveDebounced() {
+  clearTimeout(_tsnsSaveTimer);
+  _tsnsSaveTimer = setTimeout(() => {
+    const platform = _tsnsActivePlatform || 'linkedin';
+    const bodyId   = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
+    const content  = document.getElementById(bodyId)?.value || '';
+    const topic    = document.getElementById('tsns-topic')?.value || '';
+    if (!content.trim()) return;
+    saveDraft({ type: platform, platform, title: topic || `${platform === 'linkedin' ? '링크드인' : '쓰레드'} 콘텐츠`, content });
+    const label = document.getElementById('tsns-autosave-label');
+    const now   = new Date();
+    const hhmm  = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    if (label) { label.textContent = `자동저장됨 ${hhmm}`; label.style.display = ''; }
+  }, 1200);
+}
+
+function saveIsnsDraft() {
+  const platform    = _isnsActivePlatform || 'instagram';
+  const isInsta     = platform === 'insta' || platform === 'instagram';
+  const bodyId      = isInsta ? 'isns-insta-caption' : 'isns-fb-body';
+  const draftType   = isInsta ? 'instagram' : 'facebook';
+  const content     = document.getElementById(bodyId)?.value || '';
+  const topic       = document.getElementById('isns-topic')?.value || '이미지형 SNS 콘텐츠';
+  if (!content.trim()) { toast('저장할 내용이 없습니다.', 'orange'); return; }
+  saveDraft({ type: draftType, platform: draftType, title: topic, content });
+  const label = document.getElementById('isns-autosave-label');
+  const now   = new Date();
+  const hhmm  = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  if (label) { label.textContent = `저장됨 ${hhmm}`; label.style.display = ''; }
+  toast('임시저장 완료', '#4ade80');
+}
+
+let _isnsSaveTimer = null;
+function _isnsAutoSaveDebounced() {
+  clearTimeout(_isnsSaveTimer);
+  _isnsSaveTimer = setTimeout(() => {
+    const platform  = _isnsActivePlatform || 'instagram';
+    const isInsta   = platform === 'insta' || platform === 'instagram';
+    const bodyId    = isInsta ? 'isns-insta-caption' : 'isns-fb-body';
+    const draftType = isInsta ? 'instagram' : 'facebook';
+    const content   = document.getElementById(bodyId)?.value || '';
+    const topic     = document.getElementById('isns-topic')?.value || '';
+    if (!content.trim()) return;
+    saveDraft({ type: draftType, platform: draftType, title: topic || '이미지형 SNS 콘텐츠', content });
+    const label = document.getElementById('isns-autosave-label');
+    const now   = new Date();
+    const hhmm  = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    if (label) { label.textContent = `자동저장됨 ${hhmm}`; label.style.display = ''; }
+  }, 1200);
 }
 
 // ── 이미지형 SNS 생성 ──────────────────────────────────────
