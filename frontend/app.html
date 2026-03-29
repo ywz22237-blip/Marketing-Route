@@ -679,6 +679,21 @@
         </div>
         <div id="test-result-groq" class="api-test-result" style="display:none;"></div>
         <p style="font-size:12px;color:#484f58;margin:4px 0 0;">무료 Llama3 초고속 · console.groq.com</p>
+        <!-- 기본 LLM 선택 토글 -->
+        <div style="margin-top:10px;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;">
+          <div style="font-size:12px;color:#8b949e;margin-bottom:8px;font-weight:600;">⚡ 기본 AI 모델 선택</div>
+          <div style="display:flex;gap:6px;">
+            <button id="llm-btn-gemini" onclick="setPrimaryLLM('gemini')"
+              style="flex:1;padding:6px 0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #1f6feb;background:#1f6feb;color:#fff;">
+              🔵 Gemini 우선
+            </button>
+            <button id="llm-btn-groq" onclick="setPrimaryLLM('groq')"
+              style="flex:1;padding:6px 0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #30363d;background:transparent;color:#8b949e;">
+              🟢 Groq 우선
+            </button>
+          </div>
+          <p id="llm-mode-desc" style="font-size:11px;color:#484f58;margin:6px 0 0;">현재: Gemini 우선 사용 → 할당량 초과 시 Groq 자동 전환</p>
+        </div>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -6302,7 +6317,7 @@ function goto(name) {
   if (name === 'publish')   loadPublishJobs();
   if (name === 'deploy')    loadDeployPage();
   if (name === 'dashboard') renderDashboard();
-  if (name === 'api')       renderApiSetupChecklist();
+  if (name === 'api')       { renderApiSetupChecklist(); _restorePrimaryLLMUI(); }
   if (name === 'agency')    { _loadAgencyFields(agencyProfile || {}); renderAgencyProgress(); _restorePersonaUI(); _updateAgencyProjBadge(); _renderLearnedDataList(); _updateSamplePicker(); }
   if (name === 'seo')       { _renderPlanAgencyHint(); _renderPlanHistory(); _updatePlanRecentCount(); }
   if (name === 'blog')      { const ok = blogDraftRestore(); if (ok) toast('이전 작업을 복원했습니다', '#4ade80'); }
@@ -6927,11 +6942,52 @@ function initPlatformConnectionsUI() {
 
 function saveAllKeys() {
   const keys = _collectKeyFields();
+  // primary_llm 설정도 함께 저장
+  keys.primary_llm = localStorage.getItem('primary_llm') || 'gemini';
   const list = getProjects();
   const idx  = list.findIndex(p => p.id === activeProjectId);
   if (idx !== -1) { list[idx].api_keys = keys; saveProjects(list); }
   renderApiSetupChecklist();
   toast('API 키 저장 완료', 'green');
+}
+
+function setPrimaryLLM(mode) {
+  localStorage.setItem('primary_llm', mode);
+  // 프로젝트 api_keys에도 즉시 반영
+  const list = getProjects();
+  const idx  = list.findIndex(p => p.id === activeProjectId);
+  if (idx !== -1) {
+    list[idx].api_keys = list[idx].api_keys || {};
+    list[idx].api_keys.primary_llm = mode;
+    saveProjects(list);
+  }
+  // UI 업데이트
+  const geminiBtn = document.getElementById('llm-btn-gemini');
+  const groqBtn   = document.getElementById('llm-btn-groq');
+  const desc      = document.getElementById('llm-mode-desc');
+  if (mode === 'groq') {
+    if (geminiBtn) { geminiBtn.style.background='transparent'; geminiBtn.style.color='#8b949e'; geminiBtn.style.borderColor='#30363d'; }
+    if (groqBtn)   { groqBtn.style.background='#238636'; groqBtn.style.color='#fff'; groqBtn.style.borderColor='#238636'; }
+    if (desc) desc.textContent = '현재: Groq 우선 사용 → Groq 실패 시 Gemini 전환 (Gemini 할당량 절약)';
+  } else {
+    if (geminiBtn) { geminiBtn.style.background='#1f6feb'; geminiBtn.style.color='#fff'; geminiBtn.style.borderColor='#1f6feb'; }
+    if (groqBtn)   { groqBtn.style.background='transparent'; groqBtn.style.color='#8b949e'; groqBtn.style.borderColor='#30363d'; }
+    if (desc) desc.textContent = '현재: Gemini 우선 사용 → 할당량 초과 시 Groq 자동 전환';
+  }
+  toast(`기본 AI 모델: ${mode === 'groq' ? '🟢 Groq 우선' : '🔵 Gemini 우선'} 으로 변경됐습니다`, '#4ade80');
+}
+
+function _restorePrimaryLLMUI() {
+  const mode = getKeys().primary_llm || localStorage.getItem('primary_llm') || 'gemini';
+  // UI만 반영 (toast 없이)
+  const geminiBtn = document.getElementById('llm-btn-gemini');
+  const groqBtn   = document.getElementById('llm-btn-groq');
+  const desc      = document.getElementById('llm-mode-desc');
+  if (mode === 'groq') {
+    if (geminiBtn) { geminiBtn.style.background='transparent'; geminiBtn.style.color='#8b949e'; geminiBtn.style.borderColor='#30363d'; }
+    if (groqBtn)   { groqBtn.style.background='#238636'; groqBtn.style.color='#fff'; groqBtn.style.borderColor='#238636'; }
+    if (desc) desc.textContent = '현재: Groq 우선 사용 → Groq 실패 시 Gemini 전환 (Gemini 할당량 절약)';
+  }
 }
 
 function loadSavedKeys() {
@@ -15035,10 +15091,12 @@ async function generateTSNS(platform) {
     }
     const data = await res.json();
     const post = data.post || {};
-    const body = post.body || '';
+    // title + body 합치기 (title이 있으면 맨 앞에 붙임, 중복 방지)
+    const title = post.title || '';
+    const bodyRaw = post.body || '';
+    const body = title && !bodyRaw.startsWith(title) ? `${title}\n\n${bodyRaw}` : bodyRaw;
     if (!body) {
       if (bodyEl) bodyEl.value = '';
-      // API 키 미설정 여부 안내
       const keys = getKeys?.() || {};
       if (!keys.gemini_api_key && !keys.groq_api_key) {
         toast('❌ API 키가 없습니다. API 설정 → Gemini 또는 Groq 키를 입력하세요.', 'red');

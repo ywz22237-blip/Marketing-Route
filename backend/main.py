@@ -230,9 +230,36 @@ JSON 형식으로만 반환 (다른 텍스트 없이):
 # ── SEO 키워드 도구 ────────────────────────────────────────────
 
 async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tuple[str, str | None]:
-    """Gemini 호출 후 텍스트 반환. 429 시 Groq 자동 폴백."""
+    """Gemini 호출 후 텍스트 반환. 429 시 Groq 자동 폴백.
+    primary_llm='groq' 이면 Groq 먼저 시도 (Gemini 할당량 절약).
+    """
     import os
-    key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+    # primary_llm 설정 확인 (프론트에서 api_keys에 포함)
+    primary_llm = api_keys.get("primary_llm", "gemini")
+
+    groq_key   = api_keys.get("groq_api_key")  or os.getenv("GROQ_API_KEY", "")
+    gemini_key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+
+    # ── Groq 우선 모드 ──────────────────────────────────────────
+    if primary_llm == "groq" and groq_key:
+        try:
+            from groq import Groq
+            gclient = Groq(api_key=groq_key)
+            gresp = gclient.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.6,
+                max_tokens=8192,
+            )
+            return gresp.choices[0].message.content or "", None
+        except Exception as ge:
+            err_str = str(ge)
+            # Groq도 실패하면 Gemini 폴백
+            if not gemini_key:
+                return "", f"Groq 오류: {err_str[:150]}"
+            # Gemini로 계속 진행
+
+    key = gemini_key
     # tier2/3 = 2.5-flash(고품질), 기본 = 2.0-flash(6배 높은 무료 할당량)
     model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.0-flash"
 
@@ -1718,8 +1745,8 @@ _SNS_PROMPTS = {
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 - SEO 기획 전략(키워드·검색의도·리서치 내용)을 본문에 충분히 반영하세요
 
-JSON 형식으로만 반환:
-{{"title": "첫 줄 후킹 문장", "body": "전체 포스트 본문", "hashtags": ["#태그1", "#태그2", "#태그3", "#태그4", "#태그5"], "cta": "마무리 CTA 문구"}}""",
+JSON 형식으로만 반환 (body에 title을 반복하지 말 것 — title은 별도 필드):
+{{"title": "첫 줄 후킹 문장", "body": "후킹 문장 없이 본문 내용만 (title 제외)", "hashtags": ["#태그1", "#태그2", "#태그3", "#태그4", "#태그5"], "cta": "마무리 CTA 문구"}}""",
 
     SNSPlatform.INSTAGRAM: """당신은 인스타그램 비즈니스 계정 콘텐츠 전문 작가입니다.
 비주얼 중심 플랫폼에 최적화된 캡션을 작성하세요.
@@ -1744,8 +1771,8 @@ JSON 형식으로만 반환:
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 - SEO 기획 전략(키워드·검색의도·리서치 내용)을 콘텐츠에 충분히 반영하세요
 
-JSON 형식으로만 반환:
-{{"title": "첫 줄 후킹", "body": "전체 캡션 본문", "hashtags": ["#태그1", "#태그2"], "cta": "CTA 문구"}}""",
+JSON 형식으로만 반환 (body에 title을 반복하지 말 것):
+{{"title": "첫 줄 후킹", "body": "title 제외한 캡션 본문", "hashtags": ["#태그1", "#태그2"], "cta": "CTA 문구"}}""",
 
     SNSPlatform.THREADS: """당신은 쓰레드(Threads) 플랫폼 전문 콘텐츠 작가입니다.
 대화를 유도하는 짧고 흥미로운 시리즈형 글을 작성하세요.
@@ -1770,8 +1797,8 @@ JSON 형식으로만 반환:
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 - SEO 기획 전략(키워드·검색의도·리서치 내용)을 콘텐츠에 충분히 반영하세요
 
-JSON 형식으로만 반환:
-{{"title": "첫 번째 글 (후킹)", "body": "전체 시리즈 글 (--- 구분)", "hashtags": ["#태그1", "#태그2", "#태그3"], "cta": "마지막 CTA"}}""",
+JSON 형식으로만 반환 (body에 title을 반복하지 말 것):
+{{"title": "첫 번째 글 (후킹)", "body": "title 제외한 2번 글부터 시리즈 (--- 구분)", "hashtags": ["#태그1", "#태그2", "#태그3"], "cta": "마지막 CTA"}}""",
 }
 
 
