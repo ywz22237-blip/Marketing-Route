@@ -110,90 +110,19 @@ async def seo_plan(req: SEOPlanRequest):
     profile = req.agency_profile or _agency_profile
     gemini_key = (req.api_keys or {}).get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
 
-    # 보이스 DNA 섹션 (중첩 f-string 방지)
-    if profile.brand_voice_dna:
-        dna = profile.brand_voice_dna
-        voice_dna_section = (
-            "보이스 DNA:\n"
-            "- 문장 스타일: " + dna.get('sentence_style', '') + "\n"
-            "- 제목 패턴: " + dna.get('title_pattern', '') + "\n"
-            "- 자주 쓰는 표현: " + ', '.join(dna.get('tone_keywords', [])) + "\n"
-            "- 피해야 할 표현: " + ', '.join(dna.get('avoid', [])) + "\n"
-            "- 한 줄 요약: " + dna.get('summary', '')
-        )
-    else:
-        voice_dna_section = ""
+    voice_dna_section, voice_sample_section, pillars_str = _build_voice_context(profile)
 
-    if profile.brand_voice_samples:
-        sample_lines = "\n".join(f"- {s}" for s in profile.brand_voice_samples[:3])
-        voice_sample_section = "보이스 샘플:\n" + sample_lines
-    else:
-        voice_sample_section = ""
-
-    prompt = f"""당신은 B2B 멀티플랫폼 콘텐츠 기획 전문가입니다.
-하나의 키워드/주제로 블로그·링크드인·인스타그램·쓰레드·카드뉴스·유튜브에 배포할 콘텐츠를 기획하세요.
-같은 핵심 메시지를 각 플랫폼에 맞는 형식으로 재구성하는 OSMU 전략입니다.
+    prompt = f"""당신은 B2B 멀티플랫폼 콘텐츠 기획 전문가입니다. OSMU 전략으로 블로그·링크드인·인스타·쓰레드·카드뉴스·유튜브용 콘텐츠를 기획하세요.
 
 키워드: {req.keyword}
-에이전시: {profile.agency_name} / 업종: {profile.industry}
-서비스: {profile.services}
-타겟: {profile.target_audience}
-톤앤매너: {profile.tone_and_manner}
-콘텐츠 기둥: {', '.join(profile.content_pillars)}
+에이전시: {profile.agency_name} | 업종: {profile.industry} | 서비스: {profile.services}
+타겟: {profile.target_audience} | 톤: {profile.tone_and_manner}
+콘텐츠 기둥: {pillars_str}
 {voice_dna_section}
 {voice_sample_section}
 
-JSON 형식으로만 반환 (다른 텍스트 없이):
-{{
-  "search_intent": "검색 의도 한 줄 요약",
-  "recommended_topics": ["주제1", "주제2", "주제3", "주제4", "주제5"],
-  "hook_angles": ["후킹앵글1", "후킹앵글2", "후킹앵글3"],
-  "competitor_patterns": ["경쟁사패턴1", "경쟁사패턴2"],
-  "content_calendar": [
-    {{"week": 1, "topic": "주제", "platform": "blog", "format": "longform"}},
-    {{"week": 1, "topic": "주제", "platform": "linkedin", "format": "shortpost"}},
-    {{"week": 2, "topic": "주제", "platform": "instagram", "format": "card_news"}}
-  ],
-  "content_briefs": {{
-    "blog": {{
-      "topic": "블로그 글 제목 (SEO 최적화)",
-      "summary": "블로그 글의 핵심 내용 2~3문장 요약",
-      "key_points": ["핵심포인트1", "핵심포인트2", "핵심포인트3"],
-      "angle": "독자가 얻는 가치/관점"
-    }},
-    "linkedin": {{
-      "topic": "링크드인 포스트 제목",
-      "summary": "비즈니스 인사이트 중심 2~3문장 요약",
-      "key_points": ["인사이트1", "인사이트2"],
-      "angle": "전문가 관점의 비즈니스 가치"
-    }},
-    "instagram": {{
-      "topic": "인스타그램 캡션 첫줄 (후킹)",
-      "summary": "비주얼 콘텐츠용 핵심 메시지",
-      "key_points": ["포인트1", "포인트2", "포인트3"],
-      "angle": "감성/비주얼 소구점"
-    }},
-    "threads": {{
-      "topic": "쓰레드 첫 글 (호기심 유발)",
-      "summary": "대화형 짧은 시리즈 주제",
-      "key_points": ["스레드1", "스레드2", "스레드3"],
-      "angle": "대화를 유도하는 질문/반전"
-    }},
-    "card_news": {{
-      "topic": "카드뉴스 전체 제목",
-      "summary": "슬라이드로 나눌 핵심 내용 요약",
-      "key_points": ["슬라이드주제1", "슬라이드주제2", "슬라이드주제3", "슬라이드주제4", "슬라이드주제5"],
-      "angle": "인포그래픽 소구점",
-      "recommended_slide_count": 7
-    }},
-    "youtube": {{
-      "topic": "유튜브 영상 제목",
-      "summary": "영상 구성 핵심 내용 요약",
-      "key_points": ["챕터1", "챕터2", "챕터3"],
-      "angle": "시청자가 배울 것"
-    }}
-  }}
-}}"""
+JSON만 반환:
+{{"search_intent":"...","recommended_topics":["주제1","주제2","주제3","주제4","주제5"],"hook_angles":["앵글1","앵글2","앵글3"],"competitor_patterns":["패턴1","패턴2"],"content_calendar":[{{"week":1,"topic":"...","platform":"blog","format":"longform"}},{{"week":1,"topic":"...","platform":"linkedin","format":"shortpost"}},{{"week":2,"topic":"...","platform":"instagram","format":"card_news"}}],"content_briefs":{{"blog":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}},"linkedin":{{"topic":"...","summary":"...","key_points":["...","..."],"angle":"..."}},"instagram":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}},"threads":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}},"card_news":{{"topic":"...","summary":"...","key_points":["...","...","...","...","..."],"angle":"...","recommended_slide_count":7}},"youtube":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}}}}}}"""
 
     result_text, _err = await _gemini_text(prompt, {"gemini_api_key": gemini_key}, req.tier)
     if _err:
@@ -508,40 +437,7 @@ async def seo_analyze(req: SEOAnalyzeRequest):
 5. **recommended_topics는 실제 포스팅 제목 형태** (예: "B2B 콘텐츠 마케팅 완벽 가이드 2024")
 
 JSON만 반환 (코드블록 없이):
-{{
-  "search_intent": "이 주제를 검색하는 사람의 핵심 의도 (2~3문장)",
-  "related_keywords": [
-    {{"keyword": "구체적인 키워드", "relevance": 95, "monthly_est": 15000, "competition": "low", "intent": "정보|상업|롱테일"}},
-    ... (총 {min(req.related_count, 30)}개, 의도별 골고루)
-  ],
-  "clusters": [
-    {{"name": "정보성 키워드", "keywords": ["kw1", "kw2", "kw3", "kw4"]}},
-    {{"name": "상업성 키워드", "keywords": ["kw1", "kw2", "kw3"]}},
-    {{"name": "롱테일 키워드", "keywords": ["kw1", "kw2", "kw3"]}},
-    ... (총 {min(req.cluster_count, 8)}개)
-  ],
-  "trend_data": [
-    {{"period": "YYYY-MM", "value": 75}},
-    ... (최근 {months}개월, value 0-100)
-  ],
-  "smart_block": [
-    {{"rank": 1, "title": "실제 검색 결과에 뜰 법한 인기글 제목", "type": "블로그|카페|뉴스|지식인", "engagement": "높음|보통|낮음"}},
-    ... (5개)
-  ],
-  "recommended_topics": [
-    "실제 포스팅 제목처럼 구체적으로",
-    ... (5개, 채널별로 다르게)
-  ],
-  "hook_angles": ["차별화 앵글1 — 구체적으로", "앵글2", "앵글3"],
-  "content_briefs": {{
-    "blog":      {{"topic": "...", "summary": "...", "key_points": ["...", "...", "..."], "angle": "..."}},
-    "linkedin":  {{"topic": "...", "summary": "...", "key_points": ["...", "..."], "angle": "..."}},
-    "instagram": {{"topic": "...", "summary": "...", "key_points": ["...", "...", "..."], "angle": "..."}},
-    "threads":   {{"topic": "...", "summary": "...", "key_points": ["...", "...", "..."], "angle": "..."}},
-    "card_news": {{"topic": "...", "summary": "...", "key_points": ["...", "...", "...", "...", "..."], "angle": "...", "recommended_slide_count": 7}},
-    "youtube":   {{"topic": "...", "summary": "...", "key_points": ["...", "...", "..."], "angle": "..."}}
-  }}
-}}"""
+{{"search_intent":"...","related_keywords":[{{"keyword":"...","relevance":95,"monthly_est":15000,"competition":"low","intent":"정보|상업|롱테일"}},...총{min(req.related_count,30)}개],"clusters":[{{"name":"정보성","keywords":["kw1","kw2","kw3","kw4"]}},...총{min(req.cluster_count,8)}개],"trend_data":[{{"period":"YYYY-MM","value":75}},...최근{months}개월],"smart_block":[{{"rank":1,"title":"...","type":"블로그|카페|뉴스|지식인","engagement":"높음|보통|낮음"}},...5개],"recommended_topics":["포스팅제목1",...5개],"hook_angles":["앵글1","앵글2","앵글3"],"content_briefs":{{"blog":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}},"linkedin":{{"topic":"...","summary":"...","key_points":["...","..."],"angle":"..."}},"instagram":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}},"threads":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}},"card_news":{{"topic":"...","summary":"...","key_points":["...","...","...","...","..."],"angle":"...","recommended_slide_count":7}},"youtube":{{"topic":"...","summary":"...","key_points":["...","...","..."],"angle":"..."}}}}}}"""
 
     data, err = await _groq_json(prompt, keys)
     if data and isinstance(data, dict):
@@ -1489,89 +1385,29 @@ def _tier_checklist(tier: ApiTier) -> dict:
 
 # ── 블로그 플랫폼별 생성 ───────────────────────────────────────
 
+# 블로그 공통 컨텍스트 (3개 플랫폼 공유 — 중복 제거)
+_BLOG_CTX = """한국어로만 작성.
+주제: {topic} | 에이전시: {agency} | 톤: {tone} | 타겟: {target} | 언어: {language}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
+{seo_strategy}"""
+
 BLOG_PLATFORM_PROMPTS = {
-    BlogPlatform.NAVER: """[CRITICAL] 반드시 한국어로만 작성하세요. 다른 언어 절대 사용 금지.
+    BlogPlatform.NAVER: """당신은 네이버 블로그 SEO 전문 작가입니다.
+""" + _BLOG_CTX + """
+최적화: 제목 30자·키워드 포함, 본문 1500~2000자·단락 3~4줄·소제목(##) 5개+, 키워드 5~7회, 이웃추가 CTA, 해시태그 10개, 메타설명 80자
+JSON만: {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}""",
 
-당신은 네이버 블로그 SEO 전문 작가입니다.
-네이버 검색 알고리즘에 최적화된 블로그 글을 작성하세요.
+    BlogPlatform.TISTORY: """당신은 티스토리 SEO 블로그 전문 작가입니다.
+""" + _BLOG_CTX + """
+최적화: 제목 SEO 키워드+수치, 본문 1200~1800자·목차→서론→H2 3개+→결론, 내부링크 유도, 해시태그 5개, 메타설명 160자
+JSON만: {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}""",
 
-주제: {topic}
-에이전시: {agency}
-톤앤매너: {tone}
-타겟: {target}
-언어: {language}
-콘텐츠 기둥: {content_pillars}
-{voice_dna}
-{voice_samples}
-{seo_strategy}
-
-네이버 최적화 요구사항:
-- 제목: 핵심 키워드 포함, 30자 이내, 클릭 유도 후킹
-- 본문: 1500~2000자, 짧은 단락(3~4줄), 소제목(##) 5개 이상
-- 키워드 밀도: 핵심 키워드 5~7회 자연스럽게 반복 (위 SEO 키워드 반드시 사용)
-- 글 하단: 이웃추가/공감 유도 CTA
-- 해시태그: 10개 (네이버 검색 최적화)
-- 메타설명: 80자 이내 요약
-- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
-- SEO 기획 전략(소주제 구조·검색 의도·리서치 내용)을 본문에 충분히 반영하세요
-
-JSON 형식으로만 반환:
-{{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
-""",
-    BlogPlatform.TISTORY: """[CRITICAL] 반드시 한국어로만 작성하세요. 다른 언어 절대 사용 금지.
-
-당신은 티스토리 SEO 블로그 전문 작가입니다.
-
-주제: {topic}
-에이전시: {agency}
-톤앤매너: {tone}
-타겟: {target}
-언어: {language}
-콘텐츠 기둥: {content_pillars}
-{voice_dna}
-{voice_samples}
-{seo_strategy}
-
-티스토리 최적화 요구사항:
-- 제목: SEO 키워드 포함, 구체적 수치/결과 포함
-- 본문: 1200~1800자, 구글/다음 SEO 최적화
-- 구성: 목차(TOC) → 서론 → 본론(H2 3개 이상, 위 소주제 구조 활용) → 결론
-- 내부 링크 유도 문장 포함
-- 해시태그: 5개
-- 메타설명: 검색 결과 미리보기용 160자 이내
-- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
-- SEO 기획 전략(소주제 구조·검색 의도·리서치 내용)을 본문에 충분히 반영하세요
-
-JSON 형식으로만 반환:
-{{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
-""",
-    BlogPlatform.WORDPRESS: """[CRITICAL] 반드시 한국어로만 작성하세요. 다른 언어 절대 사용 금지.
-
-당신은 워드프레스 SEO 콘텐츠 전문 작가입니다.
-
-주제: {topic}
-에이전시: {agency}
-톤앤매너: {tone}
-타겟: {target}
-언어: {language}
-콘텐츠 기둥: {content_pillars}
-{voice_dna}
-{voice_samples}
-{seo_strategy}
-
-워드프레스 최적화 요구사항:
-- 제목: Yoast SEO 기준, 핵심 키워드 앞배치, 60자 이내
-- 본문: 1000~1500자, H2/H3 계층 구조 (위 소주제 구조 활용), 첫 문단에 키워드 포함
-- 이미지 alt 텍스트 설명 포함 (이미지 삽입 위치 [IMAGE] 표시)
-- 내부/외부 링크 유도 포함
-- 해시태그: 5개 (카테고리/태그용)
-- 메타설명: 155자 이내 Yoast 기준
-- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
-- SEO 기획 전략(소주제 구조·검색 의도·리서치 내용)을 본문에 충분히 반영하세요
-
-JSON 형식으로만 반환:
-{{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
-""",
+    BlogPlatform.WORDPRESS: """당신은 워드프레스 SEO 콘텐츠 전문 작가입니다.
+""" + _BLOG_CTX + """
+최적화: 제목 60자·키워드 앞배치(Yoast), 본문 1000~1500자·H2/H3 구조·[IMAGE] 표시, 링크 유도, 해시태그 5개, 메타설명 155자
+JSON만: {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}""",
 }
 
 VIDEO_PROMPTS = {
@@ -1732,90 +1568,31 @@ JSON 형식으로만 반환:
 
 # ── SNS 플랫폼별 생성 ─────────────────────────────────────────
 
+# 공통 컨텍스트 (3개 플랫폼 공유 — 토큰 중복 방지)
+_SNS_CTX = """[CRITICAL] 반드시 한국어로만 작성. 다른 언어 절대 금지.
+주제: {topic} | 요약: {summary}
+에이전시: {agency} | 타겟: {target} | 톤: {tone}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
+{seo_strategy}
+※ 보이스DNA/샘플 스타일·SEO 전략 반드시 반영."""
+
 _SNS_PROMPTS = {
-    SNSPlatform.LINKEDIN: """[CRITICAL] 반드시 한국어로만 작성하세요. 영어·베트남어·중국어 등 다른 언어 절대 사용 금지.
+    SNSPlatform.LINKEDIN: """당신은 링크드인 B2B 콘텐츠 전문 작가입니다.
+""" + _SNS_CTX + """
+요구사항: 첫줄=스크롤멈추는 후킹(숫자/질문/반전), 본문=3~5단락×2~3줄·데이터/수치포함, 마지막=토론유도CTA, 총800~1500자, 이모지≤3개, 해시태그5개
+JSON만: {{"body":"후킹\\n\\n단락1\\n\\n단락2\\n\\nCTA","hashtags":["#태그1","#태그2","#태그3","#태그4","#태그5"],"cta":"CTA문구"}}""",
 
-당신은 링크드인 B2B 콘텐츠 전문 작가입니다.
-비즈니스 의사결정자를 대상으로 인사이트 중심 포스트를 작성하세요.
+    SNSPlatform.INSTAGRAM: """당신은 인스타그램 비즈니스 콘텐츠 전문 작가입니다.
+""" + _SNS_CTX + """
+요구사항: 첫줄=2줄이내 클릭유도(이모지), 본문=bullet/줄바꿈·단락당이모지1~2개, 총150~300자, 해시태그20~30개, 마지막=저장/링크CTA
+JSON만: {{"body":"클릭유도첫줄\\n\\n본문\\n\\nCTA","hashtags":["#태그1","#태그2"],"cta":"CTA문구"}}""",
 
-주제: {topic}
-핵심 내용 요약: {summary}
-에이전시: {agency}
-타겟: {target}
-톤앤매너: {tone}
-콘텐츠 기둥: {content_pillars}
-{voice_dna}
-{voice_samples}
-{seo_strategy}
-
-링크드인 최적화 요구사항:
-- body 첫 줄: 스크롤을 멈추게 하는 후킹 문장 (숫자/질문/반전) — 빈 줄 후 본문 시작
-- 본문: 3~5개 단락, 각 단락 2~3줄, 줄간격 활용
-- 데이터/사례/구체적 수치 포함 (SEO 리서치 내용 적극 활용)
-- 마지막: 토론 유도 질문 또는 CTA
-- 총 800~1500자, 이모지 최소화 (3개 이내)
-- 해시태그: 5개 (SEO 키워드 기반으로 선정)
-- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
-- SEO 기획 전략(키워드·검색의도·리서치 내용)을 본문에 충분히 반영하세요
-
-JSON 형식으로만 반환 (body 하나에 후킹 문장 + 본문 전체를 모두 포함):
-{{"body": "후킹 문장\\n\\n본문 단락1\\n\\n본문 단락2\\n\\n마무리 CTA", "hashtags": ["#태그1", "#태그2", "#태그3", "#태그4", "#태그5"], "cta": "마무리 CTA 문구"}}""",
-
-    SNSPlatform.INSTAGRAM: """[CRITICAL] 반드시 한국어로만 작성하세요. 영어·베트남어·중국어 등 다른 언어 절대 사용 금지.
-
-당신은 인스타그램 비즈니스 계정 콘텐츠 전문 작가입니다.
-비주얼 중심 플랫폼에 최적화된 캡션을 작성하세요.
-
-주제: {topic}
-핵심 내용 요약: {summary}
-에이전시: {agency}
-타겟: {target}
-톤앤매너: {tone}
-콘텐츠 기둥: {content_pillars}
-{voice_dna}
-{voice_samples}
-{seo_strategy}
-
-인스타그램 최적화 요구사항:
-- body 첫 줄(프리뷰): 2줄 이내, 클릭 유도 문장 (이모지 활용)
-- 본문: 핵심 내용을 짧은 bullet 또는 줄바꿈으로 구성 (SEO 리서치 핵심 인사이트 활용)
-- 이모지: 적극 활용 (단락당 1~2개)
-- 캡션 총 150~300자 (너무 길면 안 읽힘)
-- 해시태그: 20~30개 (SEO 키워드 기반으로 선정)
-- 마지막: 저장/링크 클릭 유도 CTA
-- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
-- SEO 기획 전략(키워드·검색의도·리서치 내용)을 콘텐츠에 충분히 반영하세요
-
-JSON 형식으로만 반환 (body 하나에 캡션 전체 포함):
-{{"body": "클릭 유도 첫 줄\\n\\n본문 내용\\n\\nCTA", "hashtags": ["#태그1", "#태그2"], "cta": "CTA 문구"}}""",
-
-    SNSPlatform.THREADS: """[CRITICAL] 반드시 한국어로만 작성하세요. 영어·베트남어·중국어 등 다른 언어 절대 사용 금지.
-
-당신은 쓰레드(Threads) 플랫폼 전문 콘텐츠 작가입니다.
-대화를 유도하는 짧고 흥미로운 시리즈형 글을 작성하세요.
-
-주제: {topic}
-핵심 내용 요약: {summary}
-에이전시: {agency}
-타겟: {target}
-톤앤매너: {tone}
-콘텐츠 기둥: {content_pillars}
-{voice_dna}
-{voice_samples}
-{seo_strategy}
-
-쓰레드 최적화 요구사항:
-- 1번 글: 호기심을 자극하는 질문 또는 반전 문장 (100자 이내)
-- 2~4번 글: 핵심 내용을 짧게 나눠서 연결 (각 150자 이내, SEO 리서치 인사이트 활용)
-- 마지막 글: 의견 묻기 또는 저장 유도
-- 구어체, 친근한 말투, 이모지 적극 활용
-- 각 글은 "---" 로 구분
-- 해시태그: 3~5개만 (마지막 글에만, SEO 키워드 기반)
-- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
-- SEO 기획 전략(키워드·검색의도·리서치 내용)을 콘텐츠에 충분히 반영하세요
-
-JSON 형식으로만 반환 (body 하나에 1번 글부터 전체 시리즈 포함):
-{{"body": "1번 글(후킹)\\n---\\n2번 글\\n---\\n3번 글\\n---\\n마지막 글+CTA", "hashtags": ["#태그1", "#태그2", "#태그3"], "cta": "마지막 CTA"}}""",
+    SNSPlatform.THREADS: """당신은 쓰레드(Threads) 콘텐츠 전문 작가입니다.
+""" + _SNS_CTX + """
+요구사항: 1번=호기심질문/반전(100자내), 2~4번=핵심내용연결(각150자내), 마지막=의견묻기/저장유도, 구어체·이모지활용, 글구분="---", 해시태그3~5개(마지막글만)
+JSON만: {{"body":"1번후킹\\n---\\n2번\\n---\\n3번\\n---\\n마지막+CTA","hashtags":["#태그1","#태그2","#태그3"],"cta":"마지막CTA"}}""",
 }
 
 
