@@ -4823,12 +4823,17 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
   <!-- 탭 -->
   <div style="display:flex;gap:3px;margin-bottom:20px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:4px;">
     <button id="dptab-history" onclick="switchDeployTab('history')" class="pub-tab-btn active">📊 배포 이력</button>
-    <button id="dptab-queue"   onclick="switchDeployTab('queue')"   class="pub-tab-btn">📋 배포 대기열</button>
+    <button id="dptab-queue"   onclick="switchDeployTab('queue')"   class="pub-tab-btn">📋 예약 대기열</button>
     <button id="dptab-deploy"  onclick="switchDeployTab('deploy')"  class="pub-tab-btn">🚀 채널 배포</button>
   </div>
 
-  <!-- ── Tab 1: 배포 대기열 ── -->
+  <!-- ── Tab 1: 예약 대기열 ── -->
   <div id="dppanel-queue" style="display:none;">
+    <!-- 안내 배너 -->
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1f6feb12;border:1px solid #1f6feb30;border-radius:10px;margin-bottom:14px;">
+      <span style="font-size:16px;">📅</span>
+      <div style="font-size:13px;color:#8b949e;">예약 배포로 등록된 콘텐츠 목록입니다. 지정된 시간에 채널별로 배포됩니다.</div>
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;" id="dp-channel-filter">
       <button class="dp-filter-btn active" onclick="filterDeployQueue('all')"       data-ch="all">전체</button>
       <button class="dp-filter-btn"        onclick="filterDeployQueue('blog')"      data-ch="blog">📝 블로그</button>
@@ -4840,17 +4845,48 @@ AI 도구를 활용하면 월 30개의 콘텐츠를...
     </div>
     <div id="dp-queue-list" style="display:flex;flex-direction:column;gap:10px;"></div>
     <div id="dp-queue-empty" style="display:none;text-align:center;padding:60px 20px;">
-      <div style="font-size:36px;margin-bottom:12px;">📭</div>
-      <div style="font-size:15px;font-weight:600;color:#8b949e;margin-bottom:6px;">배포 대기 중인 콘텐츠가 없습니다</div>
-      <div style="font-size:13px;color:#484f58;">검수 페이지에서 콘텐츠를 승인하면 여기에 표시됩니다.</div>
+      <div style="font-size:36px;margin-bottom:12px;">📅</div>
+      <div style="font-size:15px;font-weight:600;color:#8b949e;margin-bottom:6px;">예약 대기 중인 콘텐츠가 없습니다</div>
+      <div style="font-size:13px;color:#484f58;">채널 배포 탭에서 콘텐츠를 선택 후 "예약 배포"하면 여기에 표시됩니다.</div>
     </div>
   </div>
 
   <!-- ── Tab 2: 채널 배포 ── -->
   <div id="dppanel-deploy" style="display:none;">
 
+    <!-- 배포 방식 선택 -->
+    <div style="display:flex;gap:3px;margin-bottom:16px;background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:4px;max-width:360px;">
+      <button id="dp-mode-instant" onclick="dpSwitchMode('instant')"
+        style="flex:1;padding:7px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:#238636;color:#fff;">
+        🚀 바로 배포
+      </button>
+      <button id="dp-mode-schedule" onclick="dpSwitchMode('schedule')"
+        style="flex:1;padding:7px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;color:#8b949e;">
+        📅 예약 배포
+      </button>
+    </div>
+
+    <!-- 바로 배포 설명 -->
+    <div id="dp-mode-instant-hint" style="font-size:12px;color:#8b949e;margin-bottom:14px;padding:8px 12px;background:#23863612;border:1px solid #23863630;border-radius:8px;">
+      ✅ 콘텐츠를 선택하면 즉시 복사·API 배포가 가능합니다.
+    </div>
+    <!-- 예약 배포 설명 + 날짜/시간 입력 -->
+    <div id="dp-mode-schedule-hint" style="display:none;margin-bottom:14px;padding:12px 14px;background:#1f6feb12;border:1px solid #1f6feb30;border-radius:10px;">
+      <div style="font-size:13px;font-weight:600;color:#60a5fa;margin-bottom:8px;">📅 배포 예약 시간 설정</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="datetime-local" id="dp-schedule-datetime"
+          style="background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:6px 10px;font-size:13px;font-family:inherit;"
+          min="" />
+        <select id="dp-schedule-tz" style="background:#0d1117;border:1px solid #30363d;border-radius:7px;color:#e6edf3;padding:6px 10px;font-size:13px;font-family:inherit;">
+          <option value="Asia/Seoul">한국 (KST)</option>
+          <option value="UTC">UTC</option>
+        </select>
+        <span style="font-size:12px;color:#484f58;">콘텐츠를 선택 후 "예약 등록" 버튼을 누르세요</span>
+      </div>
+    </div>
+
     <!-- 채널 선택 -->
-    <div style="display:flex;gap:6px;margin-bottom:16px;">
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
       <button onclick="dpSelectChannel('blog')"      id="dp-ch-blog"      class="dp-ch-btn active">📝 블로그</button>
       <button onclick="dpSelectChannel('text-sns')"  id="dp-ch-text-sns"  class="dp-ch-btn">💬 텍스트형 SNS</button>
       <button onclick="dpSelectChannel('image-sns')" id="dp-ch-image-sns" class="dp-ch-btn">📷 이미지형 SNS</button>
@@ -10430,23 +10466,35 @@ async function loadCmoApprovalDetail(jobId) {
   }
 }
 
-// ── API 키 select 채우기 ─────────────────────────────
+// ── API 키 select 채우기 (프로젝트 키 우선, 구 osmu_api_keys 폴백) ──────
 function _populateKpiApiSelect() {
   const sel = document.getElementById('kpi-report-api');
   if (!sel) return;
   try {
-    const keys = JSON.parse(localStorage.getItem('osmu_api_keys') || '{}');
-    const groq = keys.groq_api_key || '';
-    sel.innerHTML = groq
-      ? `<option value="${groq}">Groq API 키 (저장됨)</option>`
-      : `<option value="">Groq API 키가 없습니다 — API 설정에서 입력하세요</option>`;
+    // getKeys() = 현재 활성 프로젝트의 API 키
+    const keys = getKeys?.() || {};
+    const groq = keys.groq_api_key || keys.groqApiKey || '';
+    const gemini = keys.gemini_api_key || keys.geminiApiKey || '';
+    const options = [];
+    if (groq)   options.push(`<option value="${groq}">Groq API 키 (저장됨)</option>`);
+    if (gemini) options.push(`<option value="gemini:${gemini}">Gemini API 키 (저장됨)</option>`);
+    sel.innerHTML = options.length
+      ? options.join('')
+      : `<option value="">API 키 없음 — API 설정에서 입력하세요</option>`;
   } catch(e) {}
 }
 
 // ── CMO AI 리포트 생성 ──────────────────────────────
 async function runCmoReport() {
-  const apiKey = document.getElementById('kpi-report-api')?.value;
-  if (!apiKey) { toast('Groq API 키를 먼저 API 설정에서 입력하세요.', 'orange'); return; }
+  // select에 없으면 getKeys()에서 직접 가져오기
+  let apiKey = document.getElementById('kpi-report-api')?.value;
+  if (!apiKey) {
+    const k = getKeys?.() || {};
+    apiKey = k.groq_api_key || k.gemini_api_key || '';
+  }
+  if (!apiKey) { toast('API 키를 먼저 API 설정에서 입력하세요.', 'orange'); return; }
+  const isGemini = apiKey.startsWith('gemini:');
+  const realKey  = isGemini ? apiKey.slice(7) : apiKey;
 
   const goals = JSON.parse(localStorage.getItem(KPI_GOALS_KEY) || '{}');
   const actuals = {
@@ -10488,19 +10536,32 @@ CMO로서 ① 전체 성과 총평, ② 미달 KPI 원인 분석, ③ 채널별 
 마크다운 없이 일반 텍스트로, 번호 붙여서.`,
     };
 
-    // Groq 직접 호출 (CORS OK)
-    const gr = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: body._kpi_prompt }],
-        temperature: 0.4,
-        max_tokens: 1024,
-      })
-    });
-    const data = await gr.json();
-    const text = data.choices?.[0]?.message?.content || '리포트 생성 실패';
+    let text = '';
+    if (isGemini) {
+      // Gemini API 직접 호출
+      const gemRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${realKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: body._kpi_prompt }] }] })
+      });
+      const gemData = await gemRes.json();
+      text = gemData.candidates?.[0]?.content?.parts?.[0]?.text || '리포트 생성 실패';
+    } else {
+      // Groq 직접 호출 (CORS OK)
+      const gr = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${realKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: body._kpi_prompt }],
+          temperature: 0.4,
+          max_tokens: 1024,
+        })
+      });
+      const data = await gr.json();
+      if (data.error) throw new Error(data.error.message || 'Groq 오류');
+      text = data.choices?.[0]?.message?.content || '리포트 생성 실패';
+    }
     if (resEl) resEl.textContent = text;
   } catch(e) {
     if (resEl) resEl.textContent = `오류: ${e.message}`;
@@ -10874,6 +10935,48 @@ const _DP_META = {
 // 채널 필터용 그룹 분류 (플랫폼별 1:1 매핑)
 function _dpFilterGroup(type) {
   return _dpGroup(type);
+}
+
+// ── 배포 방식 토글 (바로 배포 / 예약 배포) ────────
+let _dpMode = 'instant'; // 'instant' | 'schedule'
+function dpSwitchMode(mode) {
+  _dpMode = mode;
+  const iBtn = document.getElementById('dp-mode-instant');
+  const sBtn = document.getElementById('dp-mode-schedule');
+  const iHint = document.getElementById('dp-mode-instant-hint');
+  const sHint = document.getElementById('dp-mode-schedule-hint');
+  if (iBtn) { iBtn.style.background = mode==='instant' ? '#238636' : 'transparent'; iBtn.style.color = mode==='instant' ? '#fff' : '#8b949e'; }
+  if (sBtn) { sBtn.style.background = mode==='schedule' ? '#1f6feb' : 'transparent'; sBtn.style.color = mode==='schedule' ? '#fff' : '#8b949e'; }
+  if (iHint) iHint.style.display = mode==='instant'  ? '' : 'none';
+  if (sHint) sHint.style.display = mode==='schedule' ? '' : 'none';
+  // 날짜 기본값 설정
+  if (mode === 'schedule') {
+    const dtEl = document.getElementById('dp-schedule-datetime');
+    if (dtEl && !dtEl.value) {
+      const now = new Date(Date.now() + 3600000); // 1시간 후 기본
+      dtEl.value = now.toISOString().slice(0,16);
+      dtEl.min    = new Date().toISOString().slice(0,16);
+    }
+  }
+}
+
+// ── 예약 배포 등록 ──────────────────────────────
+function dpScheduleDraft(draftId) {
+  const dtEl = document.getElementById('dp-schedule-datetime');
+  const dt   = dtEl?.value;
+  if (!dt) { toast('배포 예약 시간을 먼저 설정하세요.', 'orange'); return; }
+  const d = getDrafts().find(x=>x.id===draftId);
+  if (!d) return;
+  // 예약 상태로 업데이트 + 예약 시간 저장
+  const drafts = getDrafts().map(x => x.id===draftId
+    ? { ...x, status:'approved', scheduled_at: dt, schedule_mode: 'scheduled' }
+    : x
+  );
+  saveDrafts(drafts);
+  toast(`✅ "${d.title}" → ${dt.replace('T',' ')} 예약 완료!`, 'green');
+  closeDpBottomSheet();
+  renderDeployQueue();
+  switchDeployTab('queue');
 }
 
 // ── 탭 전환 ──────────────────────────────────────
@@ -11270,9 +11373,11 @@ function _dpOpenBottomSheet(draftId, d) {
         const methodBadge = m.method==='api'
           ? '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:rgba(56,139,253,.12);color:#388bfd;border:1px solid rgba(56,139,253,.3);">🔑 API</span>'
           : '<span style="font-size:11px;padding:2px 7px;border-radius:10px;background:#21262d;color:#8b949e;border:1px solid #30363d;">✋ 수동</span>';
-        const actionBtn = deployed
+        const scheduleBtn = `<button onclick="dpScheduleDraft('${draftId}')" style="background:#1f6feb;border:none;color:#fff;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">📅 예약 등록</button>`;
+        const instantBtn  = deployed
           ? `<button onclick="dpUnmark('${draftId}','${p}');_dpOpenBottomSheet('${draftId}',getDrafts().find(x=>x.id==='${draftId}'))" style="background:#21262d;border:1px solid #30363d;color:#8b949e;padding:6px 12px;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;">완료 취소</button>`
           : `<button id="dp-send-btn-${p}" onclick="dpAutoSend('${draftId}','${p}','${taId}')" style="background:${m.method==='api'?'#1f6feb':'#238636'};border:none;color:#fff;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">${m.method==='api'?'🔗 API 배포':'✓ 배포 완료'}</button>`;
+        const actionBtn = `<span id="dp-action-wrap-${p}">${window._dpMode==='schedule' ? scheduleBtn : instantBtn}</span>`;
         return `
         <div style="background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:14px;margin-bottom:10px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
