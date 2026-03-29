@@ -1679,11 +1679,31 @@
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span id="plan-done-status" style="display:none;" class="plan-done-badge">✓ 기획 완료</span>
-      <select class="field-input" id="seo-tier" style="width:150px;font-size:14px;">
-        <option value="tier1">Tier 1 · 무료</option>
-        <option value="tier2">Tier 2</option>
-        <option value="tier3">Tier 3 · SerpAPI</option>
-      </select>
+
+      <!-- 최근 기획 드롭다운 (구 Tier 선택 위치) -->
+      <div style="position:relative;" id="plan-recent-wrap">
+        <button onclick="togglePlanRecentDropdown(event)"
+          style="display:flex;align-items:center;gap:7px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:7px 12px;color:#c9d1d9;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .15s;"
+          onmouseover="this.style.borderColor='#58a6ff'" onmouseout="this.style.borderColor='#30363d'">
+          <span>🕐 최근 기획</span>
+          <span id="plan-recent-count" style="background:#1f6feb;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;min-width:18px;text-align:center;">0</span>
+          <span style="font-size:11px;color:#8b949e;">▾</span>
+        </button>
+        <!-- 드롭다운 패널 -->
+        <div id="plan-recent-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:300px;background:#161b22;border:1px solid #30363d;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.6);z-index:300;">
+          <div style="padding:10px 14px;border-bottom:1px solid #21262d;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:#8b949e;font-weight:700;">최근 저장된 기획</span>
+            <span style="font-size:11px;color:#484f58;">최대 5개</span>
+          </div>
+          <div id="plan-recent-list" style="max-height:260px;overflow-y:auto;"></div>
+          <div style="padding:10px 12px;border-top:1px solid #21262d;">
+            <button onclick="planReset();document.getElementById('plan-recent-dropdown').style.display='none';"
+              style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:7px;color:#8b949e;padding:7px;font-size:12px;cursor:pointer;font-family:inherit;">
+              ＋ 새 기획 시작
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -6283,7 +6303,7 @@ function goto(name) {
   if (name === 'dashboard') renderDashboard();
   if (name === 'api')       renderApiSetupChecklist();
   if (name === 'agency')    { _loadAgencyFields(agencyProfile || {}); renderAgencyProgress(); _restorePersonaUI(); _updateAgencyProjBadge(); _renderLearnedDataList(); _updateSamplePicker(); }
-  if (name === 'seo')       { _renderPlanAgencyHint(); _renderPlanHistory(); }
+  if (name === 'seo')       { _renderPlanAgencyHint(); _renderPlanHistory(); _updatePlanRecentCount(); }
   if (name === 'blog')      { const ok = blogDraftRestore(); if (ok) toast('이전 작업을 복원했습니다', '#4ade80'); }
   if (name === 'sns')       _syncBlogTopicToSNS();
   if (name === 'isns')      _syncBlogTopicToSNS();
@@ -14163,9 +14183,64 @@ function savePlanResult() {
 
   toast('기획이 저장되었습니다.', '#4ade80');
   _renderPlanHistory();
+  _updatePlanRecentCount();
 }
 
 function _getPlanHistory() { try { return JSON.parse(localStorage.getItem(PLAN_STORE) || '[]'); } catch { return []; } }
+
+// ── 최근 기획 드롭다운 ────────────────────────────────────────
+function _updatePlanRecentCount() {
+  const cnt = document.getElementById('plan-recent-count');
+  if (cnt) cnt.textContent = Math.min(_getPlanHistory().length, 5);
+}
+
+function togglePlanRecentDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('plan-recent-dropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  if (!isOpen) {
+    _renderPlanRecentDropdown();
+    dd.style.display = '';
+    // 외부 클릭 시 닫기
+    setTimeout(() => {
+      document.addEventListener('click', function _closeDd(ev) {
+        const wrap = document.getElementById('plan-recent-wrap');
+        if (!wrap?.contains(ev.target)) {
+          dd.style.display = 'none';
+          document.removeEventListener('click', _closeDd);
+        }
+      });
+    }, 10);
+  } else {
+    dd.style.display = 'none';
+  }
+}
+
+function _renderPlanRecentDropdown() {
+  const list = _getPlanHistory().slice(0, 5);
+  const el   = document.getElementById('plan-recent-list');
+  const cnt  = document.getElementById('plan-recent-count');
+  if (cnt) cnt.textContent = list.length;
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#484f58;font-size:13px;">저장된 기획이 없습니다.<br><span style="font-size:12px;">기획 완료 후 💾 기획 저장을 눌러주세요.</span></div>';
+    return;
+  }
+  el.innerHTML = list.map((p, i) => `
+    <div onclick="loadPlanHistory('${p.id}');document.getElementById('plan-recent-dropdown').style.display='none';"
+      style="padding:11px 14px;cursor:pointer;border-bottom:${i < list.length-1 ? '1px solid #21262d' : 'none'};"
+      onmouseover="this.style.background='#21262d'" onmouseout="this.style.background=''">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+        <span style="font-size:11px;color:#fff;background:#1f6feb;border-radius:4px;padding:1px 6px;font-weight:700;">${i+1}</span>
+        <span style="font-size:13px;font-weight:600;color:#e6edf3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${p.topic || p.idea || '(제목 없음)'}</span>
+      </div>
+      <div style="font-size:11px;color:#484f58;margin-left:24px;">
+        ${(p.keywords||[]).slice(0,3).join(' · ')}${p.keywords?.length > 3 ? ' ...' : ''}
+        <span style="margin-left:6px;">${p.created_at?.slice(0,10)||''}</span>
+      </div>
+    </div>`).join('');
+}
 
 function _renderPlanHistory() {
   const list = _getPlanHistory();
