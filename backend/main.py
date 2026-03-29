@@ -2353,11 +2353,27 @@ async def generate_sns(req: SNSRequest):
 
     raw = await _llm_generate(prompt, keys)
 
+    # ── LLM 에러 감지 ── {"error": "..."} 형태로 반환되면 즉시 오류 응답
+    try:
+        _err_check = jsonlib.loads(raw) if raw.strip().startswith('{') else None
+        if _err_check and _err_check.get("error"):
+            raise HTTPException(status_code=500, detail=_err_check["error"])
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     if match:
         try:
             d = jsonlib.loads(match.group())
+            # error 키가 있으면 LLM 오류 메시지로 처리
+            if d.get("error"):
+                raise HTTPException(status_code=500, detail=d["error"])
             body = d.get("body", "")
+            if not body:
+                # body가 비어있으면 raw 전체를 본문으로 사용 (non-JSON 응답 대비)
+                body = raw.strip()[:3000]
             return SNSResult(
                 topic=req.topic,
                 platform=req.platform,
@@ -2370,13 +2386,19 @@ async def generate_sns(req: SNSRequest):
                     char_count=len(body),
                 )
             )
+        except HTTPException:
+            raise
         except Exception:
             pass
 
+    # JSON 파싱 실패 → raw 텍스트 전체를 본문으로 반환
+    body_raw = raw.strip()[:3000]
+    if not body_raw:
+        raise HTTPException(status_code=500, detail="LLM이 빈 응답을 반환했습니다. API 키 또는 할당량을 확인하세요.")
     return SNSResult(
         topic=req.topic,
         platform=req.platform,
-        post=SNSPost(platform=req.platform, body=raw[:2000], char_count=len(raw[:2000]))
+        post=SNSPost(platform=req.platform, body=body_raw, char_count=len(body_raw))
     )
 
 
