@@ -14203,7 +14203,12 @@ function applyBriefToTextSNS() {
   _applySeoPlanToBlog();
   const bl = _planState.briefs?.linkedin;
   const bt = _planState.briefs?.threads;
-  const topic = _planState.selectedTitle || _planState.selectedTopic || '';
+  // topic 폴백: selectedTitle → selectedTopic → briefs에서 제목 → ''
+  const topic = _planState.selectedTitle
+             || _planState.selectedTopic
+             || bl?.seo_title
+             || _planState.briefs?.blog?.seo_title
+             || '';
   // 텍스트형 SNS 탭 필드 채우기
   const topicEl = document.getElementById('tsns-topic');
   const msgEl   = document.getElementById('tsns-message');
@@ -14213,7 +14218,6 @@ function applyBriefToTextSNS() {
   const tags = _planState.seoTags;
   if (tags?.by_platform?.linkedin) {
     const liTags = (tags.by_platform.linkedin.tags || []).join(' ');
-    // 링크드인 바디에 태그 삽입 준비 (생성 후 자동 추가용으로 저장)
     _snsLinkedSource = _snsLinkedSource || {};
     _snsLinkedSource.linkedinTags = liTags;
   }
@@ -14223,7 +14227,7 @@ function applyBriefToTextSNS() {
     _snsLinkedSource.threadsTags = thTags;
   }
   goto('tsns');
-  switchTsnsTab('basic');
+  switchTsnsTab('content'); // 바로 본문 탭으로 이동 (AI 생성 버튼 바로 사용 가능)
   toast('텍스트형 SNS로 SEO 기획이 연동됐습니다. AI 생성 버튼을 누르세요.', '#0ea5e9');
 }
 
@@ -14231,7 +14235,12 @@ function applyBriefToImageSNS() {
   // SEO 기획 전체 연동
   _applySeoPlanToBlog();
   const bi = _planState.briefs?.instagram;
-  const topic = _planState.selectedTitle || _planState.selectedTopic || '';
+  // topic 폴백: selectedTitle → selectedTopic → briefs에서 제목 → ''
+  const topic = _planState.selectedTitle
+             || _planState.selectedTopic
+             || bi?.seo_title
+             || _planState.briefs?.blog?.seo_title
+             || '';
   const topicEl = document.getElementById('isns-topic');
   if (topicEl) topicEl.value = topic;
   // 인스타그램 태그 자동 적용
@@ -14244,7 +14253,7 @@ function applyBriefToImageSNS() {
     _snsLinkedSource.instagramTags = igTags;
   }
   goto('isns');
-  switchIsnsTab('basic');
+  switchIsnsTab('content'); // 바로 본문 탭으로 이동 (AI 생성 버튼 바로 사용 가능)
   toast('이미지형 SNS로 SEO 기획이 연동됐습니다. AI 생성 버튼을 누르세요.', '#f472b6');
 }
 
@@ -14985,9 +14994,15 @@ let _tsnsActivePlatform = 'linkedin';
 
 async function generateTSNS(platform) {
   _tsnsActivePlatform = platform;
-  const topic   = document.getElementById('tsns-topic')?.value.trim();
+  // topic 폴백: 필드 값 → _planState (SEO 기획에서 넘어온 경우)
+  const topic   = document.getElementById('tsns-topic')?.value.trim()
+               || _planState.selectedTitle || _planState.selectedTopic || '';
   const summary = document.getElementById('tsns-message')?.value.trim() || '';
+  // topic이 빈 경우 필드에 채운 뒤 basic 탭으로
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchTsnsTab('basic'); return; }
+  // 필드가 비어있으면 채우기 (content 탭에서 바로 올 때를 위해)
+  const topicFieldEl = document.getElementById('tsns-topic');
+  if (topicFieldEl && !topicFieldEl.value.trim()) topicFieldEl.value = topic;
 
   const bodyId = platform === 'linkedin' ? 'tsns-linkedin-body' : 'tsns-threads-body';
   const bodyEl = document.getElementById(bodyId);
@@ -15123,8 +15138,13 @@ let _isnsActivePlatform = 'instagram';
 
 async function generateISNS(platform) {
   _isnsActivePlatform = platform;
-  const topic = document.getElementById('isns-topic')?.value.trim();
+  // topic 폴백: 필드 값 → _planState (SEO 기획에서 넘어온 경우)
+  const topic = document.getElementById('isns-topic')?.value.trim()
+             || _planState.selectedTitle || _planState.selectedTopic || '';
   if (!topic) { toast('주제를 입력하세요', 'orange'); switchIsnsTab('basic'); return; }
+  // 필드가 비어있으면 채우기
+  const topicFieldEl = document.getElementById('isns-topic');
+  if (topicFieldEl && !topicFieldEl.value.trim()) topicFieldEl.value = topic;
 
   // 백엔드 SNSPlatform enum: linkedin / instagram / threads 만 지원
   // facebook → instagram 프롬프트로 대체 (Meta 계열 동일 방향)
