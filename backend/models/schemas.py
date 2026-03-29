@@ -158,6 +158,11 @@ class SNSRequest(BaseModel):
     api_keys: Optional[dict] = None
     tier: str = "tier1"
     language: str = "ko"
+    keywords: List[str] = []              # SEO 핵심 키워드
+    search_intent: Optional[str] = None  # 검색 의도
+    subtopics: List[str] = []            # H2 소주제 구조
+    source_document: Optional[str] = None  # 섹션별 리서치 소스
+    content_brief: Optional[str] = None   # 플랫폼별 콘텐츠 브리프
 
 
 class SNSPost(BaseModel):

@@ -1706,15 +1706,17 @@ _SNS_PROMPTS = {
 콘텐츠 기둥: {content_pillars}
 {voice_dna}
 {voice_samples}
+{seo_strategy}
 
 링크드인 최적화 요구사항:
 - 첫 줄: 스크롤을 멈추게 하는 후킹 문장 (숫자/질문/반전)
 - 본문: 3~5개 단락, 각 단락 2~3줄, 줄간격 활용
-- 데이터/사례/구체적 수치 포함
+- 데이터/사례/구체적 수치 포함 (SEO 리서치 내용 적극 활용)
 - 마지막: 토론 유도 질문 또는 CTA
 - 총 800~1500자, 이모지 최소화 (3개 이내)
-- 해시태그: 5개 (업계/전문 키워드)
+- 해시태그: 5개 (SEO 키워드 기반으로 선정)
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
+- SEO 기획 전략(키워드·검색의도·리서치 내용)을 본문에 충분히 반영하세요
 
 JSON 형식으로만 반환:
 {{"title": "첫 줄 후킹 문장", "body": "전체 포스트 본문", "hashtags": ["#태그1", "#태그2", "#태그3", "#태그4", "#태그5"], "cta": "마무리 CTA 문구"}}""",
@@ -1730,15 +1732,17 @@ JSON 형식으로만 반환:
 콘텐츠 기둥: {content_pillars}
 {voice_dna}
 {voice_samples}
+{seo_strategy}
 
 인스타그램 최적화 요구사항:
 - 첫 줄(프리뷰): 2줄 이내, 클릭 유도 문장 (이모지 활용)
-- 본문: 핵심 내용을 짧은 bullet 또는 줄바꿈으로 구성
+- 본문: 핵심 내용을 짧은 bullet 또는 줄바꿈으로 구성 (SEO 리서치 핵심 인사이트 활용)
 - 이모지: 적극 활용 (단락당 1~2개)
 - 캡션 총 150~300자 (너무 길면 안 읽힘)
-- 해시태그: 20~30개 (관련 키워드 최대화)
+- 해시태그: 20~30개 (SEO 키워드 기반으로 선정)
 - 마지막: 저장/링크 클릭 유도 CTA
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
+- SEO 기획 전략(키워드·검색의도·리서치 내용)을 콘텐츠에 충분히 반영하세요
 
 JSON 형식으로만 반환:
 {{"title": "첫 줄 후킹", "body": "전체 캡션 본문", "hashtags": ["#태그1", "#태그2"], "cta": "CTA 문구"}}""",
@@ -1754,15 +1758,17 @@ JSON 형식으로만 반환:
 콘텐츠 기둥: {content_pillars}
 {voice_dna}
 {voice_samples}
+{seo_strategy}
 
 쓰레드 최적화 요구사항:
 - 1번 글: 호기심을 자극하는 질문 또는 반전 문장 (100자 이내)
-- 2~4번 글: 핵심 내용을 짧게 나눠서 연결 (각 150자 이내)
+- 2~4번 글: 핵심 내용을 짧게 나눠서 연결 (각 150자 이내, SEO 리서치 인사이트 활용)
 - 마지막 글: 의견 묻기 또는 저장 유도
 - 구어체, 친근한 말투, 이모지 적극 활용
 - 각 글은 "---" 로 구분
-- 해시태그: 3~5개만 (마지막 글에만)
+- 해시태그: 3~5개만 (마지막 글에만, SEO 키워드 기반)
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
+- SEO 기획 전략(키워드·검색의도·리서치 내용)을 콘텐츠에 충분히 반영하세요
 
 JSON 형식으로만 반환:
 {{"title": "첫 번째 글 (후킹)", "body": "전체 시리즈 글 (--- 구분)", "hashtags": ["#태그1", "#태그2", "#태그3"], "cta": "마지막 CTA"}}""",
@@ -2315,6 +2321,24 @@ async def generate_sns(req: SNSRequest):
     keys    = req.api_keys or {}
 
     voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
+
+    # ── SEO 기획 전략 컨텍스트 빌드 ──────────────────────────────
+    seo_parts = []
+    if req.keywords:
+        seo_parts.append(f"[SEO 핵심 키워드] {', '.join(req.keywords)}")
+    if req.search_intent:
+        seo_parts.append(f"[검색 의도] {req.search_intent}")
+    if req.content_brief:
+        seo_parts.append(f"[콘텐츠 방향] {req.content_brief}")
+    if req.subtopics:
+        seo_parts.append("[핵심 토픽 구조]\n" + "\n".join(f"  • {t}" for t in req.subtopics))
+    if req.source_document and req.source_document.strip():
+        seo_parts.append(
+            "[SEO 리서치 소스 — 아래 내용을 SNS 콘텐츠에 충분히 반영하세요]\n"
+            + req.source_document.strip()[:3000]
+        )
+    seo_strategy = ("\n\n━━━ SEO 기획 전략 (반드시 반영) ━━━\n" + "\n\n".join(seo_parts) + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n") if seo_parts else ""
+
     prompt = _SNS_PROMPTS[req.platform].format(
         topic            = req.topic,
         summary          = req.seo_summary or req.topic,
@@ -2324,6 +2348,7 @@ async def generate_sns(req: SNSRequest):
         voice_dna        = voice_dna,
         voice_samples    = voice_samples,
         content_pillars  = content_pillars,
+        seo_strategy     = seo_strategy,
     )
 
     raw = await _llm_generate(prompt, keys)

@@ -2951,6 +2951,16 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
       <div style="font-size:13px;color:#484f58;margin-top:8px;">선택한 플랫폼에 맞게 각각 최적화된 본문이 생성됩니다.</div>
     </div>
 
+    <!-- SEO 기획 연동 배너 (텍스트형) -->
+    <div id="tsns-seo-linked" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#1f6feb15;border:1px solid #1f6feb40;border-radius:10px;margin-bottom:12px;">
+      <span style="font-size:16px;">🔗</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#60a5fa;">SEO 기획 연동됨</div>
+        <div id="tsns-seo-topic-preview" style="font-size:12px;color:#8b949e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+      </div>
+      <span style="font-size:11px;padding:2px 8px;background:#4ade8020;color:#4ade80;border-radius:10px;font-weight:600;">AI 퀄리티 향상</span>
+    </div>
+
     <!-- 기본 정보 -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
       <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;">
@@ -3290,6 +3300,16 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
         </label>
       </div>
       <div style="font-size:13px;color:#484f58;margin-top:8px;">플랫폼별 비율과 해시태그 규칙이 다르게 적용됩니다.</div>
+    </div>
+
+    <!-- SEO 기획 연동 배너 (이미지형) -->
+    <div id="isns-seo-linked" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#1f6feb15;border:1px solid #1f6feb40;border-radius:10px;margin-bottom:12px;">
+      <span style="font-size:16px;">🔗</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#60a5fa;">SEO 기획 연동됨</div>
+        <div id="isns-seo-topic-preview" style="font-size:12px;color:#8b949e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+      </div>
+      <span style="font-size:11px;padding:2px 8px;background:#4ade8020;color:#4ade80;border-radius:10px;font-weight:600;">AI 퀄리티 향상</span>
     </div>
 
     <!-- 기본 정보 -->
@@ -12607,8 +12627,9 @@ let _planState = {
   briefs: null,
 };
 
-// SEO기획 → 블로그 연결용 전역 저장소
-let _blogLinkedSource = null; // { topic, keywords, sourceDocument }
+// SEO기획 → 콘텐츠 연결용 전역 저장소
+let _blogLinkedSource = null; // { topic, keywords, searchIntent, contentBrief, subtopics, sourceDocument }
+let _snsLinkedSource  = null; // { topic, keywords, searchIntent, subtopics, sourceDocument, linkedinBrief, threadsBrief, instagramBrief }
 
 // ── 메인 탭 전환 ────────────────────────────────────
 function switchPlanMainTab(tab) {
@@ -13802,15 +13823,32 @@ function _applySeoPlanToBlog() {
   const briefs   = _planState.briefs || {};
   const blogBrief = briefs.blog || {};
 
-  // ── _blogLinkedSource에 SEO 기획 전체 데이터 저장 (generateBlog()가 사용) ──
+  const _srcDoc = document.getElementById('plan-source-doc')?.value?.trim()
+                 || _planState.sourceDocument || '';
+  const _subtopicList = (_planSubtopics || []).map(s => `${s.heading} ${s.title}`);
+  const _searchIntent = seoData.intent || '';
+
+  // ── _blogLinkedSource: 블로그 생성에서 사용 ──
   _blogLinkedSource = {
     topic:          title || topic,
     keywords:       keywords,
-    searchIntent:   seoData.intent || '',
-    contentBrief:   blogBrief.summary || seoData.intent || '',
-    subtopics:      (_planSubtopics || []).map(s => `${s.heading} ${s.title}`),
-    sourceDocument: document.getElementById('plan-source-doc')?.value?.trim()
-                    || _planState.sourceDocument || '',
+    searchIntent:   _searchIntent,
+    contentBrief:   blogBrief.summary || _searchIntent || '',
+    subtopics:      _subtopicList,
+    sourceDocument: _srcDoc,
+  };
+
+  // ── _snsLinkedSource: 텍스트형·이미지형 SNS 생성에서 사용 ──
+  _snsLinkedSource = {
+    topic:          title || topic,
+    keywords:       keywords,
+    searchIntent:   _searchIntent,
+    subtopics:      _subtopicList,
+    sourceDocument: _srcDoc,
+    linkedinBrief:  briefs.linkedin?.summary  || _searchIntent || '',
+    threadsBrief:   briefs.threads?.summary   || _searchIntent || '',
+    instagramBrief: briefs.instagram?.summary || _searchIntent || '',
+    facebookBrief:  briefs.instagram?.summary || _searchIntent || '',
   };
 
   // 주제 필드
@@ -13855,6 +13893,18 @@ function _applySeoPlanToBlog() {
 
   const preview = document.getElementById('blog-seo-topic-preview');
   if (preview) preview.textContent = `${title || topic} · 키워드 ${keywords.length}개`;
+
+  // 텍스트형 SNS 연동 배너
+  const tsnsBanner = document.getElementById('tsns-seo-linked');
+  if (tsnsBanner) tsnsBanner.style.display = 'flex';
+  const tsnsPreview = document.getElementById('tsns-seo-topic-preview');
+  if (tsnsPreview) tsnsPreview.textContent = `${title || topic} · 키워드 ${keywords.length}개`;
+
+  // 이미지형 SNS 연동 배너
+  const isnsBanner = document.getElementById('isns-seo-linked');
+  if (isnsBanner) isnsBanner.style.display = 'flex';
+  const isnsPreview = document.getElementById('isns-seo-topic-preview');
+  if (isnsPreview) isnsPreview.textContent = `${title || topic} · 키워드 ${keywords.length}개`;
 }
 
 function _buildBriefs(topic, kws, seoData) {
@@ -14581,12 +14631,23 @@ async function generateTSNS(platform) {
   const bodyEl = document.getElementById(bodyId);
   if (bodyEl) bodyEl.value = '⏳ 생성 중...';
 
+  // SEO 기획 연동 데이터
+  const seoLink = _snsLinkedSource || {};
+  const platformBrief = platform === 'linkedin' ? (seoLink.linkedinBrief || summary)
+                                                 : (seoLink.threadsBrief || summary);
   try {
     const res = await fetch(`${API}/sns/generate`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        topic, seo_summary: summary, platform,
-        tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile
+        topic, platform,
+        seo_summary:     platformBrief,
+        tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile,
+        // SEO 기획 전체 데이터 (에이전시 학습 + 기획 = 최고 퀄리티)
+        keywords:        seoLink.keywords       || [],
+        search_intent:   seoLink.searchIntent   || '',
+        subtopics:       seoLink.subtopics      || [],
+        content_brief:   platformBrief,
+        source_document: seoLink.sourceDocument || null,
       })
     });
     if (!res.ok) {
@@ -14712,12 +14773,22 @@ async function generateISNS(platform) {
   const bodyEl  = document.getElementById(bodyId);
   if (bodyEl) bodyEl.value = '⏳ 생성 중...';
 
+  // SEO 기획 연동 데이터
+  const seoLinkI = _snsLinkedSource || {};
+  const isnsBrief = isInsta ? (seoLinkI.instagramBrief || '') : (seoLinkI.facebookBrief || '');
   try {
     const res = await fetch(`${API}/sns/generate`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        topic, seo_summary: '', platform: apiPlatform,
-        tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile
+        topic, platform: apiPlatform,
+        seo_summary:     isnsBrief,
+        tier: selectedTier, api_keys: getKeys(), agency_profile: agencyProfile,
+        // SEO 기획 전체 데이터 (에이전시 학습 + 기획 = 최고 퀄리티)
+        keywords:        seoLinkI.keywords       || [],
+        search_intent:   seoLinkI.searchIntent   || '',
+        subtopics:       seoLinkI.subtopics      || [],
+        content_brief:   isnsBrief,
+        source_document: seoLinkI.sourceDocument || null,
       })
     });
     if (!res.ok) {
