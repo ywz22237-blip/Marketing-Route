@@ -87,8 +87,10 @@ def root():
     return {"status": "ok", "service": "Marketing Route v0.1"}
 
 
-# ── 에이전시 프로필 (학습) ─────────────────────────────────────
-_agency_profile: AgencyProfile = AgencyProfile()   # 인메모리 (MVP)
+# ── 에이전시 프로필 + 서버사이드 키 저장소 ───────────────────────
+_agency_profile: AgencyProfile = AgencyProfile()
+_server_keys: dict = {}           # POST /settings/keys 로 1회 저장
+_voice_ctx_cache: dict | None = None  # _build_voice_context 결과 캐시
 
 @app.get("/agency", response_model=AgencyProfile)
 def get_agency():
@@ -96,9 +98,38 @@ def get_agency():
 
 @app.post("/agency", response_model=AgencyProfile)
 def save_agency(profile: AgencyProfile):
-    global _agency_profile
+    global _agency_profile, _voice_ctx_cache
     _agency_profile = profile
+    _voice_ctx_cache = None   # 에이전시 변경 시 캐시 무효화
     return _agency_profile
+
+
+# ── 서버사이드 키 관리 ──────────────────────────────────────────
+@app.post("/settings/keys")
+async def save_server_keys(body: dict):
+    """API 키를 서버 인메모리에 저장. 이후 요청에 api_keys 불필요."""
+    global _server_keys
+    incoming = body.get("keys", {})
+    for k, v in incoming.items():
+        if v:
+            _server_keys[k] = v
+        elif k in _server_keys:
+            del _server_keys[k]
+    return {"ok": True, "saved": [k for k, v in _server_keys.items() if v]}
+
+@app.get("/settings/keys/status")
+async def get_keys_status():
+    """키 설정 여부만 반환 (실제 값 노출 없음)"""
+    import os
+    sources = {
+        "gemini_api_key":      _server_keys.get("gemini_api_key")      or os.getenv("GEMINI_API_KEY", ""),
+        "groq_api_key":        _server_keys.get("groq_api_key")        or os.getenv("GROQ_API_KEY", ""),
+        "unsplash_access_key": _server_keys.get("unsplash_access_key") or os.getenv("UNSPLASH_ACCESS_KEY", ""),
+        "google_tts_api_key":  _server_keys.get("google_tts_api_key")  or os.getenv("GOOGLE_TTS_API_KEY", ""),
+        "serp_api_key":        _server_keys.get("serp_api_key")        or os.getenv("SERP_API_KEY", ""),
+        "data_go_kr_key":      _server_keys.get("data_go_kr_key")      or os.getenv("DATA_GO_KR_KEY", ""),
+    }
+    return {k: bool(v) for k, v in sources.items()}
 
 
 # ── SEO 기획 ──────────────────────────────────────────────────
@@ -193,8 +224,8 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
     import os
     primary_llm = api_keys.get("primary_llm", "gemini")
 
-    groq_key   = api_keys.get("groq_api_key")  or os.getenv("GROQ_API_KEY", "")
-    gemini_key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+    groq_key   = api_keys.get("groq_api_key")   or _server_keys.get("groq_api_key")   or os.getenv("GROQ_API_KEY", "")
+    gemini_key = api_keys.get("gemini_api_key") or _server_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
 
     if max_tokens == 0:
         prompt_len = len(prompt)
@@ -244,7 +275,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
 async def _gemini_json(prompt: str, api_keys: dict, tier: str = "tier1"):
     """Gemini 호출 후 JSON 파싱. 429 시 Groq 자동 폴백."""
     import re, json as jl, os
-    key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+    key = api_keys.get("gemini_api_key") or _server_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
     model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.0-flash"
     raw = None
 
@@ -272,7 +303,7 @@ async def _gemini_json(prompt: str, api_keys: dict, tier: str = "tier1"):
 
     # Gemini 결과 없으면 Groq 폴백
     if raw is None:
-        groq_key = api_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
+        groq_key = api_keys.get("groq_api_key") or _server_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
         if groq_key:
             try:
                 raw = _groq_call(groq_key, prompt, 4096)
@@ -1474,6 +1505,15 @@ def _build_voice_context(profile) -> tuple[str, str, str]:
         pillars_str = ', '.join(profile.content_pillars[:5])  # 최대 5개
 
     return voice_dna_str, voice_samples_str, pillars_str
+
+
+def _get_cached_voice_context() -> tuple[str, str, str]:
+    """에이전시 보이스 컨텍스트를 캐시. POST /agency 시 자동 무효화."""
+    global _voice_ctx_cache
+    if _voice_ctx_cache is None:
+        d, s, p = _build_voice_context(_agency_profile)
+        _voice_ctx_cache = {"dna": d, "samples": s, "pillars": p}
+    return _voice_ctx_cache["dna"], _voice_ctx_cache["samples"], _voice_ctx_cache["pillars"]
 
 
 async def _llm_generate(prompt: str, api_keys: dict, tier: str = "tier1") -> str:
@@ -2914,7 +2954,11 @@ async def generate_blog(req: BlogRequest):
     profile = req.agency_profile or _agency_profile
     keys = req.api_keys or {}
 
-    voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
+    # 요청에 프로필이 포함된 경우 직접 빌드, 없으면 캐시 사용 (토큰 절약)
+    if req.agency_profile:
+        voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
+    else:
+        voice_dna, voice_samples, content_pillars = _get_cached_voice_context()
 
     # ── SEO 기획 전략 컨텍스트 빌드 ──────────────────────────────
     seo_parts = []
@@ -2981,8 +3025,19 @@ async def generate_blog(req: BlogRequest):
                 pass
         return BlogPost(platform=platform, title="[파싱 실패]", body=raw[:2000], word_count=len(raw[:2000]))
 
-    posts = await asyncio.gather(*[gen_one(p) for p in req.platforms])
-    return BlogResult(topic=req.topic, posts=list(posts))
+    # return_exceptions=True → 일부 플랫폼 실패해도 나머지 결과 반환
+    results = await asyncio.gather(*[gen_one(p) for p in req.platforms], return_exceptions=True)
+    posts = []
+    for r, platform in zip(results, req.platforms):
+        if isinstance(r, Exception):
+            posts.append(BlogPost(
+                platform=platform, title="[생성 실패]",
+                body=f"❌ {str(r)[:200]}\n\n재시도 버튼을 눌러주세요.",
+                word_count=0,
+            ))
+        else:
+            posts.append(r)
+    return BlogResult(topic=req.topic, posts=posts)
 
 
 # ── 카드뉴스 생성 (최대 10장) ──────────────────────────────────
@@ -4014,7 +4069,7 @@ async def generate_image(body: dict):
     width        = body.get("width", 1200)
     height       = body.get("height", 630)
     api_keys     = body.get("api_keys") or {}
-    unsplash_key = api_keys.get("unsplash_access_key", "")
+    unsplash_key = api_keys.get("unsplash_access_key") or _server_keys.get("unsplash_access_key") or os.getenv("UNSPLASH_ACCESS_KEY", "")
 
     if not keyword:
         raise HTTPException(status_code=400, detail="keyword 또는 prompt가 필요합니다.")

@@ -5860,6 +5860,7 @@ function _saveCurrentStateToProject() {
   list[idx].agency   = agencyProfile;
   list[idx].tier     = selectedTier;
   saveProjects(list);
+  saveKeysToServer(); // 서버 인메모리에도 동기화
 }
 
 // ── 프로젝트 생성 마법사 ─────────────────────────────────────────
@@ -6500,10 +6501,26 @@ function _loadKeyFields(keys) {
   });
 }
 
+// ── 서버사이드 키 동기화 ─────────────────────────────────────────
+async function saveKeysToServer() {
+  const keys = _collectKeyFields();
+  if (!Object.keys(keys).length) return;
+  try {
+    await fetch(`${API}/settings/keys`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ keys })
+    });
+  } catch(e) { /* 서버 미응답 시 무시 */ }
+}
+
+let _keyChangeTo;
 function onKeyChange(input, key) {
   input.classList.toggle('saved', !!input.value.trim());
   renderCurrentStatus();
   renderApiSetupChecklist();
+  // 1.5초 디바운스 후 서버 동기화
+  clearTimeout(_keyChangeTo);
+  _keyChangeTo = setTimeout(saveKeysToServer, 1500);
 }
 
 // ── 외부 플랫폼 연결 ──
@@ -7854,19 +7871,19 @@ async function generateBlog() {
   try {
     // SEO 기획 연동 데이터 수집 (_applySeoPlanToBlog() 이후 세팅됨)
     const seoLink = _blogLinkedSource || {};
+    // 재시도에도 쓸 수 있도록 요청 저장 (api_keys 제외 — 서버에 저장됨)
+    window._blogRequest = {
+      topic, tier: selectedTier,
+      language: document.getElementById('blog-lang').value,
+      keywords:        seoLink.keywords       || [],
+      search_intent:   seoLink.searchIntent   || '',
+      subtopics:       seoLink.subtopics      || [],
+      content_brief:   seoLink.contentBrief   || '',
+      source_document: seoLink.sourceDocument || null,
+    };
     const res = await fetch(`${API}/blog/generate`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        topic, platforms, tier: selectedTier,
-        language: document.getElementById('blog-lang').value,
-        api_keys: getKeys(), agency_profile: agencyProfile,
-        // SEO 기획 전체 데이터 (에이전시 학습 + 기획 = 최고 퀄리티)
-        keywords:        seoLink.keywords       || [],
-        search_intent:   seoLink.searchIntent   || '',
-        subtopics:       seoLink.subtopics      || [],
-        content_brief:   seoLink.contentBrief   || '',
-        source_document: seoLink.sourceDocument || null,
-      })
+      body: JSON.stringify({ ...window._blogRequest, platforms })
     });
     const data = await res.json();
     renderBlogResult(data.posts || []);
@@ -7898,8 +7915,16 @@ function renderBlogResult(posts) {
   if (posts.length > 1) {
     const platLabels = {naver:'네이버 블로그', tistory:'티스토리', wordpress:'워드프레스'};
     const existing = document.getElementById('blog-result-tabs');
-    const tabHtml = `<div id="blog-result-tabs" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-      ${posts.map((p,i)=>`<button onclick="loadBlogPost(${i})" id="brtab-${i}" style="padding:4px 12px;border-radius:6px;border:1px solid ${i===0?'#1f6feb':'#30363d'};background:${i===0?'#1f6feb20':'transparent'};color:${i===0?'#60a5fa':'#8b949e'};font-size:13px;cursor:pointer;">${platLabels[p.platform]||p.platform}</button>`).join('')}
+    const tabHtml = `<div id="blog-result-tabs" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      ${posts.map((p,i) => {
+        const failed = p.title === '[생성 실패]';
+        const active = i === 0;
+        return `<button onclick="loadBlogPost(${i})" id="brtab-${i}"
+          style="padding:4px 12px;border-radius:6px;border:1px solid ${failed?'#f87171':active?'#1f6feb':'#30363d'};background:${failed?'#f8717120':active?'#1f6feb20':'transparent'};color:${failed?'#f87171':active?'#60a5fa':'#8b949e'};font-size:13px;cursor:pointer;">
+          ${platLabels[p.platform]||p.platform}${failed?' ❌':''}
+        </button>
+        ${failed?`<button onclick="retryBlogPost(${i})" style="padding:3px 8px;border-radius:5px;border:1px solid #f59e0b;background:transparent;color:#f59e0b;font-size:12px;cursor:pointer;margin-left:-4px;">↩ 재시도</button>`:''}`;
+      }).join('')}
     </div>`;
     if (existing) existing.outerHTML = tabHtml;
     else editorEl.insertAdjacentHTML('afterbegin', tabHtml);
@@ -7913,6 +7938,24 @@ function renderBlogResult(posts) {
   posts.forEach(p => saveDraft({ type:'blog', platform:p.platform, title:p.title||'블로그 글', content:p.body||'' }));
   toast('블로그 본문이 생성되었습니다!', '#4ade80');
   blogAutoSave();
+}
+
+async function retryBlogPost(idx) {
+  const platform = window._blogPosts?.[idx]?.platform;
+  if (!platform || !window._blogRequest) { toast('재시도 정보가 없습니다', 'red'); return; }
+  toast(`${platform} 재생성 중...`, '#60a5fa');
+  try {
+    const res = await fetch(`${API}/blog/generate`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ...window._blogRequest, platforms: [platform] })
+    });
+    const data = await res.json();
+    if (data.posts?.[0]) {
+      window._blogPosts[idx] = data.posts[0];
+      renderBlogResult(window._blogPosts);
+      toast(`${platform} 재생성 완료!`, '#4ade80');
+    }
+  } catch(e) { toast('재생성 실패: ' + e.message, 'red'); }
 }
 
 async function regenerateBlogTitle() {
