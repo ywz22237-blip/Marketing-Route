@@ -229,9 +229,10 @@ JSON 형식으로만 반환 (다른 텍스트 없이):
 
 # ── SEO 키워드 도구 ────────────────────────────────────────────
 
-async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tuple[str, str | None]:
+async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tokens: int = 0) -> tuple[str, str | None]:
     """Gemini 호출 후 텍스트 반환. 429 시 Groq 자동 폴백.
     primary_llm='groq' 이면 Groq 먼저 시도 (Gemini 할당량 절약).
+    max_tokens=0 이면 용도별 기본값 자동 적용.
     """
     import os
     # primary_llm 설정 확인 (프론트에서 api_keys에 포함)
@@ -239,6 +240,14 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tupl
 
     groq_key   = api_keys.get("groq_api_key")  or os.getenv("GROQ_API_KEY", "")
     gemini_key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+
+    # 용도별 max_tokens 자동 설정 (0이면 프롬프트 길이 기반 추정)
+    if max_tokens == 0:
+        prompt_len = len(prompt)
+        if prompt_len < 1000:   max_tokens = 1024   # 짧은 분석
+        elif prompt_len < 2500: max_tokens = 2048   # SNS 생성
+        elif prompt_len < 4000: max_tokens = 3000   # 블로그 단락
+        else:                   max_tokens = 4096   # 긴 블로그 전체
 
     # ── Groq 우선 모드 ──────────────────────────────────────────
     if primary_llm == "groq" and groq_key:
@@ -249,7 +258,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tupl
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.6,
-                max_tokens=4096,
+                max_tokens=max_tokens,
             )
             return gresp.choices[0].message.content or "", None
         except Exception as ge:
@@ -284,7 +293,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tupl
                             model="llama-3.3-70b-versatile",
                             messages=[{"role": "user", "content": prompt}],
                             temperature=0.6,
-                            max_tokens=4096,
+                            max_tokens=max_tokens,
                         )
                         return gresp.choices[0].message.content or "", None
                     except Exception as ge:
@@ -302,7 +311,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tupl
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.6,
-                max_tokens=4096,
+                max_tokens=max_tokens,
             )
             return gresp.choices[0].message.content or "", None
         except Exception as ge:
@@ -1624,27 +1633,28 @@ VIDEO_PROMPTS = {
 
 
 def _build_voice_context(profile) -> tuple[str, str, str]:
-    """agency_profile에서 voice_dna, voice_samples, content_pillars 문자열 생성"""
+    """agency_profile에서 voice_dna, voice_samples, content_pillars 문자열 생성
+    토큰 절약: dna 핵심 3필드만, samples 2개로 제한
+    """
     voice_dna_str = ""
     if getattr(profile, 'brand_voice_dna', None):
         dna = profile.brand_voice_dna
-        voice_dna_str = (
-            "브랜드 보이스 DNA:\n"
-            "- 문장 스타일: " + dna.get('sentence_style', '') + "\n"
-            "- 제목 패턴: " + dna.get('title_pattern', '') + "\n"
-            "- 자주 쓰는 표현: " + ', '.join(dna.get('tone_keywords', [])) + "\n"
-            "- 피해야 할 표현: " + ', '.join(dna.get('avoid', [])) + "\n"
-            "- 한 줄 요약: " + dna.get('summary', '')
-        )
+        parts = []
+        if dna.get('sentence_style'): parts.append("스타일: " + dna['sentence_style'])
+        if dna.get('tone_keywords'):  parts.append("표현: " + ', '.join(dna['tone_keywords'][:5]))
+        if dna.get('avoid'):          parts.append("금지: " + ', '.join(dna['avoid'][:3]))
+        if parts:
+            voice_dna_str = "보이스DNA: " + " | ".join(parts)
 
     voice_samples_str = ""
     if getattr(profile, 'brand_voice_samples', None):
-        samples = "\n".join(f"- {s}" for s in profile.brand_voice_samples[:3])
-        voice_samples_str = "보이스 샘플 (이 스타일과 어조로 작성하세요):\n" + samples
+        # 2개로 제한 (3개→2개, ~50토큰 절약)
+        samples = "\n".join(f"- {s[:120]}" for s in profile.brand_voice_samples[:2])
+        voice_samples_str = "보이스샘플:\n" + samples
 
     pillars_str = ""
     if getattr(profile, 'content_pillars', None):
-        pillars_str = ', '.join(profile.content_pillars)
+        pillars_str = ', '.join(profile.content_pillars[:5])  # 최대 5개
 
     return voice_dna_str, voice_samples_str, pillars_str
 
@@ -2371,9 +2381,9 @@ async def generate_sns(req: SNSRequest):
     if req.source_document and req.source_document.strip():
         seo_parts.append(
             "[SEO 리서치 소스 — 아래 내용을 SNS 콘텐츠에 충분히 반영하세요]\n"
-            + req.source_document.strip()[:3000]
+            + req.source_document.strip()[:1500]
         )
-    seo_strategy = ("\n\n━━━ SEO 기획 전략 (반드시 반영) ━━━\n" + "\n\n".join(seo_parts) + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n") if seo_parts else ""
+    seo_strategy = ("\n[SEO전략]\n" + "\n".join(seo_parts) + "\n[/SEO전략]\n") if seo_parts else ""
 
     prompt = _SNS_PROMPTS[req.platform].format(
         topic            = req.topic,
@@ -2831,10 +2841,10 @@ async def generate_blog(req: BlogRequest):
     if req.source_document and req.source_document.strip():
         seo_parts.append(
             "[SEO 리서치 소스 — 아래 내용을 본문에 충분히 반영하세요]\n"
-            + req.source_document.strip()[:5000]
+            + req.source_document.strip()[:3000]
         )
 
-    seo_strategy = ("\n\n━━━ SEO 기획 전략 (반드시 반영) ━━━\n" + "\n\n".join(seo_parts) + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n") if seo_parts else ""
+    seo_strategy = ("\n[SEO전략]\n" + "\n".join(seo_parts) + "\n[/SEO전략]\n") if seo_parts else ""
 
     async def gen_one(platform: BlogPlatform) -> BlogPost:
         prompt_tpl = BLOG_PLATFORM_PROMPTS[platform]
