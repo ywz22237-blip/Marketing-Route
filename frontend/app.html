@@ -746,7 +746,21 @@
           <a href="https://unsplash.com/developers" target="_blank" style="font-size:12px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
         </div>
         <input type="password" class="key-input" id="key-unsplash" placeholder="Access Key..." oninput="onKeyChange(this,'unsplash_access_key')" />
-        <p style="font-size:12px;color:#484f58;margin:4px 0 0;">무료 50req/h · 키 없으면 Pollinations AI 자동 사용</p>
+        <p style="font-size:12px;color:#484f58;margin:4px 0 0;">무료 50req/h · 키 없으면 Pexels → Pollinations AI 순 자동 사용</p>
+      </div>
+      <div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div>
+            <label class="field-label" style="margin:0 0 3px;display:block;">Pexels API Key <span style="font-size:11px;padding:1px 6px;border-radius:10px;background:#16a34a30;color:#4ade80;font-weight:600;">Free</span></label>
+            <div style="display:flex;gap:4px;margin-bottom:6px;">
+              <span style="font-size:11px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">블로그 본문 이미지</span>
+              <span style="font-size:11px;padding:1px 6px;border-radius:3px;background:#23863620;color:#4ade80;">섹션 이미지</span>
+            </div>
+          </div>
+          <a href="https://www.pexels.com/api/" target="_blank" style="font-size:12px;color:#388bfd;text-decoration:none;flex-shrink:0;">발급 →</a>
+        </div>
+        <input type="password" class="key-input" id="key-pexels" placeholder="..." oninput="onKeyChange(this,'pexels_api_key')" />
+        <p style="font-size:12px;color:#484f58;margin:4px 0 0;">무료 200req/h · 20,000req/월 · Unsplash 없을 때 자동 사용</p>
       </div>
       <div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:12px;display:flex;align-items:flex-start;gap:10px;">
         <span style="font-size:18px;margin-top:2px;">🔗</span>
@@ -2484,7 +2498,7 @@
 
     <!-- 다음 버튼 -->
     <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-      <button class="btn btn-primary" onclick="generateBlog()" style="gap:8px;">
+      <button class="btn btn-primary" onclick="generateBlogStream()" style="gap:8px;">
         ✨ AI 본문 생성하기 →
       </button>
     </div>
@@ -2514,7 +2528,7 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:13px;color:#8b949e;font-weight:700;">본문</div>
             <div style="display:flex;gap:6px;">
-              <button class="btn btn-ghost" style="font-size:12px;padding:3px 10px;" onclick="generateBlog()">✨ AI 생성</button>
+              <button class="btn btn-ghost" style="font-size:12px;padding:3px 10px;" onclick="generateBlogStream()">✨ AI 생성</button>
               <button class="btn btn-ghost" style="font-size:12px;padding:3px 10px;" onclick="viewBlogStructure()">구조 보기</button>
             </div>
           </div>
@@ -2523,7 +2537,7 @@
             <div style="font-size:32px;margin-bottom:10px;">✍️</div>
             <div style="font-size:15px;color:#8b949e;margin-bottom:6px;">AI가 기본 설정 기반으로 본문을 생성합니다</div>
             <div style="font-size:13px;color:#484f58;margin-bottom:16px;">SEO 최적화 구조 · H2/H3 태그 · 핵심 키워드 자연 배치</div>
-            <button class="btn btn-primary" onclick="generateBlog()">✨ 본문 생성하기</button>
+            <button class="btn btn-primary" onclick="generateBlogStream()">✨ 본문 생성하기</button>
           </div>
           <!-- 에디터 -->
           <div id="blog-content-editor" style="display:none;">
@@ -2617,7 +2631,7 @@ B2B 스타트업에서 마케팅 예산은 항상 부족합니다. 광고비를 
               </select>
             </div>
           </div>
-          <button class="btn btn-primary" style="width:100%;margin-top:14px;font-size:14px;" onclick="generateBlog()">✨ 전체 재생성</button>
+          <button class="btn btn-primary" style="width:100%;margin-top:14px;font-size:14px;" onclick="generateBlogStream()">✨ 전체 재생성</button>
         </div>
         <!-- SEO 점수 -->
         <div class="card" style="padding:14px;">
@@ -6473,6 +6487,7 @@ const KEY_FIELD_MAP = {
   'groq_api_key':          'key-groq',
   'google_tts_api_key':    'key-tts',
   'unsplash_access_key':   'key-unsplash',
+  'pexels_api_key':        'key-pexels',
   'data_go_kr_key':        'key-datagokr',
   'serp_api_key':          'key-serp',
   'imgbb_api_key':         'key-imgbb',
@@ -7853,6 +7868,105 @@ function _syncBlogTopicToSNS() {
   }
 }
 
+// ── 블로그 스트리밍 생성 ──────────────────────────────────────
+async function generateBlogStream() {
+  const topic = document.getElementById('blog-topic').value.trim();
+  if (!topic) { toast('주제를 입력하세요', 'orange'); return; }
+  const platforms = [...document.querySelectorAll('.blog-platform-cb:checked')].map(c=>c.value);
+  if (!platforms.length) { toast('플랫폼을 선택하세요', 'orange'); return; }
+
+  switchBlogTab('content');
+  const emptyEl  = document.getElementById('blog-content-empty');
+  const editorEl = document.getElementById('blog-content-editor');
+  const bodyEl   = document.getElementById('blog-body');
+  const titleEl  = document.getElementById('blog-title');
+
+  if (emptyEl)  { emptyEl.style.display = 'none'; }
+  if (editorEl) { editorEl.style.display = ''; }
+  if (bodyEl)   { bodyEl.value = ''; }
+
+  // 스트리밍 상태 표시
+  const indicator = document.createElement('div');
+  indicator.id = 'stream-indicator';
+  indicator.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1f6feb;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;z-index:9999;display:flex;align-items:center;gap:8px;';
+  indicator.innerHTML = '<span style="display:inline-block;width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1s infinite;"></span> 스트리밍 생성 중...';
+  document.body.appendChild(indicator);
+
+  const seoLink = _blogLinkedSource || {};
+  window._blogRequest = {
+    topic, tier: selectedTier,
+    language: document.getElementById('blog-lang').value,
+    keywords:      seoLink.keywords || [],
+    search_intent: seoLink.searchIntent || '',
+    subtopics:     seoLink.subtopics || [],
+    content_brief: seoLink.contentBrief || '',
+    source_document: seoLink.sourceDocument || null,
+  };
+
+  let fullText = '';
+  try {
+    const res = await fetch(`${API}/blog/stream`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ...window._blogRequest, platforms: [platforms[0]] })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break;
+        try {
+          const d = JSON.parse(raw);
+          if (d.error) { toast('스트리밍 오류: ' + d.error, 'red'); break; }
+          if (d.text)  { fullText += d.text; if (bodyEl) { bodyEl.value = fullText; bodyEl.scrollTop = bodyEl.scrollHeight; } }
+        } catch(e) {}
+      }
+    }
+
+    // 제목 추출 (# 첫 번째 헤딩)
+    const titleMatch = fullText.match(/^#\s+(.+)$/m);
+    if (titleMatch && titleEl) {
+      titleEl.value = titleMatch[1].trim();
+      if (bodyEl) bodyEl.value = fullText.replace(/^#\s+.+\n?/, '').trim();
+    }
+
+    // 멀티 플랫폼이면 나머지는 일반 생성
+    if (platforms.length > 1) {
+      const rest = platforms.slice(1);
+      const res2 = await fetch(`${API}/blog/generate`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ ...window._blogRequest, platforms: rest })
+      });
+      const d2 = await res2.json();
+      const streamPost = { platform: platforms[0], title: titleEl?.value||topic, body: bodyEl?.value||fullText, word_count: fullText.length };
+      renderBlogResult([streamPost, ...(d2.posts||[])]);
+    } else {
+      const streamPost = { platform: platforms[0], title: titleEl?.value||topic, body: bodyEl?.value||fullText, word_count: fullText.length };
+      window._blogPosts = [streamPost];
+      setTimeout(_buildSectionList, 100);
+      saveDraft({ type:'blog', platform:platforms[0], title:streamPost.title, content:streamPost.body });
+    }
+
+    toast('블로그 본문이 생성되었습니다!', '#4ade80');
+    blogAutoSave?.();
+  } catch(e) {
+    toast('스트리밍 실패: ' + e.message + ' — 일반 생성으로 전환', 'orange');
+    generateBlog(); // 폴백
+  } finally {
+    document.getElementById('stream-indicator')?.remove();
+  }
+}
+
 // ── 블로그 생성 (새 /blog/generate API 사용) ──────────────────
 async function generateBlog() {
   const topic = document.getElementById('blog-topic').value.trim();
@@ -7888,7 +8002,7 @@ async function generateBlog() {
     const data = await res.json();
     renderBlogResult(data.posts || []);
   } catch(e) {
-    if (emptyEl) emptyEl.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:28px;margin-bottom:10px;">✍️</div><div style="font-size:15px;color:#8b949e;margin-bottom:16px;">AI가 기본 설정 기반으로 본문을 생성합니다</div><button class="btn btn-primary" onclick="generateBlog()">✨ 본문 생성하기</button></div>';
+    if (emptyEl) emptyEl.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:28px;margin-bottom:10px;">✍️</div><div style="font-size:15px;color:#8b949e;margin-bottom:16px;">AI가 기본 설정 기반으로 본문을 생성합니다</div><button class="btn btn-primary" onclick="generateBlogStream()">✨ 본문 생성하기</button></div>';
     toast('생성 실패: ' + e.message, 'red');
   }
 }
@@ -14331,7 +14445,7 @@ function applyBriefToBlog() {
     if (bodyEl)  bodyEl.value  = '';
     const emptyEl  = document.getElementById('blog-content-empty');
     const editorEl = document.getElementById('blog-content-editor');
-    if (emptyEl)  { emptyEl.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:32px;margin-bottom:10px;">✍️</div><div style="font-size:15px;color:#8b949e;margin-bottom:6px;">SEO 기획 기반 블로그 생성 준비됨</div><button class="btn btn-primary" onclick="generateBlog()">✨ 본문 생성하기</button></div>'; emptyEl.style.display = ''; }
+    if (emptyEl)  { emptyEl.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:32px;margin-bottom:10px;">✍️</div><div style="font-size:15px;color:#8b949e;margin-bottom:6px;">SEO 기획 기반 블로그 생성 준비됨</div><button class="btn btn-primary" onclick="generateBlogStream()">✨ 본문 생성하기</button></div>'; emptyEl.style.display = ''; }
     if (editorEl) editorEl.style.display = 'none';
   }
   goto('blog');

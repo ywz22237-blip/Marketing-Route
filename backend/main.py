@@ -7,6 +7,7 @@ import uuid
 import os
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -128,6 +129,7 @@ async def get_keys_status():
         "google_tts_api_key":  _server_keys.get("google_tts_api_key")  or os.getenv("GOOGLE_TTS_API_KEY", ""),
         "serp_api_key":        _server_keys.get("serp_api_key")        or os.getenv("SERP_API_KEY", ""),
         "data_go_kr_key":      _server_keys.get("data_go_kr_key")      or os.getenv("DATA_GO_KR_KEY", ""),
+        "pexels_api_key":      _server_keys.get("pexels_api_key")      or os.getenv("PEXELS_API_KEY", ""),
     }
     return {k: bool(v) for k, v in sources.items()}
 
@@ -195,24 +197,29 @@ _GROQ_MODELS = [
     "gemma2-9b-it",              # 3순위: 최후 수단
 ]
 
-def _groq_call(groq_key: str, prompt: str, max_tokens: int) -> str:
-    """Groq 모델을 순서대로 시도. 429면 다음 모델로 넘어감."""
+async def _groq_call(groq_key: str, prompt: str, max_tokens: int) -> str:
+    """Groq 모델 순서대로 시도. 429 시 지수 백오프(2s) → 다음 모델."""
+    import asyncio
     from groq import Groq
     gclient = Groq(api_key=groq_key)
     last_err = ""
     for model in _GROQ_MODELS:
-        try:
-            gresp = gclient.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.6,
-                max_tokens=max_tokens,
-            )
-            return gresp.choices[0].message.content or ""
-        except Exception as e:
-            last_err = str(e)
-            if "429" not in last_err and "rate_limit" not in last_err.lower():
-                raise  # 429 외 오류는 즉시 재발생
+        for attempt in range(2):   # 모델당 최대 2번 시도
+            try:
+                gresp = gclient.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.6,
+                    max_tokens=max_tokens,
+                )
+                return gresp.choices[0].message.content or ""
+            except Exception as e:
+                last_err = str(e)
+                is_rate_limit = "429" in last_err or "rate_limit" in last_err.lower()
+                if not is_rate_limit:
+                    raise   # 429 외 오류는 즉시 재발생
+                if attempt == 0:
+                    await asyncio.sleep(2)  # 2초 대기 후 같은 모델 재시도
     raise RuntimeError(f"Groq 모든 모델 한도 초과: {last_err[:120]}")
 
 
@@ -235,7 +242,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
     # ── Groq 우선 모드 ──────────────────────────────────────────
     if primary_llm == "groq" and groq_key:
         try:
-            return _groq_call(groq_key, prompt, max_tokens), None
+            return await _groq_call(groq_key, prompt, max_tokens), None
         except Exception as ge:
             if not gemini_key:
                 return "", f"Groq 오류: {str(ge)[:150]}"
@@ -257,7 +264,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
             if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
                 if groq_key:
                     try:
-                        return _groq_call(groq_key, prompt, max_tokens), None
+                        return await _groq_call(groq_key, prompt, max_tokens), None
                     except Exception as ge:
                         return "", f"❌ Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:120]}"
                 return "", "❌ Gemini 일일 할당량 초과(429). Groq API 키를 설정하면 자동 전환됩니다."
@@ -266,7 +273,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
     # Gemini 키 없으면 Groq 직접 시도
     if groq_key:
         try:
-            return _groq_call(groq_key, prompt, max_tokens), None
+            return await _groq_call(groq_key, prompt, max_tokens), None
         except Exception as ge:
             return "", f"Groq 오류: {str(ge)[:150]}"
     return "", "Gemini API 키가 없습니다. API 설정에서 키를 입력하고 저장해주세요."
@@ -306,7 +313,7 @@ async def _gemini_json(prompt: str, api_keys: dict, tier: str = "tier1"):
         groq_key = api_keys.get("groq_api_key") or _server_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
         if groq_key:
             try:
-                raw = _groq_call(groq_key, prompt, 4096)
+                raw = await _groq_call(groq_key, prompt, 4096)
             except Exception as ge:
                 return None, f"Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:120]}"
         else:
@@ -1422,6 +1429,24 @@ JSON만: {{"title":"...","body":"...","meta_description":"...","hashtags":["#...
 """ + _BLOG_CTX + """
 최적화: 제목 60자·키워드 앞배치(Yoast), 본문 1000~1500자·H2/H3 구조·[IMAGE] 표시, 링크 유도, 해시태그 5개, 메타설명 155자
 JSON만: {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}""",
+}
+
+# ── 스트리밍용 프롬프트 (마크다운 직접 출력) ──────────────────────
+BLOG_STREAM_PROMPTS = {
+    BlogPlatform.NAVER: """당신은 네이버 블로그 SEO 전문 작가입니다.
+""" + _BLOG_CTX + """
+형식: 마크다운만 출력. # 제목(30자 이내, 키워드 포함)으로 시작. 본문 1500~2000자. ## 소제목 5개+. 키워드 5~7회. 마지막 줄에 해시태그 10개(#태그 형식).
+JSON 없이 마크다운 텍스트만.""",
+
+    BlogPlatform.TISTORY: """당신은 티스토리 SEO 블로그 전문 작가입니다.
+""" + _BLOG_CTX + """
+형식: 마크다운만 출력. # 제목(SEO키워드+수치)으로 시작. 본문 1200~1800자. ## 소제목 3개+. 마지막 줄에 해시태그 5개.
+JSON 없이 마크다운 텍스트만.""",
+
+    BlogPlatform.WORDPRESS: """당신은 워드프레스 SEO 콘텐츠 전문 작가입니다.
+""" + _BLOG_CTX + """
+형식: 마크다운만 출력. # 제목(60자 이내, 키워드 앞배치)으로 시작. 본문 1000~1500자. ## H2 구조. 마지막 줄에 해시태그 5개.
+JSON 없이 마크다운 텍스트만.""",
 }
 
 VIDEO_PROMPTS = {
@@ -3040,6 +3065,89 @@ async def generate_blog(req: BlogRequest):
     return BlogResult(topic=req.topic, posts=posts)
 
 
+# ── 블로그 스트리밍 ────────────────────────────────────────────
+@app.post("/blog/stream")
+async def stream_blog(req: BlogRequest):
+    """블로그 본문 실시간 스트리밍 (SSE). 토큰이 생성되는 즉시 전달."""
+    import asyncio, os, json as _json
+
+    profile = req.agency_profile or _agency_profile
+    keys = req.api_keys or {}
+    if req.agency_profile:
+        voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
+    else:
+        voice_dna, voice_samples, content_pillars = _get_cached_voice_context()
+
+    seo_parts = []
+    if req.keywords:      seo_parts.append(f"[SEO 핵심 키워드] {', '.join(req.keywords)}")
+    if req.search_intent: seo_parts.append(f"[검색 의도] {req.search_intent}")
+    if req.subtopics:     seo_parts.append("[H2 구조]\n" + "\n".join(f"  • {t}" for t in req.subtopics))
+    if req.content_brief: seo_parts.append(f"[방향] {req.content_brief}")
+    seo_strategy = ("\n[SEO전략]\n" + "\n".join(seo_parts) + "\n[/SEO전략]\n") if seo_parts else ""
+
+    platform = req.platforms[0] if req.platforms else BlogPlatform.NAVER
+    prompt = BLOG_STREAM_PROMPTS[platform].format(
+        topic=req.topic,
+        agency=f"{profile.agency_name} / {profile.industry}",
+        tone=profile.tone_and_manner or "전문적이고 신뢰감 있는",
+        target=profile.target_audience or "기업 의사결정자",
+        language=req.language,
+        voice_dna=voice_dna, voice_samples=voice_samples,
+        content_pillars=content_pillars, seo_strategy=seo_strategy,
+    )
+
+    groq_key   = keys.get("groq_api_key")   or _server_keys.get("groq_api_key")   or os.getenv("GROQ_API_KEY", "")
+    gemini_key = keys.get("gemini_api_key") or _server_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+
+    async def event_stream():
+        try:
+            if groq_key:
+                from groq import Groq
+                client = Groq(api_key=groq_key)
+                # 429 시 다음 모델 시도
+                for model in _GROQ_MODELS:
+                    try:
+                        stream = client.chat.completions.create(
+                            model=model,
+                            messages=[{"role": "user", "content": prompt}],
+                            stream=True, temperature=0.6, max_tokens=4096,
+                        )
+                        for chunk in stream:
+                            text = (chunk.choices[0].delta.content or "")
+                            if text:
+                                yield f"data: {_json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
+                    except Exception as e:
+                        if "429" not in str(e) and "rate_limit" not in str(e).lower():
+                            raise
+                        await asyncio.sleep(2)
+                        continue
+
+            if gemini_key:
+                from google import genai
+                client = genai.Client(api_key=gemini_key)
+                for chunk in client.models.generate_content_stream(
+                    model="gemini-2.0-flash", contents=prompt
+                ):
+                    if chunk.text:
+                        yield f"data: {_json.dumps({'text': chunk.text}, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
+            yield f"data: {_json.dumps({'error': 'API 키 없음. 설정에서 Gemini 또는 Groq 키를 입력하세요.'})}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {_json.dumps({'error': str(e)[:200]})}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 # ── 카드뉴스 생성 (최대 10장) ──────────────────────────────────
 
 _CARD_NEWS_PROMPT = """당신은 SNS 카드뉴스 전문 콘텐츠 작가입니다.
@@ -4077,30 +4185,41 @@ async def generate_image(body: dict):
     # ── 한국어이면 영어로 변환 ─────────────────────────────────
     en_keyword = await _translate_keyword(keyword, api_keys)
 
-    # ── 1순위: Unsplash ────────────────────────────────────────
-    if unsplash_key:
-        try:
-            async with httpx.AsyncClient(timeout=15) as client:
+    pexels_key = api_keys.get("pexels_api_key") or _server_keys.get("pexels_api_key") or os.getenv("PEXELS_API_KEY", "")
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        # ── 1순위: Unsplash ────────────────────────────────────
+        if unsplash_key:
+            try:
                 r = await client.get(
                     "https://api.unsplash.com/photos/random",
-                    params={
-                        "query":       en_keyword,
-                        "orientation": "landscape",
-                        "client_id":   unsplash_key,
-                    },
+                    params={"query": en_keyword, "orientation": "landscape", "client_id": unsplash_key},
                 )
                 if r.status_code == 200:
                     d = r.json()
-                    return {
-                        "image_url":  d["urls"]["regular"],
-                        "source":     "unsplash",
-                        "credit":     f"{d['user']['name']} on Unsplash",
-                        "en_keyword": en_keyword,
-                    }
-        except Exception:
-            pass  # 폴백
+                    return {"image_url": d["urls"]["regular"], "source": "unsplash",
+                            "credit": f"{d['user']['name']} on Unsplash", "en_keyword": en_keyword}
+            except Exception:
+                pass
 
-    # ── 2순위: Pollinations.ai (무료 무제한) ───────────────────
+        # ── 2순위: Pexels ──────────────────────────────────────
+        if pexels_key:
+            try:
+                r = await client.get(
+                    "https://api.pexels.com/v1/search",
+                    params={"query": en_keyword, "per_page": 5, "orientation": "landscape"},
+                    headers={"Authorization": pexels_key},
+                )
+                if r.status_code == 200:
+                    photos = r.json().get("photos", [])
+                    if photos:
+                        p = photos[0]
+                        return {"image_url": p["src"]["large2x"], "source": "pexels",
+                                "credit": f"{p['photographer']} on Pexels", "en_keyword": en_keyword}
+            except Exception:
+                pass
+
+    # ── 3순위: Pollinations.ai (무료 무제한) ────────────────────
     enc = urllib.parse.quote(f"{en_keyword}, professional blog photo, high quality, clean")
     url = f"https://image.pollinations.ai/prompt/{enc}?width={width}&height={height}&nologo=true"
     return {"image_url": url, "source": "pollinations", "en_keyword": en_keyword}
