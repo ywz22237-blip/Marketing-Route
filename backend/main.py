@@ -3565,7 +3565,7 @@ async def agency_sampling_analyze(body: dict):
     샘플링: URL 목록 크롤링 → 작성자 페이지 크롤링 → 글쓰기 스타일 샘플 추출
     body: { urls: [str], member_id: str, api_keys: dict, agency_profile: dict }
     """
-    import asyncio
+    import asyncio, json as jsonlib
     urls         = body.get("urls", [])
     member_id    = body.get("member_id", "팀원")
     api_keys     = body.get("api_keys", {})
