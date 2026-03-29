@@ -6282,7 +6282,8 @@ function goto(name) {
   const snsPages = ['linkedin','threads'];
   const ytPages  = ['longform','shortform','script','thumbnail'];
 
-  if (name === 'linkedin' || name === 'threads') name = 'sns';
+  if (name === 'linkedin' || name === 'threads' || name === 'tsns') name = 'sns';
+  if (name === 'isns') name = 'instagram';
   if (ytPages.includes(name)) name = 'youtube';   // 구 유튜브 서브페이지 → 통합 페이지
 
   closeMobileNav();
@@ -6305,8 +6306,7 @@ function goto(name) {
   if (name === 'agency')    { _loadAgencyFields(agencyProfile || {}); renderAgencyProgress(); _restorePersonaUI(); _updateAgencyProjBadge(); _renderLearnedDataList(); _updateSamplePicker(); }
   if (name === 'seo')       { _renderPlanAgencyHint(); _renderPlanHistory(); _updatePlanRecentCount(); }
   if (name === 'blog')      { const ok = blogDraftRestore(); if (ok) toast('이전 작업을 복원했습니다', '#4ade80'); }
-  if (name === 'sns')       _syncBlogTopicToSNS();
-  if (name === 'isns')      _syncBlogTopicToSNS();
+  if (name === 'sns' || name === 'instagram') _syncBlogTopicToSNS();
 }
 
 // ── SNS 페이지 탭 전환 ───────────────────────────────────────
