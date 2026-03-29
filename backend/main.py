@@ -242,12 +242,11 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
     gemini_key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
 
     # 용도별 max_tokens 자동 설정 (0이면 프롬프트 길이 기반 추정)
+    # 출력 품질 우선 — 짧은 분석만 줄이고 콘텐츠 생성은 충분히 확보
     if max_tokens == 0:
         prompt_len = len(prompt)
-        if prompt_len < 1000:   max_tokens = 1024   # 짧은 분석
-        elif prompt_len < 2500: max_tokens = 2048   # SNS 생성
-        elif prompt_len < 4000: max_tokens = 3000   # 블로그 단락
-        else:                   max_tokens = 4096   # 긴 블로그 전체
+        if prompt_len < 1000:   max_tokens = 1024   # 짧은 분석·키워드 추출
+        else:                   max_tokens = 4096   # SNS·블로그 생성은 넉넉하게
 
     # ── Groq 우선 모드 ──────────────────────────────────────────
     if primary_llm == "groq" and groq_key:
@@ -1648,8 +1647,7 @@ def _build_voice_context(profile) -> tuple[str, str, str]:
 
     voice_samples_str = ""
     if getattr(profile, 'brand_voice_samples', None):
-        # 2개로 제한 (3개→2개, ~50토큰 절약)
-        samples = "\n".join(f"- {s[:120]}" for s in profile.brand_voice_samples[:2])
+        samples = "\n".join(f"- {s[:150]}" for s in profile.brand_voice_samples[:3])
         voice_samples_str = "보이스샘플:\n" + samples
 
     pillars_str = ""
@@ -2381,7 +2379,7 @@ async def generate_sns(req: SNSRequest):
     if req.source_document and req.source_document.strip():
         seo_parts.append(
             "[SEO 리서치 소스 — 아래 내용을 SNS 콘텐츠에 충분히 반영하세요]\n"
-            + req.source_document.strip()[:1500]
+            + req.source_document.strip()[:2500]
         )
     seo_strategy = ("\n[SEO전략]\n" + "\n".join(seo_parts) + "\n[/SEO전략]\n") if seo_parts else ""
 
