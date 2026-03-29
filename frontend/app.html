@@ -6961,15 +6961,34 @@ async function startSampling(memberId) {
     const samples = data.voice_samples || [];
 
     if (data.llm_error) {
-      // AI 추출 단계 실패
       statusEl.innerHTML += `<div style="font-size:13px;color:#fb923c;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #fb923c30;">
         ⚠️ AI 스타일 추출 실패: ${data.llm_error}
       </div>`;
     } else if (samples.length) {
-      statusEl.innerHTML += `<div style="font-size:13px;color:#22c55e;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #22c55e30;">
-        ✅ 학습 완료 — URL ${data.total_crawled}/${data.total_urls}개 성공, 글쓰기 샘플 ${samples.length}개 추출
-      </div>`;
-      _samplingResults.push(...samples.map(s => ({ ...s, member: memberLabels[memberId] })));
+      const savedSamples = samples.map(s => ({ ...s, member: memberLabels[memberId] }));
+      _samplingResults.push(...savedSamples);
+
+      // 인라인 결과 카드 + 즉시 저장 버튼
+      const sampleCards = savedSamples.map((s, i) => `
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px 12px;margin-top:6px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span style="font-size:11px;padding:1px 7px;border-radius:8px;background:#1f6feb20;color:#60a5fa;">${s.channel}</span>
+            <span style="font-size:11px;color:#484f58;">샘플 ${i+1}</span>
+          </div>
+          <div style="font-size:13px;color:#c9d1d9;line-height:1.6;white-space:pre-wrap;max-height:90px;overflow-y:auto;">${s.text}</div>
+        </div>`).join('');
+
+      statusEl.innerHTML += `
+        <div style="margin-top:8px;padding:10px 12px;background:#0d1117;border-radius:8px;border:1px solid #22c55e30;">
+          <div style="font-size:13px;color:#22c55e;font-weight:600;margin-bottom:8px;">
+            ✅ 학습 완료 — URL ${data.total_crawled}/${data.total_urls}개 성공, 샘플 ${samples.length}개 추출
+          </div>
+          ${sampleCards}
+          <button onclick="_saveSamplingInline(${memberId})" style="margin-top:10px;width:100%;padding:8px;background:#238636;border:none;color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+            💾 브랜드 보이스에 저장
+          </button>
+        </div>`;
+
       _renderSamplingResults();
     } else {
       statusEl.innerHTML += `<div style="font-size:13px;color:#fb923c;margin-top:8px;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #fb923c30;">
@@ -6980,6 +6999,31 @@ async function startSampling(memberId) {
     statusEl.innerHTML = `<div style="font-size:13px;color:#f87171;padding:8px 10px;background:#0d1117;border-radius:6px;border:1px solid #f8717130;">
       ❌ 오류: ${e.message}
     </div>`;
+  }
+}
+
+function _saveSamplingInline(memberId) {
+  const memberLabels = { 1:'팀원1', 2:'팀원2', 3:'팀원3', 4:'팀원4' };
+  const memberName = memberLabels[memberId] || `팀원${memberId}`;
+  // 해당 팀원의 샘플만 저장
+  const toSave = _samplingResults.filter(s => s.member === memberName);
+  if (!toSave.length) { toast('저장할 샘플이 없습니다.', 'orange'); return; }
+
+  toSave.forEach(s => {
+    _voiceCards.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), channel: s.channel, text: s.text });
+  });
+  // 저장된 것 제거
+  _samplingResults = _samplingResults.filter(s => s.member !== memberName);
+
+  _renderVoiceCards();
+  saveAgency();
+  toast(`✅ ${toSave.length}개 샘플이 브랜드 보이스에 저장됐습니다!`, 'green');
+
+  // 버튼을 완료 표시로 교체
+  const statusEl = document.getElementById(`sampling-status-${memberId}`);
+  if (statusEl) {
+    const btn = statusEl.querySelector('button[onclick*="_saveSamplingInline"]');
+    if (btn) { btn.textContent = '✅ 저장 완료'; btn.disabled = true; btn.style.background = '#21262d'; btn.style.color = '#4ade80'; }
   }
 }
 
