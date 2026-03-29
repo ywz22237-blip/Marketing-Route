@@ -2060,7 +2060,7 @@ _BLOG_PLATFORM_LABELS: dict = {
 def _blog_thumb_html(title: str, subtitle: str, platform: str,
                      brand_color: str = "#1f6feb", brand_name: str = "",
                      theme: str = "dark") -> "tuple[str, int, int]":
-    """블로그 OG 썸네일 HTML 생성 (Playwright PNG 캡처용)"""
+    """블로그 OG 썸네일 HTML 생성 — 제목 중심 레이아웃 (Playwright PNG 캡처용)"""
     W, H     = _BLOG_THUMB_DIMS.get(platform, (1200, 630))
     brand    = brand_color or "#1f6feb"
     brand_dk = _hex_darken(brand)
@@ -2088,20 +2088,20 @@ def _blog_thumb_html(title: str, subtitle: str, platform: str,
     # 테마 팔레트
     T = {
         "dark":     {"bg1": "#0d1117", "bg2": "#131a24",
-                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.8)",
-                     "xc": "rgba(255,255,255,.42)", "dotp": "rgba(255,255,255,.05)"},
+                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.72)",
+                     "xc": "rgba(255,255,255,.38)", "dotp": "rgba(255,255,255,.05)"},
         "light":    {"bg1": "#f5f7fc", "bg2": "#eaecf5",
-                     "tc": "#0f1629",  "bc": "#3a3f5c",
-                     "xc": "#8890a8",  "dotp": "rgba(0,0,0,.04)"},
+                     "tc": "#0f1629",  "bc": "#5a6280",
+                     "xc": "#9099b2",  "dotp": "rgba(0,0,0,.04)"},
         "vivid":    {"bg1": brand,     "bg2": brand_dk,
-                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.88)",
-                     "xc": "rgba(255,255,255,.55)", "dotp": "rgba(255,255,255,.09)"},
+                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.82)",
+                     "xc": "rgba(255,255,255,.5)",  "dotp": "rgba(255,255,255,.09)"},
         "gradient": {"bg1": brand,     "bg2": brand_dk,
-                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.85)",
-                     "xc": "rgba(255,255,255,.5)",  "dotp": "rgba(255,255,255,.07)"},
+                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.8)",
+                     "xc": "rgba(255,255,255,.45)", "dotp": "rgba(255,255,255,.07)"},
     }
     t   = T.get(theme, T["dark"])
-    pad = int(W * 0.06)
+    pad = int(W * 0.07)
 
     if theme in ("vivid", "gradient"):
         bg_css = f"background:linear-gradient(145deg,{t['bg1']},{t['bg2']})"
@@ -2115,32 +2115,53 @@ def _blog_thumb_html(title: str, subtitle: str, platform: str,
     dot_b64 = _b64m.b64encode(dot_svg.encode()).decode()
     dot_bg  = f"url('data:image/svg+xml;base64,{dot_b64}')"
 
-    title_fs = int(H * 0.1)
-    sub_html = (
-        f'<div style="margin-top:{int(H*.035)}px;font-family:\'NG\',sans-serif;'
-        f'font-weight:400;font-size:{int(H*.048)}px;color:{t["bc"]};'
-        f'line-height:1.5;max-width:{int(W*.72)}px;">{subtitle_e}</div>'
-    ) if subtitle_e else ""
+    # ── 제목 글자 수 기반 어댑티브 폰트 크기 ─────────────────
+    tlen = len(title or "")
+    if   tlen <= 14: title_fs = int(H * 0.118)
+    elif tlen <= 22: title_fs = int(H * 0.096)
+    elif tlen <= 30: title_fs = int(H * 0.080)
+    elif tlen <= 40: title_fs = int(H * 0.068)
+    else:            title_fs = int(H * 0.056)
 
+    # ── 플랫폼 뱃지 (작고 절제된 스타일)
     plat_badge = (
         f'<div style="display:inline-flex;align-items:center;'
-        f'padding:{int(H*.013)}px {int(W*.016)}px;border-radius:{int(H*.03)}px;'
-        f'background:{brand};margin-bottom:{int(H*.04)}px;">'
+        f'padding:{int(H*.01)}px {int(W*.014)}px;border-radius:{int(H*.022)}px;'
+        f'background:{brand};margin-bottom:{int(H*.032)}px;">'
         f'<span style="font-family:\'NG\',sans-serif;font-weight:700;'
-        f'font-size:{int(H*.034)}px;color:#fff;letter-spacing:0.04em;">'
+        f'font-size:{int(H*.026)}px;color:#fff;letter-spacing:0.05em;">'
         f'{plabel}</span></div>'
     )
+
+    # ── 제목 아래 브랜드 컬러 액센트 바
+    accent_bar = (
+        f'<div style="margin-top:{int(H*.028)}px;'
+        f'width:{int(W*.1)}px;height:{int(H*.007)}px;'
+        f'background:linear-gradient(90deg,{brand},{brand_dk});'
+        f'border-radius:{int(H*.004)}px;"></div>'
+    )
+
+    # ── 서브타이틀 (작고 보조적)
+    sub_html = (
+        f'<div style="margin-top:{int(H*.022)}px;font-family:\'NG\',sans-serif;'
+        f'font-weight:400;font-size:{int(H*.032)}px;color:{t["bc"]};'
+        f'line-height:1.55;word-break:keep-all;'
+        f'overflow-wrap:break-word;">{subtitle_e}</div>'
+    ) if subtitle_e else ""
+
+    # ── 브랜드명 (우측 하단)
     bname_line = (
         f'<div style="font-family:\'NG\',sans-serif;font-weight:700;'
-        f'font-size:{int(H*.036)}px;color:{t["xc"]};letter-spacing:0.04em;">'
+        f'font-size:{int(H*.028)}px;color:{t["xc"]};letter-spacing:0.05em;">'
         f'{bname_e}</div>'
     ) if bname_e else ""
 
+    # ── 배경 장식 (우측 대형 반투명 텍스트)
     bg_deco = (
-        f'<div style="position:absolute;right:{int(W*.015)}px;'
-        f'bottom:-{int(H*.05)}px;font-family:\'NG\',sans-serif;'
-        f'font-weight:700;font-size:{int(H*.7)}px;color:{brand};'
-        f'opacity:.055;line-height:1;pointer-events:none;">B</div>'
+        f'<div style="position:absolute;right:-{int(W*.02)}px;'
+        f'bottom:-{int(H*.06)}px;font-family:\'NG\',sans-serif;'
+        f'font-weight:700;font-size:{int(H*.72)}px;color:{brand};'
+        f'opacity:.05;line-height:1;pointer-events:none;white-space:nowrap;">POST</div>'
     )
 
     html_body = f"""
@@ -2149,22 +2170,24 @@ def _blog_thumb_html(title: str, subtitle: str, platform: str,
        background-image:{dot_bg};background-size:30px 30px;"></div>
   {bg_deco}
   <div style="position:absolute;top:0;left:0;
-       width:{int(W*.006)}px;height:100%;background:{brand};"></div>
-  <div style="position:absolute;top:0;left:0;width:{int(W*.52)}px;height:100%;
-       background:linear-gradient(90deg,{brand}22,transparent);"></div>
+       width:{int(W*.007)}px;height:100%;background:{brand};"></div>
+  <div style="position:absolute;top:0;left:0;width:{int(W*.55)}px;height:100%;
+       background:linear-gradient(90deg,{brand}1e,transparent);"></div>
   <div style="position:absolute;top:50%;transform:translateY(-50%);
-       left:{int(W*.08)}px;right:{pad}px;">
+       left:{int(W*.085)}px;right:{pad}px;">
     {plat_badge}
     <div style="font-family:'NG',sans-serif;font-weight:700;
-         font-size:{title_fs}px;color:{t["tc"]};line-height:1.22;
-         text-shadow:0 2px 20px rgba(0,0,0,.12);">{title_e}</div>
+         font-size:{title_fs}px;color:{t["tc"]};line-height:1.26;
+         word-break:keep-all;overflow-wrap:break-word;
+         text-shadow:0 2px 24px rgba(0,0,0,.15);">{title_e}</div>
+    {accent_bar}
     {sub_html}
   </div>
-  <div style="position:absolute;bottom:{int(H*.065)}px;right:{pad}px;">
+  <div style="position:absolute;bottom:{int(H*.068)}px;right:{pad}px;">
     {bname_line}
   </div>
   <div style="position:absolute;bottom:0;left:0;right:0;
-       height:{int(H*.01)}px;
+       height:{int(H*.012)}px;
        background:linear-gradient(90deg,{brand},{brand_dk});"></div>
 </div>"""
 
