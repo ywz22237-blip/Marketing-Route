@@ -13155,7 +13155,7 @@ function _renderPlanKeywords() {
     div.innerHTML = `<div style="font-size:12px;color:${color};font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;">${label}</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;" data-group="${label}">
       ${items.map(k => `
-        <div class="kw-chip" onclick="togglePlanKeyword(this,'${k.keyword.replace(/'/g,"\\'")}')">
+        <div class="kw-chip" data-kw="${k.keyword.replace(/"/g,'&quot;')}" onclick="togglePlanKeyword(this,'${k.keyword.replace(/'/g,"\\'")}')">
           ${k.keyword}
           ${k.vol ? `<span class="kw-vol" style="color:${color};">${k.vol>=10000?Math.round(k.vol/1000)+'k':k.vol>=1000?Math.round(k.vol/100)/10+'k':k.vol}</span>` : ''}
         </div>`).join('')}
@@ -13177,6 +13177,7 @@ function _renderPlanKeywords() {
       const kw = typeof k === 'string' ? k : (k.keyword || k);
       const chip = document.createElement('div');
       chip.className = 'kw-chip';
+      chip.dataset.kw = kw;
       chip.textContent = kw;
       chip.onclick = () => togglePlanKeyword(chip, kw);
       div.appendChild(chip);
@@ -14254,9 +14255,13 @@ function savePlanResult() {
   list.unshift({
     id: 'plan_' + Date.now(),
     idea: _planState.idea,
+    context: _planState.context || document.getElementById('plan-context')?.value?.trim() || '',
     topic: _planState.selectedTopic,
     selectedTitle: _planState.selectedTitle || '',
     keywords: [..._planState.selectedKeywords],
+    allKeywords: _planState.allKeywords || [],
+    topics: _planState.topics || [],
+    subtopics: [...(_planSubtopics || [])],
     briefs: _planState.briefs,
     seoData: _planState.seoData || null,
     sourceDocument: _planState.sourceDocument || document.getElementById('plan-source-doc')?.value?.trim() || '',
@@ -14352,23 +14357,85 @@ function loadPlanHistory(id) {
   const item = _getPlanHistory().find(p => p.id === id);
   if (!item) return;
 
-  // _planState 복원
+  // ── _planState 전체 복원 ─────────────────────────────
   _planState.idea             = item.idea || '';
-  _planState.selectedKeywords = item.keywords || [];
+  _planState.context          = item.context || '';
+  _planState.selectedKeywords = [...(item.keywords || [])];
+  _planState.allKeywords      = item.allKeywords || item.keywords || [];
+  _planState.topics           = item.topics || [];
   _planState.selectedTopic    = item.topic || '';
   _planState.selectedTitle    = item.selectedTitle || item.topic || '';
   _planState.briefs           = item.briefs || null;
   _planState.seoData          = item.seoData || null;
   _planState.sourceDocument   = item.sourceDocument || '';
 
-  // 입력 필드 복원
+  // 전역 소주제 복원
+  _planSubtopics = item.subtopics ? [...item.subtopics] : [];
+
+  // ── Step 1: 아이디어 필드 복원 ───────────────────────
   const ideaEl = document.getElementById('plan-idea');
   if (ideaEl) ideaEl.value = item.idea || '';
+  const ctxEl = document.getElementById('plan-context');
+  if (ctxEl) ctxEl.value = item.context || '';
+
+  // ── Step 2: 키워드 UI 복원 ──────────────────────────
+  if (_planState.allKeywords.length) {
+    document.getElementById('plan-kw-loading').style.display = 'none';
+    document.getElementById('plan-kw-result').style.display  = '';
+    const kwLabel = document.getElementById('plan-kw-idea-label');
+    if (kwLabel) kwLabel.textContent = `"${item.idea || ''}"`;
+    _renderPlanKeywords();
+    // 선택된 키워드 칩 강조 (data-kw 속성 이용)
+    setTimeout(() => {
+      _planState.selectedKeywords.forEach(kw => {
+        const chip = document.querySelector(`.kw-chip[data-kw="${kw.replace(/"/g, '&quot;')}"]`);
+        if (chip && !chip.classList.contains('selected')) chip.classList.add('selected');
+      });
+      _updateKwCount();
+    }, 30);
+  }
+
+  // ── Step 3: 주제 선택 UI 복원 ───────────────────────
+  if (_planState.topics.length) {
+    document.getElementById('plan-topic-loading').style.display = 'none';
+    document.getElementById('plan-topic-result').style.display  = '';
+    const kwLbl = document.getElementById('plan-topic-kw-label');
+    if (kwLbl) kwLbl.textContent = _planState.selectedKeywords.join(' · ');
+    _renderPlanTopics(_planState.topics);
+    // 선택된 주제 카드 강조
+    setTimeout(() => {
+      document.querySelectorAll('.topic-card').forEach(card => {
+        const t = card.querySelector('.topic-title')?.textContent?.trim();
+        if (t === _planState.selectedTopic) card.classList.add('selected');
+      });
+      const btn3 = document.getElementById('plan-step3-next-btn');
+      if (btn3) btn3.disabled = false;
+    }, 30);
+  }
+
+  // 선택된 제목 복원
+  if (_planState.selectedTitle) {
+    const panel = document.getElementById('plan-title-opt-panel');
+    const info  = document.getElementById('plan-title-selected-info');
+    const btn4  = document.getElementById('plan-to-step4-btn');
+    if (panel) panel.style.display = '';
+    if (info)  { info.style.display = ''; info.textContent = '✅ 선택된 제목: ' + _planState.selectedTitle; }
+    if (btn4)  btn4.disabled = false;
+  }
+
+  // ── Step 4: 소스 문서 + 소주제 UI 복원 ─────────────
   const srcEl = document.getElementById('plan-source-doc');
   if (srcEl) { srcEl.value = item.sourceDocument || ''; _updateSrcCharCount && _updateSrcCharCount(); }
+  if (_planSubtopics.length) {
+    const loadEl = document.getElementById('plan-subtopic-loading');
+    const listEl = document.getElementById('plan-subtopic-list');
+    if (loadEl) loadEl.style.display = 'none';
+    if (listEl) listEl.style.display = '';
+    _renderSubtopicList();
+  }
 
+  // ── Step 5: 브리프 UI 복원 + 화면 이동 ─────────────
   if (item.briefs) {
-    // 브리프 결과가 있으면 스텝 5(브리프·생성)로 이동
     _gotoStep(5);
     const loadingEl = document.getElementById('plan-brief-loading');
     const resultEl  = document.getElementById('plan-brief-result');
@@ -14378,8 +14445,13 @@ function loadPlanHistory(id) {
     if (doneEl)    doneEl.style.display    = 'flex';
     _renderPlanBriefs(item.briefs, item.topic);
     toast('기획을 불러왔습니다: ' + (item.topic || ''), '#4ade80');
+  } else if (_planState.topics.length) {
+    _gotoStep(3);
+    toast('기획을 불러왔습니다. 주제를 선택하고 계속 진행하세요.', '#60a5fa');
+  } else if (_planState.allKeywords.length) {
+    _gotoStep(2);
+    toast('기획을 불러왔습니다. 키워드를 선택하고 계속 진행하세요.', '#60a5fa');
   } else {
-    // 브리프가 없으면 스텝 1로 돌아가기
     _gotoStep(1);
     toast('기획 초안을 불러왔습니다. 단계를 계속 진행하세요.', '#60a5fa');
   }
