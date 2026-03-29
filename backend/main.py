@@ -4007,44 +4007,46 @@ async def agency_learn_csv(req: AgencyLearnRequest):
 @app.post("/image/generate")
 async def generate_image(body: dict):
     """
-    1순위: HuggingFace FLUX.1-schnell (hf_api_token 필요, Inference 권한 필요)
-    2순위: Picsum 플레이스홀더 (항상 동작, AI 생성 아님)
+    1순위: Unsplash (unsplash_access_key 있을 때) — 키워드 관련 고품질 사진
+    2순위: Pollinations.ai (항상 동작, 무료, API 키 불필요) — AI 생성 이미지
     """
-    import httpx, base64, random
+    import httpx, urllib.parse
 
-    prompt   = body.get("prompt", "")
-    width    = body.get("width", 1024)
-    height   = body.get("height", 768)
-    hf_token = (body.get("api_keys") or {}).get("hf_api_token", "")
+    keyword      = (body.get("keyword") or body.get("prompt") or "").strip()
+    prompt       = (body.get("prompt") or keyword).strip()
+    width        = body.get("width", 1200)
+    height       = body.get("height", 630)
+    unsplash_key = (body.get("api_keys") or {}).get("unsplash_access_key", "")
 
-    if not prompt:
-        raise HTTPException(status_code=400, detail="prompt가 비어있습니다.")
+    if not keyword:
+        raise HTTPException(status_code=400, detail="keyword 또는 prompt가 필요합니다.")
 
-    # ── 1순위: HuggingFace FLUX.1-schnell ─────────────────────
-    if hf_token:
-        hf_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
+    # ── 1순위: Unsplash ────────────────────────────────────────
+    if unsplash_key:
         try:
-            async with httpx.AsyncClient(timeout=60) as client:
-                r = await client.post(
-                    hf_url,
-                    headers={"Authorization": f"Bearer {hf_token}"},
-                    json={"inputs": prompt, "parameters": {"width": width, "height": height}}
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.get(
+                    "https://api.unsplash.com/photos/random",
+                    params={
+                        "query":       keyword,
+                        "orientation": "landscape",
+                        "client_id":   unsplash_key,
+                    },
                 )
                 if r.status_code == 200:
-                    img_b64 = base64.b64encode(r.content).decode()
-                    return {"image_b64": img_b64, "mime": "image/jpeg", "source": "hf"}
-                # 403/401 → 권한 부족 안내 후 폴백
-                if r.status_code in (401, 403):
-                    hf_error = r.text[:200]
-                    # 폴백으로 진행 (에러 raise 안 함)
+                    d = r.json()
+                    return {
+                        "image_url": d["urls"]["regular"],
+                        "source":    "unsplash",
+                        "credit":    f"{d['user']['name']} on Unsplash",
+                    }
         except Exception:
-            pass  # 네트워크 오류 → 폴백
+            pass  # 폴백
 
-    # ── 2순위: Picsum 플레이스홀더 (항상 동작) ────────────────
-    seed = random.randint(1, 999)
-    picsum_url = f"https://picsum.photos/seed/{seed}/{width}/{height}"
-    msg = "" if hf_token else "HF 토큰을 등록하면 AI 이미지 생성이 활성화됩니다"
-    return {"image_url": picsum_url, "mime": "image/jpeg", "source": "picsum", "info": msg}
+    # ── 2순위: Pollinations.ai (무료 무제한) ───────────────────
+    enc  = urllib.parse.quote(f"{prompt}, professional blog photo, high quality, clean")
+    url  = f"https://image.pollinations.ai/prompt/{enc}?width={width}&height={height}&nologo=true"
+    return {"image_url": url, "source": "pollinations"}
 
 
 # ── 샘플링: URL 크롤링 → 글쓰기 스타일 추출 ────────────────────────────────
