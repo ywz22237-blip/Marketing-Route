@@ -15091,10 +15091,8 @@ async function generateTSNS(platform) {
     }
     const data = await res.json();
     const post = data.post || {};
-    // title + body 합치기 (title이 있으면 맨 앞에 붙임, 중복 방지)
-    const title = post.title || '';
-    const bodyRaw = post.body || '';
-    const body = title && !bodyRaw.startsWith(title) ? `${title}\n\n${bodyRaw}` : bodyRaw;
+    // body에 후킹 문장 포함 (title 필드 미사용)
+    const body = post.body || '';
     if (!body) {
       if (bodyEl) bodyEl.value = '';
       const keys = getKeys?.() || {};
