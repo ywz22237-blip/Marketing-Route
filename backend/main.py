@@ -1638,7 +1638,9 @@ def _hex_darken(h: str, factor: float = 0.38) -> str:
 
 def _cn_slide_html(slide: dict, design: dict, slide_total: int,
                    hashtags: list, cta: str) -> str:
-    """슬라이드 1장 → HTML 문자열 (Playwright로 PNG 캡처용)"""
+    """슬라이드 1장 → HTML (Playwright PNG 캡처용) — v2 고품질 디자인"""
+    import re as _re
+
     fonts    = _get_cn_fonts()
     ratio    = design.get("ratio", "1:1")
     theme    = design.get("theme", "dark")
@@ -1647,15 +1649,16 @@ def _cn_slide_html(slide: dict, design: dict, slide_total: int,
     W, H     = _CN_DIMS.get(ratio, (1080, 1080))
     is_cta   = slide.get("is_cta", False) or slide.get("type") == "cta"
     idx      = slide.get("index", 1)
+    is_cover = (idx == 1) and not is_cta
     brand_dk = _hex_darken(brand)
 
     def esc(s: str) -> str:
         return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-    title_e = esc(slide.get("title", ""))
-    body_e  = esc(slide.get("body",  ""))
+    title_e  = esc(slide.get("title", ""))
+    body_raw = slide.get("body", "")
 
-    # ── 폰트 CSS ─────────────────────────────────────────────
+    # ── 폰트 CSS ──────────────────────────────────────────────
     fc = ""
     if fonts.get("r"):
         fc += (f"@font-face{{font-family:'NG';"
@@ -1666,153 +1669,294 @@ def _cn_slide_html(slide: dict, design: dict, slide_total: int,
                f"src:url('data:font/truetype;base64,{fonts['b']}') format('truetype');"
                f"font-weight:700;}}")
 
-    # ── 테마 설정 ─────────────────────────────────────────────
+    # ── 테마 팔레트 ───────────────────────────────────────────
     T = {
-        "dark":     {"bg": f"background-color:#0f1117",
-                     "hbg": "#161928",
-                     "tc": "#ffffff", "bc": "rgba(255,255,255,.82)",
-                     "xc": "rgba(255,255,255,.5)", "dc": "rgba(255,255,255,.28)"},
-        "light":    {"bg": "background-color:#f4f6fb",
-                     "hbg": "#ffffff",
-                     "tc": "#1a1a2e", "bc": "#4a4a6a",
-                     "xc": "#999999", "dc": "rgba(0,0,0,.18)"},
-        "vivid":    {"bg": f"background-color:{brand}",
-                     "hbg": "rgba(0,0,0,.2)",
-                     "tc": "#ffffff", "bc": "rgba(255,255,255,.9)",
-                     "xc": "rgba(255,255,255,.7)", "dc": "rgba(255,255,255,.35)"},
-        "gradient": {"bg": f"background:linear-gradient(145deg,{brand},{brand_dk})",
-                     "hbg": "rgba(0,0,0,.12)",
-                     "tc": "#ffffff", "bc": "rgba(255,255,255,.88)",
-                     "xc": "rgba(255,255,255,.65)", "dc": "rgba(255,255,255,.32)"},
+        "dark": {
+            "bg1": "#0d1117", "bg2": "#131a24",
+            "panel": "rgba(255,255,255,.08)", "pb": "rgba(255,255,255,.13)",
+            "hbg": "rgba(13,17,23,.94)",
+            "tc": "#ffffff", "bc": "rgba(255,255,255,.82)",
+            "xc": "rgba(255,255,255,.42)", "dc": "rgba(255,255,255,.18)",
+            "dotp": "rgba(255,255,255,.05)",
+        },
+        "light": {
+            "bg1": "#f5f7fc", "bg2": "#eaecf5",
+            "panel": "rgba(255,255,255,.82)", "pb": "rgba(0,0,0,.08)",
+            "hbg": "rgba(245,247,252,.96)",
+            "tc": "#0f1629", "bc": "#3a3f5c",
+            "xc": "#8890a8", "dc": "rgba(0,0,0,.12)",
+            "dotp": "rgba(0,0,0,.04)",
+        },
+        "vivid": {
+            "bg1": brand, "bg2": brand_dk,
+            "panel": "rgba(255,255,255,.15)", "pb": "rgba(255,255,255,.25)",
+            "hbg": "rgba(0,0,0,.18)",
+            "tc": "#ffffff", "bc": "rgba(255,255,255,.9)",
+            "xc": "rgba(255,255,255,.55)", "dc": "rgba(255,255,255,.28)",
+            "dotp": "rgba(255,255,255,.09)",
+        },
+        "gradient": {
+            "bg1": brand, "bg2": brand_dk,
+            "panel": "rgba(0,0,0,.2)", "pb": "rgba(255,255,255,.18)",
+            "hbg": "rgba(0,0,0,.22)",
+            "tc": "#ffffff", "bc": "rgba(255,255,255,.88)",
+            "xc": "rgba(255,255,255,.5)", "dc": "rgba(255,255,255,.22)",
+            "dotp": "rgba(255,255,255,.07)",
+        },
     }
-    t = T.get(theme, T["dark"])
+    t   = T.get(theme, T["dark"])
+    pad = int(W * 0.072)
+    hh  = int(H * 0.075)
 
-    pad  = int(W * 0.07)
-    hh   = int(H * 0.072)   # header height
+    # ── 배경 CSS
+    if theme in ("vivid", "gradient"):
+        bg_css = f"background:linear-gradient(145deg,{t['bg1']},{t['bg2']})"
+    else:
+        bg_css = f"background:linear-gradient(160deg,{t['bg1']} 0%,{t['bg2']} 100%)"
 
-    # ── CTA 슬라이드 ──────────────────────────────────────────
+    # ── SVG 도트 패턴
+    dot_svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">'
+        f'<circle cx="1.5" cy="1.5" r="1.5" fill="{t["dotp"]}"/></svg>'
+    )
+    dot_b64 = _b64m.b64encode(dot_svg.encode()).decode()
+    dot_bg  = f"url('data:image/svg+xml;base64,{dot_b64}')"
+
+    # ── 본문 파서 (번호형 / 불릿 / 일반)
+    def parse_body(raw: str) -> str:
+        parts = []
+        for line in raw.split("\n"):
+            l = line.strip()
+            if not l:
+                continue
+            nm = _re.match(r'^(\d+)[\.、]\s+(.+)', l)
+            if nm:
+                n, txt = nm.group(1), esc(nm.group(2))
+                bsz = int(H * .036)
+                parts.append(
+                    f'<div style="display:flex;align-items:flex-start;'
+                    f'gap:{int(W*.016)}px;margin-bottom:{int(H*.013)}px;">'
+                    f'<div style="min-width:{bsz}px;height:{bsz}px;border-radius:50%;'
+                    f'background:{brand};display:flex;align-items:center;'
+                    f'justify-content:center;font-family:\'NG\',sans-serif;'
+                    f'font-weight:700;font-size:{int(H*.02)}px;color:#fff;'
+                    f'flex-shrink:0;">{n}</div>'
+                    f'<span style="padding-top:{int(H*.004)}px;">{txt}</span></div>'
+                )
+            elif l.startswith(("• ", "- ", "· ")):
+                inner = esc(l[2:])
+                ds = int(H * .012)
+                parts.append(
+                    f'<div style="display:flex;align-items:flex-start;'
+                    f'gap:{int(W*.015)}px;margin-bottom:{int(H*.012)}px;">'
+                    f'<div style="min-width:{ds}px;height:{ds}px;border-radius:50%;'
+                    f'background:{brand};margin-top:{int(H*.009)}px;'
+                    f'flex-shrink:0;"></div>'
+                    f'<span>{inner}</span></div>'
+                )
+            else:
+                parts.append(
+                    f'<div style="margin-bottom:{int(H*.013)}px;">{esc(l)}</div>'
+                )
+        return "".join(parts)
+
+    # ── 진행 도트
+    def make_dots() -> str:
+        if slide_total <= 1:
+            return ""
+        items = []
+        for i in range(1, slide_total + 1):
+            if i == idx:
+                items.append(
+                    f'<span style="width:{int(W*.024)}px;height:{int(H*.008)}px;'
+                    f'border-radius:{int(H*.004)}px;background:{brand};'
+                    f'display:inline-block;"></span>'
+                )
+            else:
+                items.append(
+                    f'<span style="width:{int(H*.008)}px;height:{int(H*.008)}px;'
+                    f'border-radius:50%;background:{t["dc"]};'
+                    f'display:inline-block;"></span>'
+                )
+        return (
+            f'<div style="position:absolute;bottom:{int(H*.036)}px;left:0;right:0;'
+            f'display:flex;justify-content:center;align-items:center;'
+            f'gap:{int(W*.009)}px;">{"".join(items)}</div>'
+        )
+
+    # ════════════════════════════════════
+    #  CTA 슬라이드
+    # ════════════════════════════════════
     if is_cta:
-        cta_e  = esc(cta or slide.get("title", "") or "저장하고 팔로우하세요!")
-        tags   = "  ".join(hashtags[:6]) if hashtags else ""
-        tags_h = (f'<div style="margin-top:{int(H*.028)}px;font-size:{int(H*.026)}px;'
-                  f'color:rgba(255,255,255,.72);word-break:break-word;">{esc(tags)}</div>'
-                  ) if tags else ""
-        bname_h = (f'<div style="position:absolute;bottom:{int(H*.06)}px;width:100%;'
-                   f'text-align:center;font-size:{int(H*.022)}px;'
-                   f'color:rgba(255,255,255,.5);">{esc(bname)}</div>'
-                   ) if bname else ""
-        c1 = int(W * .65); c2 = int(W * .48)
+        cta_e = esc(cta or slide.get("title", "") or "저장하고 팔로우하세요!")
+        pills = "".join(
+            f'<span style="display:inline-block;'
+            f'padding:{int(H*.009)}px {int(W*.021)}px;'
+            f'border-radius:{int(H*.025)}px;'
+            f'background:rgba(255,255,255,.18);'
+            f'border:1px solid rgba(255,255,255,.28);'
+            f'font-family:\'NG\',sans-serif;font-size:{int(H*.022)}px;'
+            f'color:rgba(255,255,255,.88);'
+            f'margin:{int(H*.005)}px {int(W*.005)}px;">{esc(tag)}</span>'
+            for tag in hashtags[:8]
+        )
+        tag_block = (
+            f'<div style="margin-top:{int(H*.032)}px;text-align:center;'
+            f'line-height:{int(H*.06)}px;">{pills}</div>'
+        ) if pills else ""
+        bname_h = (
+            f'<div style="position:absolute;bottom:{int(H*.052)}px;left:0;right:0;'
+            f'text-align:center;font-family:\'NG\',sans-serif;'
+            f'font-size:{int(H*.021)}px;color:rgba(255,255,255,.45);">'
+            f'{esc(bname)}</div>'
+        ) if bname else ""
+        stripe = (
+            f'<div style="position:absolute;top:-{int(H*.1)}px;right:-{int(W*.08)}px;'
+            f'width:{int(W*.52)}px;height:{int(H*1.2)}px;'
+            f'background:rgba(255,255,255,.045);transform:skewX(-14deg);"></div>'
+        )
         content = f"""
 <div style="position:absolute;inset:0;
      background:linear-gradient(145deg,{brand},{brand_dk});overflow:hidden;">
-  <div style="position:absolute;top:-{int(H*.18)}px;right:-{int(W*.15)}px;
-       width:{c1}px;height:{c1}px;border-radius:50%;
-       background:rgba(255,255,255,.07);"></div>
-  <div style="position:absolute;bottom:-{int(H*.12)}px;left:-{int(W*.12)}px;
-       width:{c2}px;height:{c2}px;border-radius:50%;
-       background:rgba(255,255,255,.05);"></div>
+  <div style="position:absolute;inset:0;
+       background-image:{dot_bg};background-size:30px 30px;"></div>
+  {stripe}
+  <div style="position:absolute;top:-{int(H*.14)}px;right:-{int(W*.1)}px;
+       width:{int(W*.62)}px;height:{int(W*.62)}px;border-radius:50%;
+       background:rgba(255,255,255,.06);"></div>
+  <div style="position:absolute;bottom:-{int(H*.1)}px;left:-{int(W*.08)}px;
+       width:{int(W*.42)}px;height:{int(W*.42)}px;border-radius:50%;
+       background:rgba(255,255,255,.04);"></div>
   <div style="position:absolute;top:50%;left:50%;
-       transform:translate(-50%,-55%);width:{int(W*.86)}px;text-align:center;">
+       transform:translate(-50%,-52%);width:{int(W*.84)}px;text-align:center;">
     <div style="font-family:'NG',sans-serif;font-weight:700;
-         font-size:{int(H*.052)}px;color:#fff;line-height:1.42;">{cta_e}</div>
-    {tags_h}
+         font-size:{int(H*.054)}px;color:#fff;line-height:1.38;
+         text-shadow:0 3px 20px rgba(0,0,0,.3);">{cta_e}</div>
+    {tag_block}
   </div>
   {bname_h}
 </div>"""
 
-    # ── 일반 슬라이드 (커버 포함) ────────────────────────────
-    else:
-        # 본문 HTML: 줄별로 파싱
-        body_parts = []
-        for line in slide.get("body", "").split("\n"):
-            l = line.strip()
-            if not l:
-                continue
-            if l.startswith("• ") or l.startswith("- "):
-                inner = esc(l[2:])
-                body_parts.append(
-                    f'<div style="display:flex;gap:10px;margin-bottom:{int(H*.01)}px;">'
-                    f'<span style="color:{brand};flex-shrink:0;margin-top:2px;">•</span>'
-                    f'<span>{inner}</span></div>')
-            else:
-                body_parts.append(
-                    f'<div style="margin-bottom:{int(H*.012)}px;">{esc(l)}</div>')
-        body_inner = "".join(body_parts)
-
-        # 진행 점 (dots)
-        dots = ""
-        if slide_total > 1:
-            dot_items = []
-            for i in range(1, slide_total + 1):
-                if i == idx:
-                    dot_items.append(
-                        f'<span style="width:12px;height:12px;border-radius:50%;'
-                        f'background:{brand};display:inline-block;"></span>')
-                else:
-                    dot_items.append(
-                        f'<span style="width:8px;height:8px;border-radius:50%;'
-                        f'background:{t["dc"]};display:inline-block;'
-                        f'align-self:center;"></span>')
-            dots = (f'<div style="position:absolute;bottom:{int(H*.04)}px;'
-                    f'left:0;right:0;display:flex;justify-content:center;'
-                    f'align-items:center;gap:8px;">{"".join(dot_items)}</div>')
-
-        # 커버(1번)와 내용 슬라이드의 레이아웃 차이
-        is_cover = (idx == 1)
-        if is_cover:
-            title_top = int(H * .22)
-            title_fs  = int(H * .056)
-            body_top  = int(H * .46)
-            header_html = ""
-            accent_bar  = (f'<div style="position:absolute;top:{int(H*.175)}px;'
-                           f'left:{pad}px;width:{int(W*.1)}px;height:{int(H*.005)}px;'
-                           f'background:{brand};border-radius:3px;"></div>')
-            # 커버 장식 원
-            deco = (f'<div style="position:absolute;top:-{int(H*.12)}px;'
-                    f'right:-{int(W*.1)}px;width:{int(W*.58)}px;height:{int(W*.58)}px;'
-                    f'border-radius:50%;background:{brand};opacity:.1;"></div>'
-                    f'<div style="position:absolute;bottom:{int(H*.08)}px;'
-                    f'left:-{int(W*.08)}px;width:{int(W*.38)}px;height:{int(W*.38)}px;'
-                    f'border-radius:50%;background:{brand};opacity:.07;"></div>')
-        else:
-            title_top = int(H * .135)
-            title_fs  = int(H * .046)
-            body_top  = int(H * .30)
-            header_html = (
-                f'<div style="position:absolute;top:0;left:0;right:0;height:{hh}px;'
-                f'background:{t["hbg"]};display:flex;align-items:center;'
-                f'padding:0 {pad}px;">'
-                f'<span style="flex:1;font-family:\'NG\',sans-serif;'
-                f'font-size:{int(H*.023)}px;color:{brand};font-weight:400;">'
-                f'{esc(bname)}</span>'
-                f'<span style="font-family:\'NG\',sans-serif;'
-                f'font-size:{int(H*.022)}px;color:{t["xc"]};font-weight:400;">'
-                f'{idx:02d}&nbsp;/&nbsp;{slide_total:02d}</span></div>')
-            accent_bar = (f'<div style="position:absolute;top:{int(H*.108)}px;'
-                          f'left:{pad}px;width:{int(W*.08)}px;height:{int(H*.0048)}px;'
-                          f'background:{brand};border-radius:3px;"></div>')
-            deco = ""
-
+    # ════════════════════════════════════
+    #  커버 슬라이드 (idx == 1)
+    # ════════════════════════════════════
+    elif is_cover:
+        sub_lines = [l.strip() for l in body_raw.split("\n") if l.strip()][:2]
+        sub_html = (
+            f'<div style="margin-top:{int(H*.022)}px;'
+            f'font-family:\'NG\',sans-serif;font-weight:400;'
+            f'font-size:{int(H*.027)}px;color:{t["bc"]};line-height:1.65;">'
+            + "<br>".join(esc(s) for s in sub_lines)
+            + '</div>'
+        ) if sub_lines else ""
+        bname_badge = (
+            f'<div style="display:inline-flex;align-items:center;'
+            f'padding:{int(H*.009)}px {int(W*.022)}px;'
+            f'border-radius:{int(H*.025)}px;background:{brand};'
+            f'margin-bottom:{int(H*.028)}px;">'
+            f'<span style="font-family:\'NG\',sans-serif;font-weight:700;'
+            f'font-size:{int(H*.019)}px;color:#fff;letter-spacing:0.04em;">'
+            f'{esc(bname)}</span></div>'
+        ) if bname else ""
+        bg_num = (
+            f'<div style="position:absolute;right:{int(W*.02)}px;'
+            f'bottom:-{int(H*.04)}px;font-family:\'NG\',sans-serif;'
+            f'font-weight:700;font-size:{int(H*.55)}px;color:{brand};'
+            f'opacity:.06;line-height:1;pointer-events:none;">01</div>'
+        )
+        pg_txt = f'01&nbsp;/&nbsp;{slide_total:02d}' if slide_total > 1 else ""
         content = f"""
-<div style="position:absolute;inset:0;{t['bg']};overflow:hidden;">
-  {deco}
-  {header_html}
-  {accent_bar}
-  <div style="position:absolute;top:{title_top}px;left:{pad}px;right:{pad}px;
-       font-family:'NG',sans-serif;font-weight:700;font-size:{title_fs}px;
-       color:{t['tc']};line-height:1.38;">{title_e}</div>
-  <div style="position:absolute;top:{body_top}px;left:{pad}px;right:{pad}px;
-       bottom:{int(H*.12)}px;font-family:'NG',sans-serif;font-weight:400;
-       font-size:{int(H*.029)}px;color:{t['bc']};line-height:1.72;
-       overflow:hidden;">{body_inner}</div>
-  {dots}
+<div style="position:absolute;inset:0;{bg_css};overflow:hidden;">
+  <div style="position:absolute;inset:0;
+       background-image:{dot_bg};background-size:30px 30px;"></div>
+  {bg_num}
+  <div style="position:absolute;top:0;left:0;
+       width:{int(W*.007)}px;height:100%;background:{brand};"></div>
+  <div style="position:absolute;top:0;left:0;width:{int(W*.46)}px;height:100%;
+       background:linear-gradient(90deg,{brand}20,transparent);"></div>
+  <div style="position:absolute;top:50%;transform:translateY(-52%);
+       left:{int(W*.1)}px;right:{pad}px;">
+    {bname_badge}
+    <div style="font-family:'NG',sans-serif;font-weight:700;
+         font-size:{int(H*.062)}px;color:{t["tc"]};line-height:1.26;
+         text-shadow:0 2px 20px rgba(0,0,0,.12);">{title_e}</div>
+    {sub_html}
+  </div>
+  <div style="position:absolute;bottom:{int(H*.042)}px;right:{pad}px;
+       font-family:'NG',sans-serif;font-size:{int(H*.018)}px;
+       color:{t["xc"]};letter-spacing:0.05em;">{pg_txt}</div>
+  <div style="position:absolute;bottom:0;left:0;right:0;
+       height:{int(H*.006)}px;
+       background:linear-gradient(90deg,{brand},{brand_dk});"></div>
 </div>"""
 
-    return (f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
-            f'{fc}'
-            f'*{{margin:0;padding:0;box-sizing:border-box;}}'
-            f'html,body{{width:{W}px;height:{H}px;overflow:hidden;background:transparent;}}'
-            f'</style></head><body>{content}</body></html>')
+    # ════════════════════════════════════
+    #  내용 슬라이드 (idx 2 이상)
+    # ════════════════════════════════════
+    else:
+        body_inner  = parse_body(body_raw)
+        header_html = (
+            f'<div style="position:absolute;top:0;left:0;right:0;height:{hh}px;'
+            f'background:{t["hbg"]};border-bottom:1px solid {t["pb"]};'
+            f'display:flex;align-items:center;padding:0 {pad}px;">'
+            f'<span style="flex:1;font-family:\'NG\',sans-serif;'
+            f'font-size:{int(H*.022)}px;color:{brand};font-weight:700;'
+            f'letter-spacing:0.02em;">{esc(bname)}</span>'
+            f'<span style="font-family:\'NG\',sans-serif;'
+            f'font-size:{int(H*.021)}px;color:{t["xc"]};font-weight:400;">'
+            f'{idx:02d}&nbsp;/&nbsp;{slide_total:02d}</span></div>'
+        )
+        bg_num = (
+            f'<div style="position:absolute;right:{int(W*.018)}px;'
+            f'bottom:{int(H*.06)}px;font-family:\'NG\',sans-serif;'
+            f'font-weight:700;font-size:{int(H*.36)}px;color:{brand};'
+            f'opacity:.055;line-height:1;pointer-events:none;">{idx:02d}</div>'
+        )
+        panel_top = hh + int(H * 0.035)
+        panel_h   = H - panel_top - int(H * 0.095)
+        t_top     = int(panel_h * 0.075)
+        t_fs      = int(H * 0.042)
+        t_max     = int(t_fs * 1.3 * 2) + int(H * 0.025)
+        b_top     = t_top + t_max
+        ipx       = int(W * 0.048)
+        ipxl      = ipx + int(W * 0.012)
+        panel = (
+            f'<div style="position:absolute;top:{panel_top}px;left:{pad}px;'
+            f'right:{pad}px;height:{panel_h}px;background:{t["panel"]};'
+            f'border:1px solid {t["pb"]};border-radius:{int(W*.018)}px;'
+            f'backdrop-filter:blur(8px);overflow:hidden;">'
+            f'<div style="position:absolute;top:{int(panel_h*.07)}px;left:0;'
+            f'width:{int(W*.006)}px;height:{int(panel_h*.16)}px;'
+            f'background:{brand};'
+            f'border-radius:0 {int(W*.003)}px {int(W*.003)}px 0;"></div>'
+            f'<div style="position:absolute;top:{t_top}px;left:{ipxl}px;'
+            f'right:{ipx}px;font-family:\'NG\',sans-serif;font-weight:700;'
+            f'font-size:{t_fs}px;color:{t["tc"]};line-height:1.3;">'
+            f'{title_e}</div>'
+            f'<div style="position:absolute;top:{b_top}px;left:{ipxl}px;'
+            f'right:{ipx}px;bottom:{int(panel_h*.04)}px;'
+            f'font-family:\'NG\',sans-serif;font-weight:400;'
+            f'font-size:{int(H*.027)}px;color:{t["bc"]};line-height:1.72;'
+            f'overflow:hidden;">{body_inner}</div>'
+            f'</div>'
+        )
+        content = f"""
+<div style="position:absolute;inset:0;{bg_css};overflow:hidden;">
+  <div style="position:absolute;inset:0;
+       background-image:{dot_bg};background-size:30px 30px;"></div>
+  {bg_num}
+  {header_html}
+  {panel}
+  {make_dots()}
+</div>"""
+
+    return (
+        f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+        f'{fc}'
+        f'*{{margin:0;padding:0;box-sizing:border-box;}}'
+        f'html,body{{width:{W}px;height:{H}px;overflow:hidden;background:transparent;}}'
+        f'</style></head><body>{content}</body></html>'
+    )
 
 
 # ── Playwright 브라우저 싱글턴 ─────────────────────────────────────────────
@@ -1896,6 +2040,180 @@ async def cardnews_render_images(body: dict):
         "theme":  design.get("theme", "dark"),
         "width":  W * 2,
         "height": H * 2,
+    }
+
+
+# ── 블로그 썸네일 렌더러 ──────────────────────────────────────────────────────
+
+_BLOG_THUMB_DIMS: dict = {
+    "naver":     (1200, 630),
+    "tistory":   (1280, 720),
+    "wordpress": (1200, 628),
+}
+_BLOG_PLATFORM_LABELS: dict = {
+    "naver": "네이버 블로그",
+    "tistory": "티스토리",
+    "wordpress": "워드프레스",
+}
+
+
+def _blog_thumb_html(title: str, subtitle: str, platform: str,
+                     brand_color: str = "#1f6feb", brand_name: str = "",
+                     theme: str = "dark") -> "tuple[str, int, int]":
+    """블로그 OG 썸네일 HTML 생성 (Playwright PNG 캡처용)"""
+    W, H     = _BLOG_THUMB_DIMS.get(platform, (1200, 630))
+    brand    = brand_color or "#1f6feb"
+    brand_dk = _hex_darken(brand)
+    fonts    = _get_cn_fonts()
+    plabel   = _BLOG_PLATFORM_LABELS.get(platform, "블로그")
+
+    def esc(s: str) -> str:
+        return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    title_e    = esc(title or "")
+    subtitle_e = esc(subtitle or "")
+    bname_e    = esc(brand_name or "")
+
+    # 폰트 CSS
+    fc = ""
+    if fonts.get("r"):
+        fc += (f"@font-face{{font-family:'NG';"
+               f"src:url('data:font/truetype;base64,{fonts['r']}') format('truetype');"
+               f"font-weight:400;}}")
+    if fonts.get("b"):
+        fc += (f"@font-face{{font-family:'NG';"
+               f"src:url('data:font/truetype;base64,{fonts['b']}') format('truetype');"
+               f"font-weight:700;}}")
+
+    # 테마 팔레트
+    T = {
+        "dark":     {"bg1": "#0d1117", "bg2": "#131a24",
+                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.8)",
+                     "xc": "rgba(255,255,255,.42)", "dotp": "rgba(255,255,255,.05)"},
+        "light":    {"bg1": "#f5f7fc", "bg2": "#eaecf5",
+                     "tc": "#0f1629",  "bc": "#3a3f5c",
+                     "xc": "#8890a8",  "dotp": "rgba(0,0,0,.04)"},
+        "vivid":    {"bg1": brand,     "bg2": brand_dk,
+                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.88)",
+                     "xc": "rgba(255,255,255,.55)", "dotp": "rgba(255,255,255,.09)"},
+        "gradient": {"bg1": brand,     "bg2": brand_dk,
+                     "tc": "#ffffff",  "bc": "rgba(255,255,255,.85)",
+                     "xc": "rgba(255,255,255,.5)",  "dotp": "rgba(255,255,255,.07)"},
+    }
+    t   = T.get(theme, T["dark"])
+    pad = int(W * 0.06)
+
+    if theme in ("vivid", "gradient"):
+        bg_css = f"background:linear-gradient(145deg,{t['bg1']},{t['bg2']})"
+    else:
+        bg_css = f"background:linear-gradient(160deg,{t['bg1']} 0%,{t['bg2']} 100%)"
+
+    dot_svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">'
+        f'<circle cx="1.5" cy="1.5" r="1.5" fill="{t["dotp"]}"/></svg>'
+    )
+    dot_b64 = _b64m.b64encode(dot_svg.encode()).decode()
+    dot_bg  = f"url('data:image/svg+xml;base64,{dot_b64}')"
+
+    title_fs = int(H * 0.1)
+    sub_html = (
+        f'<div style="margin-top:{int(H*.035)}px;font-family:\'NG\',sans-serif;'
+        f'font-weight:400;font-size:{int(H*.048)}px;color:{t["bc"]};'
+        f'line-height:1.5;max-width:{int(W*.72)}px;">{subtitle_e}</div>'
+    ) if subtitle_e else ""
+
+    plat_badge = (
+        f'<div style="display:inline-flex;align-items:center;'
+        f'padding:{int(H*.013)}px {int(W*.016)}px;border-radius:{int(H*.03)}px;'
+        f'background:{brand};margin-bottom:{int(H*.04)}px;">'
+        f'<span style="font-family:\'NG\',sans-serif;font-weight:700;'
+        f'font-size:{int(H*.034)}px;color:#fff;letter-spacing:0.04em;">'
+        f'{plabel}</span></div>'
+    )
+    bname_line = (
+        f'<div style="font-family:\'NG\',sans-serif;font-weight:700;'
+        f'font-size:{int(H*.036)}px;color:{t["xc"]};letter-spacing:0.04em;">'
+        f'{bname_e}</div>'
+    ) if bname_e else ""
+
+    bg_deco = (
+        f'<div style="position:absolute;right:{int(W*.015)}px;'
+        f'bottom:-{int(H*.05)}px;font-family:\'NG\',sans-serif;'
+        f'font-weight:700;font-size:{int(H*.7)}px;color:{brand};'
+        f'opacity:.055;line-height:1;pointer-events:none;">B</div>'
+    )
+
+    html_body = f"""
+<div style="position:absolute;inset:0;{bg_css};overflow:hidden;">
+  <div style="position:absolute;inset:0;
+       background-image:{dot_bg};background-size:30px 30px;"></div>
+  {bg_deco}
+  <div style="position:absolute;top:0;left:0;
+       width:{int(W*.006)}px;height:100%;background:{brand};"></div>
+  <div style="position:absolute;top:0;left:0;width:{int(W*.52)}px;height:100%;
+       background:linear-gradient(90deg,{brand}22,transparent);"></div>
+  <div style="position:absolute;top:50%;transform:translateY(-50%);
+       left:{int(W*.08)}px;right:{pad}px;">
+    {plat_badge}
+    <div style="font-family:'NG',sans-serif;font-weight:700;
+         font-size:{title_fs}px;color:{t["tc"]};line-height:1.22;
+         text-shadow:0 2px 20px rgba(0,0,0,.12);">{title_e}</div>
+    {sub_html}
+  </div>
+  <div style="position:absolute;bottom:{int(H*.065)}px;right:{pad}px;">
+    {bname_line}
+  </div>
+  <div style="position:absolute;bottom:0;left:0;right:0;
+       height:{int(H*.01)}px;
+       background:linear-gradient(90deg,{brand},{brand_dk});"></div>
+</div>"""
+
+    full_html = (
+        f'<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+        f'{fc}'
+        f'*{{margin:0;padding:0;box-sizing:border-box;}}'
+        f'html,body{{width:{W}px;height:{H}px;overflow:hidden;background:transparent;}}'
+        f'</style></head><body>{html_body}</body></html>'
+    )
+    return full_html, W, H
+
+
+@app.post("/blog/thumbnail")
+async def blog_thumbnail(body: dict):
+    """블로그 OG 썸네일 → PNG (Playwright HTML→Screenshot)"""
+    title      = body.get("title", "").strip()
+    subtitle   = body.get("subtitle", "")
+    platform   = body.get("platform", "naver")
+    brand_color= body.get("brand_color", "#1f6feb")
+    brand_name = body.get("brand_name", "")
+    theme      = body.get("theme", "dark")
+
+    if not title:
+        raise HTTPException(status_code=400, detail="title이 필요합니다.")
+
+    html_str, W, H = _blog_thumb_html(title, subtitle, platform,
+                                      brand_color, brand_name, theme)
+    browser = await _get_pw_browser()
+    ctx = await browser.new_context(
+        viewport={"width": W, "height": H},
+        device_scale_factor=2,
+    )
+    try:
+        page = await ctx.new_page()
+        await page.set_content(html_str, wait_until="networkidle")
+        img_bytes = await page.screenshot(
+            type="png", full_page=False,
+            clip={"x": 0, "y": 0, "width": W, "height": H},
+        )
+        await page.close()
+    finally:
+        await ctx.close()
+
+    return {
+        "image_b64": _b64m.b64encode(img_bytes).decode(),
+        "width":     W * 2,
+        "height":    H * 2,
+        "platform":  platform,
     }
 
 

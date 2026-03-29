@@ -8068,33 +8068,50 @@ async function generateAllSectionImages() {
 }
 
 async function generateBlogThumbnail() {
-  const title  = document.getElementById('blog-title')?.value || document.getElementById('blog-topic')?.value || '';
-  const custom = document.getElementById('blog-img-prompt')?.value.trim();
-  const styleMap = { minimal:'minimalist flat design', photo:'realistic photo', infographic:'infographic style', illustration:'digital illustration' };
-  const prompt = custom || `${styleMap[_imgStyle] || 'minimalist'}, ${title}, professional marketing blog thumbnail, high quality`;
+  const title    = document.getElementById('blog-title')?.value.trim()
+                || document.getElementById('blog-topic')?.value.trim() || '';
+  const subtitle = document.getElementById('blog-meta-desc')?.value.trim() || '';
+
+  // 스타일 → 테마 매핑
+  const themeMap = { minimal:'dark', photo:'light', infographic:'gradient', illustration:'vivid' };
+  const theme    = themeMap[_imgStyle] || 'dark';
+
+  // 현재 선택된 블로그 플랫폼 (첫 번째 체크된 것)
+  const platCb = document.querySelector('.blog-platform-cb:checked');
+  const platform = platCb ? platCb.value : 'naver';
+
+  // 에이전시 프로필에서 브랜드 정보
+  const brandColor = agencyProfile.brand_color || '#1f6feb';
+  const brandName  = agencyProfile.agency_name  || '';
 
   const preview = document.getElementById('blog-thumbnail-preview');
-  if (preview) preview.innerHTML = '<div style="text-align:center;color:#8b949e;"><div style="font-size:24px;margin-bottom:8px;">⏳</div><div style="font-size:14px;">이미지 생성 중...</div></div>';
+  if (preview) preview.innerHTML = '<div style="text-align:center;color:#8b949e;padding:20px;"><div style="font-size:24px;margin-bottom:8px;">⏳</div><div style="font-size:14px;">썸네일 생성 중...</div></div>';
 
   try {
-    const res = await fetch(`${API}/image/generate`, {
+    const res = await fetch(`${API}/blog/thumbnail`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ prompt, api_keys: getKeys() })
+      body: JSON.stringify({ title, subtitle, platform, brand_color: brandColor, brand_name: brandName, theme })
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '생성 실패'); }
     const data = await res.json();
-    const imgSrc2 = data.image_url || `data:${data.mime};base64,${data.image_b64}`;
+    const imgSrc = `data:image/png;base64,${data.image_b64}`;
+
     if (preview) {
       preview.style.position = 'relative';
-      preview.innerHTML = `<img src="${imgSrc2}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />`
-        + (data.image_url ? `<a href="${imgSrc2}" target="_blank" style="position:absolute;bottom:8px;right:8px;background:#1f6feb;color:#fff;padding:4px 10px;border-radius:6px;font-size:13px;text-decoration:none;">열기</a>` : '');
+      preview.style.aspectRatio = data.width + '/' + data.height;
+      preview.innerHTML =
+        `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />` +
+        `<a href="${imgSrc}" download="thumbnail_${platform}.png"
+           style="position:absolute;bottom:8px;right:8px;background:#1f6feb;color:#fff;
+                  padding:5px 12px;border-radius:6px;font-size:12px;text-decoration:none;
+                  font-weight:600;">⬇ 다운로드</a>`;
     }
-    const thumbMsg = data.source === 'picsum' ? '플레이스홀더 이미지 삽입 (HF 토큰 Inference 권한 필요)' : '썸네일 생성 완료!';
-    toast(thumbMsg, data.source === 'picsum' ? 'orange' : '#4ade80');
+    window._blogThumbnailSrc = imgSrc;
+    toast('썸네일 생성 완료!', '#4ade80');
     blogAutoSave();
   } catch(e) {
     if (preview) preview.innerHTML = `<div style="text-align:center;color:#f87171;padding:20px;"><div style="font-size:15px;">❌ ${e.message}</div></div>`;
-    toast('이미지 생성 실패: ' + e.message, 'red');
+    toast('썸네일 생성 실패: ' + e.message, 'red');
   }
 }
 
