@@ -8074,7 +8074,8 @@ async function generateSectionImage(idx, keyword, titleHint) {
     window._sectionImages[idx] = imgSrc;
     const srcLabel = data.source === 'unsplash' ? 'Unsplash' : data.source === 'pollinations' ? 'Pollinations AI' : data.source || '완료';
     const credit = data.credit ? ` · ${data.credit}` : '';
-    toast(`섹션 이미지 생성 완료 (${srcLabel}${credit})`, '#4ade80');
+    const enKw = data.en_keyword ? ` [${data.en_keyword}]` : '';
+    toast(`섹션 이미지 생성 완료 (${srcLabel}${enKw}${credit})`, '#4ade80');
   } catch(e) {
     if (thumbEl) thumbEl.innerHTML = '❌';
     toast('생성 실패: ' + e.message, 'red');

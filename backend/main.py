@@ -3986,23 +3986,41 @@ async def agency_learn_csv(req: AgencyLearnRequest):
     }
 
 
+# ── 한국어 키워드 → 영어 변환 ───────────────────────────────────────────────
+def _has_korean(text: str) -> bool:
+    return any('\uAC00' <= c <= '\uD7A3' or '\u3131' <= c <= '\u318E' for c in text)
+
+async def _translate_keyword(keyword: str, api_keys: dict) -> str:
+    """한국어 키워드를 2-4단어 영어로 변환. 실패 시 원본 반환."""
+    if not _has_korean(keyword):
+        return keyword
+    prompt = f"Translate this Korean blog topic to 2-4 concise English keywords for image search. Reply with ONLY the English keywords, nothing else.\nKorean: {keyword}"
+    result, err = await _gemini_text(prompt, api_keys, tier="tier1", max_tokens=30)
+    if err or not result.strip():
+        return keyword
+    # 따옴표·줄바꿈 제거, 첫 줄만
+    return result.strip().splitlines()[0].strip('"\'').strip()
+
+
 # ── 이미지 생성 ──────────────────────────────────────────────────────────────
 @app.post("/image/generate")
 async def generate_image(body: dict):
     """
-    1순위: Unsplash (unsplash_access_key 있을 때) — 키워드 관련 고품질 사진
-    2순위: Pollinations.ai (항상 동작, 무료, API 키 불필요) — AI 생성 이미지
+    한국어 키워드 → 영어 자동 변환 → Unsplash(1순위) / Pollinations.ai(2순위)
     """
     import httpx, urllib.parse
 
     keyword      = (body.get("keyword") or body.get("prompt") or "").strip()
-    prompt       = (body.get("prompt") or keyword).strip()
     width        = body.get("width", 1200)
     height       = body.get("height", 630)
-    unsplash_key = (body.get("api_keys") or {}).get("unsplash_access_key", "")
+    api_keys     = body.get("api_keys") or {}
+    unsplash_key = api_keys.get("unsplash_access_key", "")
 
     if not keyword:
         raise HTTPException(status_code=400, detail="keyword 또는 prompt가 필요합니다.")
+
+    # ── 한국어이면 영어로 변환 ─────────────────────────────────
+    en_keyword = await _translate_keyword(keyword, api_keys)
 
     # ── 1순위: Unsplash ────────────────────────────────────────
     if unsplash_key:
@@ -4011,7 +4029,7 @@ async def generate_image(body: dict):
                 r = await client.get(
                     "https://api.unsplash.com/photos/random",
                     params={
-                        "query":       keyword,
+                        "query":       en_keyword,
                         "orientation": "landscape",
                         "client_id":   unsplash_key,
                     },
@@ -4019,17 +4037,18 @@ async def generate_image(body: dict):
                 if r.status_code == 200:
                     d = r.json()
                     return {
-                        "image_url": d["urls"]["regular"],
-                        "source":    "unsplash",
-                        "credit":    f"{d['user']['name']} on Unsplash",
+                        "image_url":  d["urls"]["regular"],
+                        "source":     "unsplash",
+                        "credit":     f"{d['user']['name']} on Unsplash",
+                        "en_keyword": en_keyword,
                     }
         except Exception:
             pass  # 폴백
 
     # ── 2순위: Pollinations.ai (무료 무제한) ───────────────────
-    enc  = urllib.parse.quote(f"{prompt}, professional blog photo, high quality, clean")
-    url  = f"https://image.pollinations.ai/prompt/{enc}?width={width}&height={height}&nologo=true"
-    return {"image_url": url, "source": "pollinations"}
+    enc = urllib.parse.quote(f"{en_keyword}, professional blog photo, high quality, clean")
+    url = f"https://image.pollinations.ai/prompt/{enc}?width={width}&height={height}&nologo=true"
+    return {"image_url": url, "source": "pollinations", "en_keyword": en_keyword}
 
 
 # ── 샘플링: URL 크롤링 → 글쓰기 스타일 추출 ────────────────────────────────
