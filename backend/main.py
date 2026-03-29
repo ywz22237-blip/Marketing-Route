@@ -158,46 +158,59 @@ JSON만 반환:
 
 # ── SEO 키워드 도구 ────────────────────────────────────────────
 
+_GROQ_MODELS = [
+    "llama-3.3-70b-versatile",   # 1순위: 고품질
+    "llama-3.1-8b-instant",      # 2순위: 한도 여유
+    "gemma2-9b-it",              # 3순위: 최후 수단
+]
+
+def _groq_call(groq_key: str, prompt: str, max_tokens: int) -> str:
+    """Groq 모델을 순서대로 시도. 429면 다음 모델로 넘어감."""
+    from groq import Groq
+    gclient = Groq(api_key=groq_key)
+    last_err = ""
+    for model in _GROQ_MODELS:
+        try:
+            gresp = gclient.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.6,
+                max_tokens=max_tokens,
+            )
+            return gresp.choices[0].message.content or ""
+        except Exception as e:
+            last_err = str(e)
+            if "429" not in last_err and "rate_limit" not in last_err.lower():
+                raise  # 429 외 오류는 즉시 재발생
+    raise RuntimeError(f"Groq 모든 모델 한도 초과: {last_err[:120]}")
+
+
 async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tokens: int = 0) -> tuple[str, str | None]:
     """Gemini 호출 후 텍스트 반환. 429 시 Groq 자동 폴백.
     primary_llm='groq' 이면 Groq 먼저 시도 (Gemini 할당량 절약).
     max_tokens=0 이면 용도별 기본값 자동 적용.
     """
     import os
-    # primary_llm 설정 확인 (프론트에서 api_keys에 포함)
     primary_llm = api_keys.get("primary_llm", "gemini")
 
     groq_key   = api_keys.get("groq_api_key")  or os.getenv("GROQ_API_KEY", "")
     gemini_key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
 
-    # 용도별 max_tokens 자동 설정 (0이면 프롬프트 길이 기반 추정)
-    # 출력 품질 우선 — 짧은 분석만 줄이고 콘텐츠 생성은 충분히 확보
     if max_tokens == 0:
         prompt_len = len(prompt)
-        if prompt_len < 1000:   max_tokens = 1024   # 짧은 분석·키워드 추출
-        else:                   max_tokens = 4096   # SNS·블로그 생성은 넉넉하게
+        if prompt_len < 1000:   max_tokens = 1024
+        else:                   max_tokens = 4096
 
     # ── Groq 우선 모드 ──────────────────────────────────────────
     if primary_llm == "groq" and groq_key:
         try:
-            from groq import Groq
-            gclient = Groq(api_key=groq_key)
-            gresp = gclient.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.6,
-                max_tokens=max_tokens,
-            )
-            return gresp.choices[0].message.content or "", None
+            return _groq_call(groq_key, prompt, max_tokens), None
         except Exception as ge:
-            err_str = str(ge)
-            # Groq도 실패하면 Gemini 폴백
             if not gemini_key:
-                return "", f"Groq 오류: {err_str[:150]}"
+                return "", f"Groq 오류: {str(ge)[:150]}"
             # Gemini로 계속 진행
 
     key = gemini_key
-    # tier2/3 = 2.5-flash(고품질), 기본 = 2.0-flash(6배 높은 무료 할당량)
     model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.0-flash"
 
     if key:
@@ -211,37 +224,18 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
             if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
                 return "", "❌ Gemini API 키가 유효하지 않습니다."
             if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
-                # ── Groq 자동 폴백 ───────────────────────────
-                groq_key = api_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
                 if groq_key:
                     try:
-                        from groq import Groq
-                        gclient = Groq(api_key=groq_key)
-                        gresp = gclient.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
-                            messages=[{"role": "user", "content": prompt}],
-                            temperature=0.6,
-                            max_tokens=max_tokens,
-                        )
-                        return gresp.choices[0].message.content or "", None
+                        return _groq_call(groq_key, prompt, max_tokens), None
                     except Exception as ge:
-                        return "", f"❌ Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:100]}"
+                        return "", f"❌ Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:120]}"
                 return "", "❌ Gemini 일일 할당량 초과(429). Groq API 키를 설정하면 자동 전환됩니다."
             return "", f"Gemini 오류: {err_str[:150]}"
 
     # Gemini 키 없으면 Groq 직접 시도
-    groq_key = api_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
     if groq_key:
         try:
-            from groq import Groq
-            gclient = Groq(api_key=groq_key)
-            gresp = gclient.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.6,
-                max_tokens=max_tokens,
-            )
-            return gresp.choices[0].message.content or "", None
+            return _groq_call(groq_key, prompt, max_tokens), None
         except Exception as ge:
             return "", f"Groq 오류: {str(ge)[:150]}"
     return "", "Gemini API 키가 없습니다. API 설정에서 키를 입력하고 저장해주세요."
@@ -281,20 +275,9 @@ async def _gemini_json(prompt: str, api_keys: dict, tier: str = "tier1"):
         groq_key = api_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
         if groq_key:
             try:
-                from groq import Groq
-                gclient = Groq(api_key=groq_key)
-                gresp = gclient.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": "반드시 유효한 JSON만 반환하세요. 코드블록 없이 순수 JSON만."},
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.4,
-                    max_tokens=4096,
-                )
-                raw = gresp.choices[0].message.content or ""
+                raw = _groq_call(groq_key, prompt, 4096)
             except Exception as ge:
-                return None, f"Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:100]}"
+                return None, f"Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:120]}"
         else:
             if not key:
                 return None, "Gemini API 키가 없습니다. API 설정에서 키를 입력하고 저장해주세요."
