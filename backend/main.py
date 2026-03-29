@@ -249,7 +249,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tupl
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.6,
-                max_tokens=8192,
+                max_tokens=4096,
             )
             return gresp.choices[0].message.content or "", None
         except Exception as ge:
@@ -284,7 +284,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tupl
                             model="llama-3.3-70b-versatile",
                             messages=[{"role": "user", "content": prompt}],
                             temperature=0.6,
-                            max_tokens=8192,
+                            max_tokens=4096,
                         )
                         return gresp.choices[0].message.content or "", None
                     except Exception as ge:
@@ -302,7 +302,7 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tupl
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.6,
-                max_tokens=8192,
+                max_tokens=4096,
             )
             return gresp.choices[0].message.content or "", None
         except Exception as ge:
@@ -1482,7 +1482,8 @@ def _tier_checklist(tier: ApiTier) -> dict:
 # ── 블로그 플랫폼별 생성 ───────────────────────────────────────
 
 BLOG_PLATFORM_PROMPTS = {
-    BlogPlatform.NAVER: """
+    BlogPlatform.NAVER: """[CRITICAL] 반드시 한국어로만 작성하세요. 다른 언어 절대 사용 금지.
+
 당신은 네이버 블로그 SEO 전문 작가입니다.
 네이버 검색 알고리즘에 최적화된 블로그 글을 작성하세요.
 
@@ -1509,7 +1510,8 @@ BLOG_PLATFORM_PROMPTS = {
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
 """,
-    BlogPlatform.TISTORY: """
+    BlogPlatform.TISTORY: """[CRITICAL] 반드시 한국어로만 작성하세요. 다른 언어 절대 사용 금지.
+
 당신은 티스토리 SEO 블로그 전문 작가입니다.
 
 주제: {topic}
@@ -1535,7 +1537,8 @@ JSON 형식으로만 반환:
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
 """,
-    BlogPlatform.WORDPRESS: """
+    BlogPlatform.WORDPRESS: """[CRITICAL] 반드시 한국어로만 작성하세요. 다른 언어 절대 사용 금지.
+
 당신은 워드프레스 SEO 콘텐츠 전문 작가입니다.
 
 주제: {topic}
@@ -1722,7 +1725,9 @@ JSON 형식으로만 반환:
 # ── SNS 플랫폼별 생성 ─────────────────────────────────────────
 
 _SNS_PROMPTS = {
-    SNSPlatform.LINKEDIN: """당신은 링크드인 B2B 콘텐츠 전문 작가입니다.
+    SNSPlatform.LINKEDIN: """[CRITICAL] 반드시 한국어로만 작성하세요. 영어·베트남어·중국어 등 다른 언어 절대 사용 금지.
+
+당신은 링크드인 B2B 콘텐츠 전문 작가입니다.
 비즈니스 의사결정자를 대상으로 인사이트 중심 포스트를 작성하세요.
 
 주제: {topic}
@@ -1748,7 +1753,9 @@ _SNS_PROMPTS = {
 JSON 형식으로만 반환 (body 하나에 후킹 문장 + 본문 전체를 모두 포함):
 {{"body": "후킹 문장\\n\\n본문 단락1\\n\\n본문 단락2\\n\\n마무리 CTA", "hashtags": ["#태그1", "#태그2", "#태그3", "#태그4", "#태그5"], "cta": "마무리 CTA 문구"}}""",
 
-    SNSPlatform.INSTAGRAM: """당신은 인스타그램 비즈니스 계정 콘텐츠 전문 작가입니다.
+    SNSPlatform.INSTAGRAM: """[CRITICAL] 반드시 한국어로만 작성하세요. 영어·베트남어·중국어 등 다른 언어 절대 사용 금지.
+
+당신은 인스타그램 비즈니스 계정 콘텐츠 전문 작가입니다.
 비주얼 중심 플랫폼에 최적화된 캡션을 작성하세요.
 
 주제: {topic}
@@ -1774,7 +1781,9 @@ JSON 형식으로만 반환 (body 하나에 후킹 문장 + 본문 전체를 모
 JSON 형식으로만 반환 (body 하나에 캡션 전체 포함):
 {{"body": "클릭 유도 첫 줄\\n\\n본문 내용\\n\\nCTA", "hashtags": ["#태그1", "#태그2"], "cta": "CTA 문구"}}""",
 
-    SNSPlatform.THREADS: """당신은 쓰레드(Threads) 플랫폼 전문 콘텐츠 작가입니다.
+    SNSPlatform.THREADS: """[CRITICAL] 반드시 한국어로만 작성하세요. 영어·베트남어·중국어 등 다른 언어 절대 사용 금지.
+
+당신은 쓰레드(Threads) 플랫폼 전문 콘텐츠 작가입니다.
 대화를 유도하는 짧고 흥미로운 시리즈형 글을 작성하세요.
 
 주제: {topic}
