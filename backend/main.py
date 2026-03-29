@@ -1142,6 +1142,9 @@ BLOG_PLATFORM_PROMPTS = {
 톤앤매너: {tone}
 타겟: {target}
 언어: {language}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
 
 네이버 최적화 요구사항:
 - 제목: 핵심 키워드 포함, 30자 이내, 클릭 유도 후킹
@@ -1150,6 +1153,7 @@ BLOG_PLATFORM_PROMPTS = {
 - 글 하단: 이웃추가/공감 유도 CTA
 - 해시태그: 10개 (네이버 검색 최적화)
 - 메타설명: 80자 이내 요약
+- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
@@ -1162,6 +1166,9 @@ JSON 형식으로만 반환:
 톤앤매너: {tone}
 타겟: {target}
 언어: {language}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
 
 티스토리 최적화 요구사항:
 - 제목: SEO 키워드 포함, 구체적 수치/결과 포함
@@ -1170,6 +1177,7 @@ JSON 형식으로만 반환:
 - 내부 링크 유도 문장 포함
 - 해시태그: 5개
 - 메타설명: 검색 결과 미리보기용 160자 이내
+- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
@@ -1182,6 +1190,9 @@ JSON 형식으로만 반환:
 톤앤매너: {tone}
 타겟: {target}
 언어: {language}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
 
 워드프레스 최적화 요구사항:
 - 제목: Yoast SEO 기준, 핵심 키워드 앞배치, 60자 이내
@@ -1190,6 +1201,7 @@ JSON 형식으로만 반환:
 - 내부/외부 링크 유도 포함
 - 해시태그: 5개 (카테고리/태그용)
 - 메타설명: 155자 이내 Yoast 기준
+- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
@@ -1243,6 +1255,32 @@ VIDEO_PROMPTS = {
 - 마크다운 없이 plain text
 """,
 }
+
+
+def _build_voice_context(profile) -> tuple[str, str, str]:
+    """agency_profile에서 voice_dna, voice_samples, content_pillars 문자열 생성"""
+    voice_dna_str = ""
+    if getattr(profile, 'brand_voice_dna', None):
+        dna = profile.brand_voice_dna
+        voice_dna_str = (
+            "브랜드 보이스 DNA:\n"
+            "- 문장 스타일: " + dna.get('sentence_style', '') + "\n"
+            "- 제목 패턴: " + dna.get('title_pattern', '') + "\n"
+            "- 자주 쓰는 표현: " + ', '.join(dna.get('tone_keywords', [])) + "\n"
+            "- 피해야 할 표현: " + ', '.join(dna.get('avoid', [])) + "\n"
+            "- 한 줄 요약: " + dna.get('summary', '')
+        )
+
+    voice_samples_str = ""
+    if getattr(profile, 'brand_voice_samples', None):
+        samples = "\n".join(f"- {s}" for s in profile.brand_voice_samples[:3])
+        voice_samples_str = "보이스 샘플 (이 스타일과 어조로 작성하세요):\n" + samples
+
+    pillars_str = ""
+    if getattr(profile, 'content_pillars', None):
+        pillars_str = ', '.join(profile.content_pillars)
+
+    return voice_dna_str, voice_samples_str, pillars_str
 
 
 async def _llm_generate(prompt: str, api_keys: dict, tier: str = "tier1") -> str:
@@ -1329,6 +1367,9 @@ _SNS_PROMPTS = {
 에이전시: {agency}
 타겟: {target}
 톤앤매너: {tone}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
 
 링크드인 최적화 요구사항:
 - 첫 줄: 스크롤을 멈추게 하는 후킹 문장 (숫자/질문/반전)
@@ -1337,6 +1378,7 @@ _SNS_PROMPTS = {
 - 마지막: 토론 유도 질문 또는 CTA
 - 총 800~1500자, 이모지 최소화 (3개 이내)
 - 해시태그: 5개 (업계/전문 키워드)
+- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 
 JSON 형식으로만 반환:
 {{"title": "첫 줄 후킹 문장", "body": "전체 포스트 본문", "hashtags": ["#태그1", "#태그2", "#태그3", "#태그4", "#태그5"], "cta": "마무리 CTA 문구"}}""",
@@ -1349,6 +1391,9 @@ JSON 형식으로만 반환:
 에이전시: {agency}
 타겟: {target}
 톤앤매너: {tone}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
 
 인스타그램 최적화 요구사항:
 - 첫 줄(프리뷰): 2줄 이내, 클릭 유도 문장 (이모지 활용)
@@ -1357,6 +1402,7 @@ JSON 형식으로만 반환:
 - 캡션 총 150~300자 (너무 길면 안 읽힘)
 - 해시태그: 20~30개 (관련 키워드 최대화)
 - 마지막: 저장/링크 클릭 유도 CTA
+- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 
 JSON 형식으로만 반환:
 {{"title": "첫 줄 후킹", "body": "전체 캡션 본문", "hashtags": ["#태그1", "#태그2"], "cta": "CTA 문구"}}""",
@@ -1369,6 +1415,9 @@ JSON 형식으로만 반환:
 에이전시: {agency}
 타겟: {target}
 톤앤매너: {tone}
+콘텐츠 기둥: {content_pillars}
+{voice_dna}
+{voice_samples}
 
 쓰레드 최적화 요구사항:
 - 1번 글: 호기심을 자극하는 질문 또는 반전 문장 (100자 이내)
@@ -1377,6 +1426,7 @@ JSON 형식으로만 반환:
 - 구어체, 친근한 말투, 이모지 적극 활용
 - 각 글은 "---" 로 구분
 - 해시태그: 3~5개만 (마지막 글에만)
+- 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
 
 JSON 형식으로만 반환:
 {{"title": "첫 번째 글 (후킹)", "body": "전체 시리즈 글 (--- 구분)", "hashtags": ["#태그1", "#태그2", "#태그3"], "cta": "마지막 CTA"}}""",
@@ -1912,12 +1962,16 @@ async def generate_sns(req: SNSRequest):
     profile = req.agency_profile or _agency_profile
     keys    = req.api_keys or {}
 
+    voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
     prompt = _SNS_PROMPTS[req.platform].format(
-        topic   = req.topic,
-        summary = req.seo_summary or req.topic,
-        agency  = f"{profile.agency_name} / {profile.industry}",
-        target  = profile.target_audience or "기업 의사결정자",
-        tone    = profile.tone_and_manner or "전문적이고 신뢰감 있는",
+        topic            = req.topic,
+        summary          = req.seo_summary or req.topic,
+        agency           = f"{profile.agency_name} / {profile.industry}",
+        target           = profile.target_audience or "기업 의사결정자",
+        tone             = profile.tone_and_manner or "전문적이고 신뢰감 있는",
+        voice_dna        = voice_dna,
+        voice_samples    = voice_samples,
+        content_pillars  = content_pillars,
     )
 
     raw = await _llm_generate(prompt, keys)
@@ -2250,6 +2304,8 @@ async def generate_blog(req: BlogRequest):
     profile = req.agency_profile or _agency_profile
     keys = req.api_keys or {}
 
+    voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
+
     async def gen_one(platform: BlogPlatform) -> BlogPost:
         prompt_tpl = BLOG_PLATFORM_PROMPTS[platform]
         prompt = prompt_tpl.format(
@@ -2258,6 +2314,9 @@ async def generate_blog(req: BlogRequest):
             tone=profile.tone_and_manner or "전문적이고 신뢰감 있는",
             target=profile.target_audience or "기업 의사결정자",
             language=req.language,
+            voice_dna=voice_dna,
+            voice_samples=voice_samples,
+            content_pillars=content_pillars,
         )
         raw = await _llm_generate(prompt, keys)
         match = re.search(r'\{.*\}', raw, re.DOTALL)
