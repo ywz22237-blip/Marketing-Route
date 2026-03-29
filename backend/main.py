@@ -230,57 +230,114 @@ JSON 형식으로만 반환 (다른 텍스트 없이):
 # ── SEO 키워드 도구 ────────────────────────────────────────────
 
 async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1") -> tuple[str, str | None]:
-    """Gemini 호출 후 텍스트 반환 (google.genai SDK)"""
+    """Gemini 호출 후 텍스트 반환. 429 시 Groq 자동 폴백."""
     import os
     key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
-    if not key:
-        return "", "Gemini API 키가 없습니다. API 설정에서 키를 입력하고 저장해주세요."
-    try:
-        from google import genai
-        client = genai.Client(api_key=key)
-        model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.5-flash"
-        resp = client.models.generate_content(model=model_name, contents=prompt)
-        return resp.text or "", None
-    except Exception as e:
-        err_str = str(e)
-        if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
-            return "", "❌ Gemini API 키가 유효하지 않습니다."
-        if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
-            return "", "❌ Gemini 일일 할당량 초과(429). 내일 다시 시도하거나 새 키를 발급받으세요."
-        return "", f"Gemini 오류: {err_str[:150]}"
+    # tier2/3 = 2.5-flash(고품질), 기본 = 2.0-flash(6배 높은 무료 할당량)
+    model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.0-flash"
+
+    if key:
+        try:
+            from google import genai
+            client = genai.Client(api_key=key)
+            resp = client.models.generate_content(model=model_name, contents=prompt)
+            return resp.text or "", None
+        except Exception as e:
+            err_str = str(e)
+            if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
+                return "", "❌ Gemini API 키가 유효하지 않습니다."
+            if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
+                # ── Groq 자동 폴백 ───────────────────────────
+                groq_key = api_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
+                if groq_key:
+                    try:
+                        from groq import Groq
+                        gclient = Groq(api_key=groq_key)
+                        gresp = gclient.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=0.6,
+                            max_tokens=8192,
+                        )
+                        return gresp.choices[0].message.content or "", None
+                    except Exception as ge:
+                        return "", f"❌ Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:100]}"
+                return "", "❌ Gemini 일일 할당량 초과(429). Groq API 키를 설정하면 자동 전환됩니다."
+            return "", f"Gemini 오류: {err_str[:150]}"
+
+    # Gemini 키 없으면 Groq 직접 시도
+    groq_key = api_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
+    if groq_key:
+        try:
+            from groq import Groq
+            gclient = Groq(api_key=groq_key)
+            gresp = gclient.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.6,
+                max_tokens=8192,
+            )
+            return gresp.choices[0].message.content or "", None
+        except Exception as ge:
+            return "", f"Groq 오류: {str(ge)[:150]}"
+    return "", "Gemini API 키가 없습니다. API 설정에서 키를 입력하고 저장해주세요."
 
 
 async def _gemini_json(prompt: str, api_keys: dict, tier: str = "tier1"):
-    """Gemini 호출 후 JSON 파싱 공통 헬퍼 (google.genai SDK)"""
+    """Gemini 호출 후 JSON 파싱. 429 시 Groq 자동 폴백."""
     import re, json as jl, os
     key = api_keys.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
-    if not key:
-        return None, "Gemini API 키가 없습니다. API 설정에서 키를 입력하고 저장해주세요."
-    try:
-        from google import genai
-        from google.genai import types
-        client = genai.Client(api_key=key)
-        model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.5-flash"
-        resp = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
+    model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.0-flash"
+    raw = None
+
+    if key:
+        try:
+            from google import genai
+            from google.genai import types
+            client = genai.Client(api_key=key)
+            resp = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(response_mime_type="application/json"),
             )
-        )
-        raw = resp.text
-    except Exception as e:
-        err_str = str(e)
-        if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
-            return None, "❌ Gemini API 키가 유효하지 않습니다. API 설정에서 새 키를 입력하세요."
-        if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
-            return None, "❌ Gemini 일일 할당량 초과(429). 내일 다시 시도하거나 새 키를 발급받으세요."
-        if "PERMISSION_DENIED" in err_str or "403" in err_str:
-            return None, "❌ Gemini API 권한 없음(403). 키가 비활성화됐거나 서비스가 꺼져있습니다."
-        return None, f"Gemini 오류: {err_str[:200]}"
-    # JSON 파싱
+            raw = resp.text
+        except Exception as e:
+            err_str = str(e)
+            if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
+                return None, "❌ Gemini API 키가 유효하지 않습니다. API 설정에서 새 키를 입력하세요."
+            if "PERMISSION_DENIED" in err_str or "403" in err_str:
+                return None, "❌ Gemini API 권한 없음(403). 키가 비활성화됐거나 서비스가 꺼져있습니다."
+            if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
+                raw = None  # Groq 폴백으로 진행
+            else:
+                return None, f"Gemini 오류: {err_str[:200]}"
+
+    # Gemini 결과 없으면 Groq 폴백
+    if raw is None:
+        groq_key = api_keys.get("groq_api_key") or os.getenv("GROQ_API_KEY", "")
+        if groq_key:
+            try:
+                from groq import Groq
+                gclient = Groq(api_key=groq_key)
+                gresp = gclient.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": "반드시 유효한 JSON만 반환하세요. 코드블록 없이 순수 JSON만."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.4,
+                    max_tokens=4096,
+                )
+                raw = gresp.choices[0].message.content or ""
+            except Exception as ge:
+                return None, f"Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:100]}"
+        else:
+            if not key:
+                return None, "Gemini API 키가 없습니다. API 설정에서 키를 입력하고 저장해주세요."
+            return None, "❌ Gemini 일일 할당량 초과(429). Groq API 키를 설정하면 자동 전환됩니다."
+
     if not raw:
-        return None, "Gemini가 빈 응답을 반환했습니다."
+        return None, "빈 응답이 반환됐습니다."
     for pat in (r'\[.*\]', r'\{.*\}'):
         m = re.search(pat, raw, re.DOTALL)
         if m:
@@ -288,7 +345,6 @@ async def _gemini_json(prompt: str, api_keys: dict, tier: str = "tier1"):
                 return jl.loads(m.group()), None
             except Exception:
                 continue
-    # response_mime_type=application/json이면 raw 자체가 JSON일 수 있음
     try:
         return jl.loads(raw), None
     except Exception:
@@ -1564,7 +1620,7 @@ def _build_voice_context(profile) -> tuple[str, str, str]:
 
 
 async def _llm_generate(prompt: str, api_keys: dict, tier: str = "tier1") -> str:
-    """Gemini API 호출 공통 함수 (google.genai SDK)"""
+    """LLM 호출 공통 함수. Gemini 우선, 429 시 Groq 자동 폴백."""
     text, err = await _gemini_text(prompt, api_keys, tier)
     if err:
         return f'{{"error": "{err}"}}'
