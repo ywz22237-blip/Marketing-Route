@@ -1934,15 +1934,6 @@
         <!-- 우: 섹션 추가 + 대화형 편집 -->
         <div style="display:flex;flex-direction:column;gap:12px;">
 
-          <!-- 블로그로 보내기 -->
-          <div class="card" style="padding:14px;background:rgba(35,134,54,0.06);border-color:#23863640;">
-            <div style="font-size:13px;font-weight:700;color:#4ade80;margin-bottom:6px;">📝 블로그로 보내기</div>
-            <div style="font-size:12px;color:#8b949e;margin-bottom:10px;line-height:1.6;">소스 문서를 블로그 탭에 연결합니다.<br>블로그 AI 생성 시 이 문서를 기반으로 작성합니다.</div>
-            <button class="btn btn-success" style="font-size:13px;width:100%;padding:8px;" onclick="planSendToBlog()">
-              📝 블로그로 보내기
-            </button>
-          </div>
-
           <!-- 섹션 추가 -->
           <div class="card" style="padding:14px;">
             <div style="font-size:13px;font-weight:700;color:#c9d1d9;margin-bottom:10px;">➕ 섹션 추가</div>
@@ -2362,33 +2353,31 @@
       <!-- 좌측: SEO 기획 요약 -->
       <div class="card">
         <div style="font-size:14px;font-weight:700;color:#8b949e;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;">SEO 기획 요약</div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
+        <div id="blog-seo-sum-empty" style="font-size:13px;color:#484f58;padding:16px 0;text-align:center;">
+          SEO기획 → 3개 동시 생성 후 자동으로 채워집니다.
+        </div>
+        <div id="blog-seo-sum-content" style="display:none;flex-direction:column;gap:12px;">
           <div>
             <div style="font-size:12px;color:#484f58;margin-bottom:4px;">주제</div>
-            <div style="font-size:15px;color:#e6edf3;font-weight:600;">B2B 콘텐츠 마케팅: 스타트업이 6개월 안에 리드를 3배 늘리는 법</div>
+            <div id="blog-seo-sum-topic" style="font-size:15px;color:#e6edf3;font-weight:600;"></div>
           </div>
           <div>
             <div style="font-size:12px;color:#484f58;margin-bottom:6px;">핵심 키워드</div>
-            <div style="display:flex;flex-wrap:wrap;gap:5px;">
-              <span style="padding:3px 10px;border-radius:12px;background:#1f6feb20;color:#60a5fa;font-size:13px;font-weight:600;">B2B 마케팅</span>
-              <span style="padding:3px 10px;border-radius:12px;background:#1f6feb20;color:#60a5fa;font-size:13px;font-weight:600;">콘텐츠 마케팅</span>
-              <span style="padding:3px 10px;border-radius:12px;background:#1f6feb20;color:#60a5fa;font-size:13px;font-weight:600;">리드 생성</span>
-              <span style="padding:3px 10px;border-radius:12px;background:#1f6feb20;color:#60a5fa;font-size:13px;font-weight:600;">스타트업 마케팅</span>
-            </div>
+            <div id="blog-seo-sum-keywords" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div>
               <div style="font-size:12px;color:#484f58;margin-bottom:3px;">검색 의도</div>
-              <div style="font-size:14px;color:#e6edf3;">정보성 → 전환형</div>
+              <div id="blog-seo-sum-intent" style="font-size:14px;color:#e6edf3;"></div>
             </div>
             <div>
               <div style="font-size:12px;color:#484f58;margin-bottom:3px;">타겟 독자</div>
-              <div style="font-size:14px;color:#e6edf3;">B2B SaaS 대표/마케터</div>
+              <div id="blog-seo-sum-target" style="font-size:14px;color:#e6edf3;"></div>
             </div>
           </div>
           <div>
             <div style="font-size:12px;color:#484f58;margin-bottom:4px;">브리프</div>
-            <div style="font-size:13px;color:#8b949e;line-height:1.6;">콘텐츠 마케팅으로 리드를 늘리고 싶은 스타트업을 위한 실전 가이드. 월별 전략, 채널별 운영법, KPI 설정까지.</div>
+            <div id="blog-seo-sum-brief" style="font-size:13px;color:#8b949e;line-height:1.6;"></div>
           </div>
         </div>
       </div>
@@ -13762,7 +13751,9 @@ async function generateAll3Platforms() {
       const bodyEl = document.getElementById('blog-body');
       if (bodyEl) bodyEl.value = data.blog;
       const topicEl = document.getElementById('blog-topic');
-      if (topicEl && !topicEl.value) topicEl.value = topic;
+      if (topicEl) topicEl.value = _planState.selectedTitle || topic;
+      // SEO 기획 요약 카드 채우기
+      _applySeoPlanToBlog();
     }
     // 텍스트형 SNS — 링크드인 + 쓰레드
     if (data.linkedin) {
@@ -13795,54 +13786,57 @@ async function generateAll3Platforms() {
   }
 }
 
-// ── SEO기획 → 블로그 연결 ─────────────────────────────────────
-function planSendToBlog() {
-  const srcDoc  = document.getElementById('plan-source-doc')?.value.trim() || _planState.sourceDocument || '';
-  const topic   = _planState.selectedTopic || '';
+// ── SEO기획 → 블로그 요약 반영 ───────────────────────────────
+function _applySeoPlanToBlog() {
+  const title    = _planState.selectedTitle || _planState.selectedTopic || '';
+  const topic    = _planState.selectedTopic || '';
   const keywords = _planState.selectedKeywords || [];
+  const seoData  = _planState.seoData || {};
+  const briefs   = _planState.briefs || {};
+  const blogBrief = briefs.blog || {};
 
-  if (!srcDoc) { toast('소스 문서가 없습니다. 자료조사를 먼저 해주세요.', '#f59e0b'); return; }
-
-  // 전역에 저장
-  _blogLinkedSource = { topic, keywords, sourceDocument: srcDoc };
-
-  // 블로그 탭으로 이동 + 주제 채우기
-  goto('blog');
-  setTimeout(() => {
-    const topicEl = document.getElementById('blog-topic');
-    if (topicEl && topic) topicEl.value = topic;
-    _renderBlogSourceBadge();
-    toast('✅ 소스 문서가 블로그에 연결됐습니다. 플랫폼 선택 후 생성하세요.', 'green');
-  }, 80);
-}
-
-function _renderBlogSourceBadge() {
-  const existing = document.getElementById('blog-source-badge');
-  if (existing) existing.remove();
-  if (!_blogLinkedSource) return;
-
+  // 주제 필드
   const topicEl = document.getElementById('blog-topic');
-  if (!topicEl) return;
+  if (topicEl && (title || topic)) topicEl.value = title || topic;
 
-  const badge = document.createElement('div');
-  badge.id = 'blog-source-badge';
-  badge.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(35,134,54,0.1);border:1px solid #23863640;border-radius:8px;margin-bottom:14px;';
-  badge.innerHTML = `
-    <span style="font-size:18px;">📄</span>
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:13px;font-weight:600;color:#4ade80;">SEO 소스 문서 연결됨</div>
-      <div style="font-size:12px;color:#8b949e;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_blogLinkedSource.topic || '소스 문서'} · ${(_blogLinkedSource.sourceDocument.length).toLocaleString()}자</div>
-    </div>
-    <button onclick="_clearBlogSource()" style="background:none;border:none;color:#484f58;cursor:pointer;font-size:16px;padding:2px 4px;" title="연결 해제">×</button>
-  `;
-  topicEl.parentElement.insertBefore(badge, topicEl);
-}
+  // SEO 기획 요약 카드 표시 전환
+  const emptyEl   = document.getElementById('blog-seo-sum-empty');
+  const contentEl = document.getElementById('blog-seo-sum-content');
+  if (emptyEl)   emptyEl.style.display   = 'none';
+  if (contentEl) { contentEl.style.display = 'flex'; }
 
-function _clearBlogSource() {
-  _blogLinkedSource = null;
-  const badge = document.getElementById('blog-source-badge');
-  if (badge) badge.remove();
-  toast('소스 문서 연결이 해제됐습니다.', '#8b949e');
+  // 주제
+  const sumTopic = document.getElementById('blog-seo-sum-topic');
+  if (sumTopic) sumTopic.textContent = title || topic;
+
+  // 핵심 키워드 뱃지
+  const sumKws = document.getElementById('blog-seo-sum-keywords');
+  if (sumKws) {
+    sumKws.innerHTML = keywords.length
+      ? keywords.map(k => `<span style="padding:3px 10px;border-radius:12px;background:#1f6feb20;color:#60a5fa;font-size:13px;font-weight:600;">${k}</span>`).join('')
+      : '<span style="color:#484f58;font-size:13px;">키워드 없음</span>';
+  }
+
+  // 검색 의도
+  const sumIntent = document.getElementById('blog-seo-sum-intent');
+  if (sumIntent) sumIntent.textContent = seoData.intent || '정보성';
+
+  // 타겟 독자 (에이전시 설정 우선)
+  const sumTarget = document.getElementById('blog-seo-sum-target');
+  if (sumTarget) sumTarget.textContent = agencyProfile?.target_audience || '비즈니스 독자';
+
+  // 브리프
+  const sumBrief = document.getElementById('blog-seo-sum-brief');
+  if (sumBrief) sumBrief.textContent = blogBrief.summary || seoData.intent || '';
+
+  // 연동 배너 업데이트
+  const linkedBanner  = document.getElementById('blog-seo-linked');
+  const unlinkedBanner = document.getElementById('blog-seo-unlinked');
+  if (linkedBanner)  linkedBanner.style.display  = '';
+  if (unlinkedBanner) unlinkedBanner.style.display = 'none';
+
+  const preview = document.getElementById('blog-seo-topic-preview');
+  if (preview) preview.textContent = `${title || topic} · 키워드 ${keywords.length}개`;
 }
 
 function _buildBriefs(topic, kws, seoData) {
