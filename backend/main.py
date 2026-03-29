@@ -854,6 +854,272 @@ JSON만 반환:
     )
 
 
+# ── SEO 기획 퀄리티 향상 — 제목 후보 / 소주제 / 섹션 생성 / 태그 ──────
+
+@app.post("/seo/title-candidates")
+async def seo_title_candidates(body: dict):
+    """SEO 제목 3종 후보 생성 (수치형·질문형·가이드형)"""
+    import json as jsonlib, re
+    topic    = body.get("topic", "")
+    keywords = body.get("keywords", [])
+    api_keys = body.get("api_keys", {})
+    tier     = body.get("tier", "tier1")
+    profile_data = body.get("agency_profile")
+    profile  = AgencyProfile(**profile_data) if isinstance(profile_data, dict) else _agency_profile
+    voice_dna_str, voice_samples_str, pillars_str = _build_voice_context(profile)
+
+    kw_str = ", ".join(keywords) if keywords else topic
+    current_year = 2026
+
+    prompt = f"""당신은 SEO 카피라이팅 전문가입니다. 아래 주제와 키워드로 3가지 유형의 SEO 최적화 제목을 만들어 각각 분석하세요.
+
+주제: {topic}
+키워드: {kw_str}
+연도: {current_year}
+{voice_dna_str}
+
+3가지 유형:
+1. 수치형 — 숫자, 통계, 연도 포함 (예: "5가지", "2026년", "3배")
+2. 질문형 — 검색자의 궁금증을 제목으로 (예: "~하는 방법?", "~해야 할까?")
+3. 가이드형 — 완전한 가이드/방법 제시 (예: "완벽 가이드", "A to Z", "핵심 정리")
+
+각 제목 SEO 점수 기준 (0-100):
+- keyword_in_title: 주요 키워드가 제목 앞부분에 있으면 +20
+- length_ok: 30-60자이면 +20
+- has_number: 숫자 포함이면 +15
+- has_question: 물음표나 질문 형태이면 +15
+- has_year: 연도(2024~2027) 포함이면 +10
+- intent_match: 검색 의도(정보형/거래형/비교형)에 맞으면 +20
+
+반드시 JSON만 반환:
+{{
+  "candidates": [
+    {{
+      "title": "수치형 제목 예시",
+      "type": "수치형",
+      "seo_score": 85,
+      "reasons": {{
+        "keyword_in_title": true,
+        "length_ok": true,
+        "has_number": true,
+        "has_question": false,
+        "has_year": true,
+        "intent_match": true
+      }},
+      "tip": "키워드를 제목 앞에 배치해 CTR을 높였습니다."
+    }},
+    {{
+      "title": "질문형 제목 예시",
+      "type": "질문형",
+      "seo_score": 78,
+      "reasons": {{
+        "keyword_in_title": true,
+        "length_ok": true,
+        "has_number": false,
+        "has_question": true,
+        "has_year": false,
+        "intent_match": true
+      }},
+      "tip": "질문형 제목은 정보 탐색 의도에 최적입니다."
+    }},
+    {{
+      "title": "가이드형 제목 예시",
+      "type": "가이드형",
+      "seo_score": 80,
+      "reasons": {{
+        "keyword_in_title": true,
+        "length_ok": true,
+        "has_number": false,
+        "has_question": false,
+        "has_year": false,
+        "intent_match": true
+      }},
+      "tip": "가이드형은 롱테일 키워드 유입에 유리합니다."
+    }}
+  ]
+}}"""
+
+    raw = await _llm_generate(prompt, api_keys, tier)
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if match:
+        try:
+            data = jsonlib.loads(match.group())
+            return data
+        except Exception:
+            pass
+    return {"candidates": []}
+
+
+@app.post("/seo/subtopics")
+async def seo_subtopics(body: dict):
+    """주제에 대한 H2 소주제 5-7개 추출"""
+    import json as jsonlib, re
+    topic    = body.get("topic", "")
+    keywords = body.get("keywords", [])
+    api_keys = body.get("api_keys", {})
+    tier     = body.get("tier", "tier1")
+    profile_data = body.get("agency_profile")
+    profile  = AgencyProfile(**profile_data) if isinstance(profile_data, dict) else _agency_profile
+    voice_dna_str, _, pillars_str = _build_voice_context(profile)
+
+    kw_str = ", ".join(keywords) if keywords else topic
+
+    prompt = f"""당신은 SEO 콘텐츠 전략가입니다. 아래 주제로 블로그 포스팅의 H2 소주제 구조를 설계하세요.
+
+주제: {topic}
+키워드: {kw_str}
+{voice_dna_str}
+
+목표: 검색 의도를 완벽히 충족하고, 독자가 페이지를 끝까지 읽도록 유도하는 소주제 구조.
+
+규칙:
+- 5~7개의 H2 소주제
+- 논리적 흐름 (도입 → 본론 → 결론 구조)
+- 각 소주제는 400~800자 분량으로 작성 가능한 범위
+- 핵심 키워드가 자연스럽게 포함되도록 구성
+
+반드시 JSON만 반환:
+{{
+  "subtopics": [
+    {{
+      "index": 1,
+      "heading": "H2",
+      "title": "소주제 제목",
+      "description": "이 섹션이 왜 필요한지 한 문장 설명",
+      "recommended_chars": 600,
+      "key_points": ["핵심 포인트 1", "핵심 포인트 2", "핵심 포인트 3"]
+    }}
+  ]
+}}"""
+
+    raw = await _llm_generate(prompt, api_keys, tier)
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if match:
+        try:
+            data = jsonlib.loads(match.group())
+            return data
+        except Exception:
+            pass
+    return {"subtopics": []}
+
+
+@app.post("/seo/section-generate")
+async def seo_section_generate(body: dict):
+    """특정 H2 섹션 콘텐츠 생성"""
+    topic               = body.get("topic", "")
+    subtopic_title      = body.get("subtopic_title", "")
+    subtopic_description= body.get("subtopic_description", "")
+    key_points          = body.get("key_points", [])
+    existing_sections   = body.get("existing_sections", "")
+    api_keys            = body.get("api_keys", {})
+    tier                = body.get("tier", "tier1")
+    profile_data        = body.get("agency_profile")
+    profile  = AgencyProfile(**profile_data) if isinstance(profile_data, dict) else _agency_profile
+    voice_dna_str, voice_samples_str, _ = _build_voice_context(profile)
+
+    kp_str = "\n".join(f"- {p}" for p in key_points) if key_points else ""
+    ctx_str = f"\n\n[앞서 작성된 섹션 요약]\n{existing_sections[:800]}" if existing_sections else ""
+
+    prompt = f"""당신은 SEO 블로그 작가입니다. 아래 소주제에 대한 섹션 내용을 마크다운으로 작성하세요.
+
+전체 주제: {topic}
+소주제 제목: {subtopic_title}
+섹션 목적: {subtopic_description}
+핵심 포인트:
+{kp_str}
+{voice_dna_str}
+{voice_samples_str}
+{ctx_str}
+
+작성 규칙:
+- ## {subtopic_title} 으로 시작
+- 400~700자 분량
+- 독자에게 실질적 가치 제공
+- 자연스러운 키워드 포함 (키워드 스터핑 금지)
+- 마크다운 형식 (소제목, 불릿 등 활용)
+- 앞 섹션과 중복 내용 없이 작성
+
+섹션 내용만 반환 (JSON 아님):"""
+
+    content = await _llm_generate(prompt, api_keys, tier)
+    return {"section_content": content.strip(), "char_count": len(content.strip())}
+
+
+@app.post("/seo/tags")
+async def seo_tags(body: dict):
+    """3계층 태그 시스템 + 플랫폼별 최적화 태그 생성"""
+    import json as jsonlib, re
+    topic           = body.get("topic", "")
+    keywords        = body.get("keywords", [])
+    source_document = body.get("source_document", "")
+    platforms       = body.get("platforms", ["naver","instagram","linkedin","threads"])
+    api_keys        = body.get("api_keys", {})
+    tier            = body.get("tier", "tier1")
+    profile_data    = body.get("agency_profile")
+    profile  = AgencyProfile(**profile_data) if isinstance(profile_data, dict) else _agency_profile
+    voice_dna_str, _, _ = _build_voice_context(profile)
+
+    kw_str  = ", ".join(keywords) if keywords else topic
+    doc_snip = source_document[:600] if source_document else ""
+
+    prompt = f"""당신은 SNS 마케팅 전문가입니다. 아래 주제와 문서를 분석해 3계층 태그와 플랫폼별 최적화 태그를 생성하세요.
+
+주제: {topic}
+키워드: {kw_str}
+문서 요약: {doc_snip}
+{voice_dna_str}
+
+태그 전략:
+1. core_tags (핵심 태그 3~5개): 검색량 최고, 주제 핵심
+2. related_tags (관련 태그 5~10개): 롱테일, 세부 주제
+3. trend_tags (트렌드 태그 3~5개): 현재 유행, 시의성
+
+플랫폼별 전략:
+- naver: SEO 중심, 검색 키워드형 해시태그 10~15개
+- instagram: 감성·비주얼·커뮤니티 해시태그 20~30개 (# 포함)
+- linkedin: 전문 업계 키워드 3~5개 (영문 혼용)
+- threads: 대화 유도, 트렌디한 태그 5~10개
+
+반드시 JSON만 반환:
+{{
+  "core_tags": ["태그1", "태그2", "태그3"],
+  "related_tags": ["태그1", "태그2", "태그3", "태그4", "태그5"],
+  "trend_tags": ["태그1", "태그2", "태그3"],
+  "by_platform": {{
+    "naver": {{
+      "tags": ["태그1", "태그2"],
+      "count": 12,
+      "strategy": "네이버 블로그 검색 최적화 전략 설명"
+    }},
+    "instagram": {{
+      "tags": ["#태그1", "#태그2"],
+      "count": 25,
+      "strategy": "인스타그램 해시태그 전략 설명"
+    }},
+    "linkedin": {{
+      "tags": ["태그1", "태그2"],
+      "count": 4,
+      "strategy": "링크드인 태그 전략 설명"
+    }},
+    "threads": {{
+      "tags": ["태그1", "태그2"],
+      "count": 7,
+      "strategy": "쓰레드 태그 전략 설명"
+    }}
+  }}
+}}"""
+
+    raw = await _llm_generate(prompt, api_keys, tier)
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if match:
+        try:
+            data = jsonlib.loads(match.group())
+            return data
+        except Exception:
+            pass
+    return {"core_tags": [], "related_tags": [], "trend_tags": [], "by_platform": {}}
+
+
 # ── SEO Phase2: Google Search Console ─────────────────────────
 
 _gsc_cache: dict = {}   # site_url → GSCReport (인메모리 캐시)

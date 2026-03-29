@@ -1820,7 +1820,7 @@
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost" style="font-size:13px;padding:5px 12px;" onclick="planStep2()">← 키워드 수정</button>
           <button class="btn btn-ghost" style="font-size:13px;padding:5px 12px;" onclick="planStep2Next()">재생성</button>
-          <button class="btn btn-primary" style="font-size:13px;padding:5px 16px;" onclick="planStep3Next()" id="plan-step3-next-btn" disabled>선택 → 소스 문서</button>
+          <button class="btn btn-primary" style="font-size:13px;padding:5px 16px;" onclick="planStep3Next()" id="plan-step3-next-btn" disabled>제목 최적화 →</button>
         </div>
       </div>
 
@@ -1841,6 +1841,23 @@
             oninput="selectCustomTopic(this.value)" style="margin-bottom:0;" />
         </div>
       </div>
+
+      <!-- SEO 제목 최적화 패널 -->
+      <div id="plan-title-opt-panel" style="display:none;margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:14px;font-weight:700;color:#f0f6fc;">🎯 SEO 제목 최적화 — 3종 후보</div>
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="_regenerateTitleCandidates()">↺ 재생성</button>
+        </div>
+        <div id="plan-title-loading" style="display:none;text-align:center;padding:20px;">
+          <div style="width:20px;height:20px;border:2px solid #388bfd;border-top-color:transparent;border-radius:50%;display:inline-block;" class="spin"></div>
+          <span style="font-size:13px;color:#8b949e;margin-left:8px;">제목 후보 생성 중...</span>
+        </div>
+        <div id="plan-title-candidates" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div id="plan-title-selected-info" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(35,134,54,0.1);border:1px solid #23863640;border-radius:8px;font-size:13px;color:#4ade80;"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+          <button class="btn btn-primary" id="plan-to-step4-btn" disabled onclick="_gotoStep4WithTitle()" style="font-size:13px;">소주제 추출 → 소스 문서 작성</button>
+        </div>
+      </div>
     </div>
 
     <!-- STEP 4: 소스 문서 -->
@@ -1854,6 +1871,33 @@
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost" style="font-size:13px;padding:5px 12px;" onclick="planStep3()">← 주제 수정</button>
           <button class="btn btn-primary" style="font-size:13px;padding:5px 16px;" onclick="planStep4Next()" id="plan-step4-next-btn">소스 문서 완료 → 브리프</button>
+        </div>
+      </div>
+
+      <!-- 소주제 추출 -->
+      <div class="card" id="plan-subtopic-card" style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#f0f6fc;">🗂️ 소주제 구조 설계</div>
+            <div style="font-size:13px;color:#8b949e;margin-top:2px;">주제를 분석해 H2 소주제를 추출합니다. 순서 변경·추가·삭제 후 확정하세요.</div>
+          </div>
+          <button class="btn btn-ghost" onclick="_extractSubtopics()" id="plan-subtopic-btn" style="white-space:nowrap;font-size:13px;">🗂️ 소주제 추출</button>
+        </div>
+        <div id="plan-subtopic-loading" style="display:none;text-align:center;padding:16px;">
+          <div style="width:20px;height:20px;border:2px solid #388bfd;border-top-color:transparent;border-radius:50%;display:inline-block;" class="spin"></div>
+          <span style="font-size:13px;color:#8b949e;margin-left:8px;">소주제 분석 중...</span>
+        </div>
+        <div id="plan-subtopic-list" style="display:none;">
+          <div id="plan-subtopic-items" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost" style="font-size:12px;" onclick="_addCustomSubtopic()">＋ 소주제 추가</button>
+            <button class="btn btn-success" style="font-size:13px;flex:1;" onclick="_confirmSubtopicsAndWrite()">✅ 소주제 확정 → 섹션별 작성</button>
+          </div>
+        </div>
+        <!-- 섹션별 작성 진행 -->
+        <div id="plan-section-writing" style="display:none;margin-top:12px;">
+          <div style="font-size:13px;font-weight:600;color:#c9d1d9;margin-bottom:8px;">📝 섹션별 작성 진행</div>
+          <div id="plan-section-progress" style="display:flex;flex-direction:column;gap:6px;"></div>
         </div>
       </div>
 
@@ -1942,6 +1986,47 @@
               이 문서 하나로 블로그·링크드인·인스타그램을 동시에 생성합니다.<br><br>
               <strong style="color:#c9d1d9;">섹션 추가로 원하는 내용을 보완하면 콘텐츠 품질이 올라갑니다.</strong>
             </div>
+          </div>
+
+          <!-- 태그 생성 버튼 -->
+          <div class="card" style="padding:14px;background:rgba(31,111,235,0.05);border-color:#1f6feb25;">
+            <div style="font-size:13px;font-weight:700;color:#60a5fa;margin-bottom:6px;">🏷️ SEO 태그 생성</div>
+            <div style="font-size:12px;color:#8b949e;margin-bottom:10px;line-height:1.6;">소스 문서 기반으로 3계층 태그와 플랫폼별 최적화 태그를 생성합니다.</div>
+            <button class="btn btn-primary" style="font-size:13px;width:100%;padding:8px;" onclick="_generateSeoTags()">🏷️ 태그 생성</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 태그 생성 패널 -->
+      <div id="plan-tags-panel" style="display:none;margin-top:14px;">
+        <div class="card" style="padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:14px;font-weight:700;color:#f0f6fc;">🏷️ SEO 태그 생성</div>
+            <button class="btn btn-ghost" style="font-size:12px;" onclick="_generateSeoTags()">↺ 재생성</button>
+          </div>
+          <div id="plan-tags-loading" style="display:none;text-align:center;padding:12px;">
+            <div style="width:18px;height:18px;border:2px solid #388bfd;border-top-color:transparent;border-radius:50%;display:inline-block;" class="spin"></div>
+            <span style="font-size:13px;color:#8b949e;margin-left:8px;">태그 분석 중...</span>
+          </div>
+          <div id="plan-tags-content" style="display:none;">
+            <!-- 3계층 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+              <div style="padding:10px 12px;background:#0d1117;border:1px solid #1f6feb30;border-radius:8px;">
+                <div style="font-size:12px;color:#60a5fa;font-weight:700;margin-bottom:8px;">🎯 핵심 태그 (3~5개)</div>
+                <div id="plan-tags-core" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+              </div>
+              <div style="padding:10px 12px;background:#0d1117;border:1px solid #34d39930;border-radius:8px;">
+                <div style="font-size:12px;color:#34d399;font-weight:700;margin-bottom:8px;">🔗 관련 태그 (5~10개)</div>
+                <div id="plan-tags-related" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+              </div>
+              <div style="padding:10px 12px;background:#0d1117;border:1px solid #f59e0b30;border-radius:8px;">
+                <div style="font-size:12px;color:#f59e0b;font-weight:700;margin-bottom:8px;">🔥 트렌드 태그 (3~5개)</div>
+                <div id="plan-tags-trend" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+              </div>
+            </div>
+            <!-- 플랫폼별 -->
+            <div style="font-size:13px;font-weight:700;color:#c9d1d9;margin-bottom:10px;">📱 플랫폼별 최적화 태그</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="plan-tags-by-platform"></div>
           </div>
         </div>
       </div>
@@ -12522,6 +12607,7 @@ let _planState = {
   selectedKeywords: [],
   topics: [],
   selectedTopic: '',
+  selectedTitle: null, // SEO 제목 후보 선택값
   briefs: null,
 };
 
@@ -12809,7 +12895,7 @@ function planStep1() {
 }
 
 function planReset() {
-  _planState = { step:1, idea:'', context:'', seoData:null, allKeywords:[], selectedKeywords:[], topics:[], selectedTopic:'', briefs:null, sourceDocument:'' };
+  _planState = { step:1, idea:'', context:'', seoData:null, allKeywords:[], selectedKeywords:[], topics:[], selectedTopic:'', selectedTitle:null, briefs:null, sourceDocument:'' };
   document.getElementById('plan-idea').value = '';
   document.getElementById('plan-context').value = '';
   document.getElementById('plan-done-status').style.display = 'none';
@@ -13099,11 +13185,279 @@ async function planStep3Next() {
                 document.getElementById('plan-topic-custom')?.value.trim();
   if (!topic) { toast('주제를 선택하거나 입력해주세요.', '#f59e0b'); return; }
   _planState.selectedTopic = topic;
+  _planState.selectedTitle = null;
+  // Show title optimization panel
+  await _generateTitleCandidates();
+}
 
-  // Step 4: 소스 문서
+async function _generateTitleCandidates() {
+  const topic = _planState.selectedTopic;
+  const panel = document.getElementById('plan-title-opt-panel');
+  const loadEl = document.getElementById('plan-title-loading');
+  const listEl = document.getElementById('plan-title-candidates');
+  if (!panel || !topic) return;
+  panel.style.display = '';
+  loadEl.style.display = '';
+  listEl.innerHTML = '';
+  document.getElementById('plan-to-step4-btn').disabled = true;
+
+  try {
+    const res = await fetch(`${API}/seo/title-candidates`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ topic, keywords: _planState.selectedKeywords, api_keys: getKeys(), agency_profile: agencyProfile, tier: selectedTier })
+    });
+    const data = await res.json();
+    loadEl.style.display = 'none';
+    _renderTitleCandidates(data.candidates || []);
+  } catch(e) {
+    loadEl.style.display = 'none';
+    listEl.innerHTML = `<div style="color:#f87171;font-size:13px;">제목 생성 실패: ${e.message}</div>`;
+  }
+}
+
+function _renderTitleCandidates(candidates) {
+  const listEl = document.getElementById('plan-title-candidates');
+  const typeColor = { '수치형':'#f59e0b', '질문형':'#60a5fa', '가이드형':'#34d399' };
+  const typeIcon  = { '수치형':'📊', '질문형':'❓', '가이드형':'📖' };
+  listEl.innerHTML = candidates.map((c, i) => {
+    const color = typeColor[c.type] || '#8b949e';
+    const icon  = typeIcon[c.type] || '✏️';
+    const score = c.seo_score || 0;
+    const r = c.reasons || {};
+    const checks = [
+      { ok: r.keyword_in_title, label: '키워드 포함' },
+      { ok: r.length_ok,        label: '글자수 최적' },
+      { ok: r.has_number,       label: '숫자 포함' },
+      { ok: r.has_question || r.has_year, label: '클릭 유도' },
+      { ok: r.intent_match,     label: '검색의도 일치' },
+    ];
+    const escapedTitle = c.title.replace(/'/g,"\\'").replace(/`/g,'\\`');
+    return `
+    <div id="title-cand-${i}" onclick="_selectTitleCandidate(${i},\`${escapedTitle}\`)"
+      style="padding:14px 16px;border:2px solid #30363d;border-radius:10px;cursor:pointer;transition:all .15s;background:#161b22;"
+      onmouseover="this.style.borderColor='${color}30'" onmouseout="if(!this.classList.contains('selected'))this.style.borderColor='#30363d'">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${color}20;color:${color};font-weight:700;">${icon} ${c.type}</span>
+        <span style="font-size:12px;color:#8b949e;margin-left:auto;">SEO 점수</span>
+        <span style="font-size:14px;font-weight:700;color:${score>=80?'#4ade80':score>=60?'#f59e0b':'#f87171'};">${score}점</span>
+      </div>
+      <div style="font-size:15px;font-weight:600;color:#f0f6fc;line-height:1.5;margin-bottom:10px;">${c.title}</div>
+      <div style="height:4px;background:#21262d;border-radius:2px;margin-bottom:10px;">
+        <div style="height:100%;width:${score}%;background:${score>=80?'#4ade80':score>=60?'#f59e0b':'#f87171'};border-radius:2px;transition:width .6s;"></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+        ${checks.map(ch=>`<span style="font-size:11px;padding:1px 7px;border-radius:8px;background:${ch.ok?'#23863620':'#21262d'};color:${ch.ok?'#4ade80':'#484f58'};">${ch.ok?'✓':'✗'} ${ch.label}</span>`).join('')}
+      </div>
+      ${c.tip ? `<div style="font-size:12px;color:#8b949e;font-style:italic;">💡 ${c.tip}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function _selectTitleCandidate(idx, title) {
+  _planState.selectedTitle = title;
+  document.querySelectorAll('[id^="title-cand-"]').forEach(el => {
+    el.classList.remove('selected');
+    el.style.borderColor = '#30363d';
+    el.style.background = '#161b22';
+  });
+  const card = document.getElementById(`title-cand-${idx}`);
+  if (card) { card.classList.add('selected'); card.style.borderColor = '#238636'; card.style.background = 'rgba(35,134,54,0.05)'; }
+  const info = document.getElementById('plan-title-selected-info');
+  if (info) { info.style.display = ''; info.textContent = `✅ 선택된 제목: ${title}`; }
+  const btn = document.getElementById('plan-to-step4-btn');
+  if (btn) btn.disabled = false;
+}
+
+function _regenerateTitleCandidates() { _generateTitleCandidates(); }
+
+async function _gotoStep4WithTitle() {
+  if (_planState.selectedTitle) _planState.selectedTopic = _planState.selectedTitle;
   _gotoStep(4);
   const srcLabel = document.getElementById('plan-src-topic-label');
-  if (srcLabel) srcLabel.textContent = topic;
+  if (srcLabel) srcLabel.textContent = _planState.selectedTopic;
+  // Auto-trigger subtopic extraction
+  await _extractSubtopics();
+}
+
+// ── 소주제 추출 + 섹션별 작성 ─────────────────────────────────
+let _planSubtopics = []; // [{index, heading, title, description, recommended_chars, key_points}]
+
+async function _extractSubtopics() {
+  const topic = _planState.selectedTopic;
+  if (!topic) { toast('주제를 먼저 선택해주세요.', '#f59e0b'); return; }
+  const loadEl = document.getElementById('plan-subtopic-loading');
+  const listEl = document.getElementById('plan-subtopic-list');
+  const btn    = document.getElementById('plan-subtopic-btn');
+  loadEl.style.display = '';
+  listEl.style.display = 'none';
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/seo/subtopics`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ topic, keywords: _planState.selectedKeywords, api_keys: getKeys(), agency_profile: agencyProfile, tier: selectedTier })
+    });
+    const data = await res.json();
+    _planSubtopics = data.subtopics || [];
+    loadEl.style.display = 'none';
+    listEl.style.display = '';
+    _renderSubtopicList();
+  } catch(e) {
+    loadEl.style.display = 'none';
+    toast('소주제 추출 실패: ' + e.message, 'red');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function _renderSubtopicList() {
+  const el = document.getElementById('plan-subtopic-items');
+  el.innerHTML = _planSubtopics.map((s, i) => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;" id="subtopic-item-${i}">
+      <span style="font-size:13px;color:#484f58;font-weight:700;padding-top:2px;min-width:22px;">${i+1}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:#c9d1d9;">${s.heading} ${s.title}</div>
+        <div style="font-size:12px;color:#484f58;margin-top:2px;">${s.description || ''} · 권장 ${s.recommended_chars || 500}자</div>
+        ${s.key_points?.length ? `<div style="font-size:11px;color:#60a5fa;margin-top:3px;">${s.key_points.map(p=>`• ${p}`).join('  ')}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button onclick="_moveSubtopic(${i},-1)" style="background:none;border:none;color:#484f58;cursor:pointer;font-size:14px;padding:0 3px;" title="위로">↑</button>
+        <button onclick="_moveSubtopic(${i},1)"  style="background:none;border:none;color:#484f58;cursor:pointer;font-size:14px;padding:0 3px;" title="아래로">↓</button>
+        <button onclick="_removeSubtopic(${i})"  style="background:none;border:none;color:#f87171;cursor:pointer;font-size:15px;padding:0 3px;" title="삭제">×</button>
+      </div>
+    </div>`).join('');
+}
+
+function _moveSubtopic(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= _planSubtopics.length) return;
+  [_planSubtopics[i], _planSubtopics[j]] = [_planSubtopics[j], _planSubtopics[i]];
+  _planSubtopics.forEach((s,idx) => s.index = idx+1);
+  _renderSubtopicList();
+}
+
+function _removeSubtopic(i) {
+  _planSubtopics.splice(i, 1);
+  _planSubtopics.forEach((s,idx) => s.index = idx+1);
+  _renderSubtopicList();
+}
+
+function _addCustomSubtopic() {
+  const title = prompt('소주제 제목을 입력하세요:');
+  if (!title?.trim()) return;
+  _planSubtopics.push({ index: _planSubtopics.length+1, heading:'H2', title: title.trim(), description:'', recommended_chars:500, key_points:[] });
+  _renderSubtopicList();
+}
+
+async function _confirmSubtopicsAndWrite() {
+  if (!_planSubtopics.length) { toast('소주제를 1개 이상 구성해주세요.', 'orange'); return; }
+  const topic = _planState.selectedTopic;
+  const progEl = document.getElementById('plan-section-progress');
+  const writingEl = document.getElementById('plan-section-writing');
+  const srcEl = document.getElementById('plan-source-doc');
+  writingEl.style.display = '';
+
+  // 진행 상황 UI 초기화
+  progEl.innerHTML = _planSubtopics.map((s, i) => `
+    <div id="sec-prog-${i}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#161b22;border:1px solid #30363d;border-radius:6px;">
+      <span id="sec-prog-icon-${i}" style="font-size:14px;">⏳</span>
+      <span style="font-size:13px;color:#8b949e;flex:1;">${s.heading} ${s.title}</span>
+      <span id="sec-prog-chars-${i}" style="font-size:12px;color:#484f58;"></span>
+    </div>`).join('');
+
+  if (srcEl) srcEl.value = '';
+  let fullDoc = '';
+
+  for (let i = 0; i < _planSubtopics.length; i++) {
+    const s = _planSubtopics[i];
+    const iconEl  = document.getElementById(`sec-prog-icon-${i}`);
+    const charsEl = document.getElementById(`sec-prog-chars-${i}`);
+    if (iconEl) iconEl.textContent = '🔄';
+    try {
+      const res = await fetch(`${API}/seo/section-generate`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic, subtopic_title: s.title, subtopic_description: s.description,
+          key_points: s.key_points || [], existing_sections: fullDoc,
+          api_keys: getKeys(), agency_profile: agencyProfile, tier: selectedTier
+        })
+      });
+      const data = await res.json();
+      const content = data.section_content || '';
+      fullDoc += (fullDoc ? '\n\n' : '') + content;
+      if (srcEl) { srcEl.value = fullDoc; _updateSrcCharCount(); }
+      if (iconEl)  iconEl.textContent = '✅';
+      if (charsEl) charsEl.textContent = `${(data.char_count||content.length).toLocaleString()}자`;
+    } catch(e) {
+      if (iconEl) iconEl.textContent = '❌';
+    }
+  }
+  toast('✅ 소주제별 소스 문서 작성 완료!', 'green');
+  // Auto-generate tags after writing
+  _generateSeoTags();
+}
+
+// ── SEO 태그 생성 ─────────────────────────────────────────────
+async function _generateSeoTags() {
+  const srcDoc = document.getElementById('plan-source-doc')?.value || '';
+  const topic  = _planState.selectedTopic || '';
+  if (!srcDoc && !topic) { toast('소스 문서 또는 주제가 필요합니다.', 'orange'); return; }
+
+  const panel   = document.getElementById('plan-tags-panel');
+  const loadEl  = document.getElementById('plan-tags-loading');
+  const contEl  = document.getElementById('plan-tags-content');
+  panel.style.display = '';
+  loadEl.style.display = '';
+  contEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API}/seo/tags`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic, keywords: _planState.selectedKeywords,
+        source_document: srcDoc,
+        platforms: ['naver','instagram','linkedin','threads'],
+        api_keys: getKeys(), agency_profile: agencyProfile, tier: selectedTier
+      })
+    });
+    const data = await res.json();
+    loadEl.style.display = 'none';
+    contEl.style.display = '';
+    _renderSeoTags(data);
+  } catch(e) {
+    loadEl.style.display = 'none';
+    toast('태그 생성 실패: ' + e.message, 'red');
+  }
+}
+
+function _renderSeoTags(data) {
+  const tagEl = (id, tags, color) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = (tags||[]).map(t=>`<span style="font-size:12px;padding:2px 8px;border-radius:10px;background:${color}15;color:${color};cursor:pointer;" onclick="navigator.clipboard.writeText('${t.replace(/'/g,"\\'")}').then(()=>toast('복사됨','#4ade80'))" title="클릭하여 복사">${t}</span>`).join('');
+  };
+  tagEl('plan-tags-core',    data.core_tags,    '#60a5fa');
+  tagEl('plan-tags-related', data.related_tags, '#34d399');
+  tagEl('plan-tags-trend',   data.trend_tags,   '#f59e0b');
+
+  const platEl = document.getElementById('plan-tags-by-platform');
+  const platColor = { naver:'#03c75a', instagram:'#f472b6', linkedin:'#0ea5e9', threads:'#c9d1d9' };
+  const platLabel = { naver:'네이버 블로그', instagram:'인스타그램', linkedin:'링크드인', threads:'쓰레드' };
+  const platIcon  = { naver:'🟢', instagram:'📸', linkedin:'💼', threads:'🧵' };
+  if (!platEl) return;
+  platEl.innerHTML = Object.entries(data.by_platform||{}).map(([plat, info]) => {
+    const color = platColor[plat] || '#8b949e';
+    const allTags = (info.tags||[]).join(' ').replace(/'/g,"\\'");
+    return `
+    <div style="padding:10px 12px;background:#0d1117;border:1px solid ${color}30;border-radius:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:12px;font-weight:700;color:${color};">${platIcon[plat]} ${platLabel[plat]} (${info.count||info.tags?.length||0}개)</span>
+        <button onclick="navigator.clipboard.writeText('${allTags}').then(()=>toast('${platLabel[plat]} 태그 복사됨','#4ade80'))"
+          style="font-size:11px;padding:2px 7px;border-radius:6px;background:${color}15;border:none;color:${color};cursor:pointer;">복사</button>
+      </div>
+      <div style="font-size:12px;color:#8b949e;margin-bottom:6px;">${info.strategy||''}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px;">${(info.tags||[]).map(t=>`<span style="font-size:11px;padding:1px 6px;border-radius:8px;background:${color}10;color:${color};">${t}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
 }
 
 async function planStep4Next() {
