@@ -14255,8 +14255,11 @@ function savePlanResult() {
     id: 'plan_' + Date.now(),
     idea: _planState.idea,
     topic: _planState.selectedTopic,
+    selectedTitle: _planState.selectedTitle || '',
     keywords: [..._planState.selectedKeywords],
     briefs: _planState.briefs,
+    seoData: _planState.seoData || null,
+    sourceDocument: _planState.sourceDocument || document.getElementById('plan-source-doc')?.value?.trim() || '',
     created_at: new Date().toISOString(),
   });
   if (list.length > 20) list.splice(20);
@@ -14348,18 +14351,37 @@ function _renderPlanHistory() {
 function loadPlanHistory(id) {
   const item = _getPlanHistory().find(p => p.id === id);
   if (!item) return;
-  _planState.idea    = item.idea || '';
+
+  // _planState 복원
+  _planState.idea             = item.idea || '';
   _planState.selectedKeywords = item.keywords || [];
-  _planState.selectedTopic = item.topic;
-  _planState.briefs  = item.briefs || null;
-  document.getElementById('plan-idea').value = item.idea || '';
+  _planState.selectedTopic    = item.topic || '';
+  _planState.selectedTitle    = item.selectedTitle || item.topic || '';
+  _planState.briefs           = item.briefs || null;
+  _planState.seoData          = item.seoData || null;
+  _planState.sourceDocument   = item.sourceDocument || '';
+
+  // 입력 필드 복원
+  const ideaEl = document.getElementById('plan-idea');
+  if (ideaEl) ideaEl.value = item.idea || '';
+  const srcEl = document.getElementById('plan-source-doc');
+  if (srcEl) { srcEl.value = item.sourceDocument || ''; _updateSrcCharCount && _updateSrcCharCount(); }
+
   if (item.briefs) {
+    // 브리프 결과가 있으면 스텝 5(브리프·생성)로 이동
+    _gotoStep(5);
+    const loadingEl = document.getElementById('plan-brief-loading');
+    const resultEl  = document.getElementById('plan-brief-result');
+    const doneEl    = document.getElementById('plan-done-status');
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (resultEl)  resultEl.style.display  = '';
+    if (doneEl)    doneEl.style.display    = 'flex';
     _renderPlanBriefs(item.briefs, item.topic);
-    _gotoStep(4);
-    document.getElementById('plan-brief-result').style.display = '';
-    document.getElementById('plan-done-status').style.display = 'flex';
+    toast('기획을 불러왔습니다: ' + (item.topic || ''), '#4ade80');
   } else {
+    // 브리프가 없으면 스텝 1로 돌아가기
     _gotoStep(1);
+    toast('기획 초안을 불러왔습니다. 단계를 계속 진행하세요.', '#60a5fa');
   }
 }
 
