@@ -1411,15 +1411,17 @@ BLOG_PLATFORM_PROMPTS = {
 콘텐츠 기둥: {content_pillars}
 {voice_dna}
 {voice_samples}
+{seo_strategy}
 
 네이버 최적화 요구사항:
 - 제목: 핵심 키워드 포함, 30자 이내, 클릭 유도 후킹
 - 본문: 1500~2000자, 짧은 단락(3~4줄), 소제목(##) 5개 이상
-- 키워드 밀도: 핵심 키워드 5~7회 자연스럽게 반복
+- 키워드 밀도: 핵심 키워드 5~7회 자연스럽게 반복 (위 SEO 키워드 반드시 사용)
 - 글 하단: 이웃추가/공감 유도 CTA
 - 해시태그: 10개 (네이버 검색 최적화)
 - 메타설명: 80자 이내 요약
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
+- SEO 기획 전략(소주제 구조·검색 의도·리서치 내용)을 본문에 충분히 반영하세요
 
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
@@ -1435,15 +1437,17 @@ JSON 형식으로만 반환:
 콘텐츠 기둥: {content_pillars}
 {voice_dna}
 {voice_samples}
+{seo_strategy}
 
 티스토리 최적화 요구사항:
 - 제목: SEO 키워드 포함, 구체적 수치/결과 포함
 - 본문: 1200~1800자, 구글/다음 SEO 최적화
-- 구성: 목차(TOC) → 서론 → 본론(H2 3개) → 결론
+- 구성: 목차(TOC) → 서론 → 본론(H2 3개 이상, 위 소주제 구조 활용) → 결론
 - 내부 링크 유도 문장 포함
 - 해시태그: 5개
 - 메타설명: 검색 결과 미리보기용 160자 이내
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
+- SEO 기획 전략(소주제 구조·검색 의도·리서치 내용)을 본문에 충분히 반영하세요
 
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
@@ -1459,15 +1463,17 @@ JSON 형식으로만 반환:
 콘텐츠 기둥: {content_pillars}
 {voice_dna}
 {voice_samples}
+{seo_strategy}
 
 워드프레스 최적화 요구사항:
 - 제목: Yoast SEO 기준, 핵심 키워드 앞배치, 60자 이내
-- 본문: 1000~1500자, H2/H3 계층 구조, 첫 문단에 키워드 포함
+- 본문: 1000~1500자, H2/H3 계층 구조 (위 소주제 구조 활용), 첫 문단에 키워드 포함
 - 이미지 alt 텍스트 설명 포함 (이미지 삽입 위치 [IMAGE] 표시)
 - 내부/외부 링크 유도 포함
 - 해시태그: 5개 (카테고리/태그용)
 - 메타설명: 155자 이내 Yoast 기준
 - 위 브랜드 보이스 DNA와 샘플 스타일을 반드시 반영하세요
+- SEO 기획 전략(소주제 구조·검색 의도·리서치 내용)을 본문에 충분히 반영하세요
 
 JSON 형식으로만 반환:
 {{"title":"...","body":"...","meta_description":"...","hashtags":["#..."],"cta":"..."}}
@@ -2662,16 +2668,39 @@ async def generate_blog(req: BlogRequest):
 
     voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
 
-    # SEO기획 소스 문서가 있으면 topic 앞에 리서치 컨텍스트로 삽입
-    src_ctx = ""
+    # ── SEO 기획 전략 컨텍스트 빌드 ──────────────────────────────
+    seo_parts = []
+
+    # 1) 핵심 키워드
+    if req.keywords:
+        seo_parts.append(f"[SEO 핵심 키워드] {', '.join(req.keywords)}")
+
+    # 2) 검색 의도
+    if req.search_intent:
+        seo_parts.append(f"[검색 의도] {req.search_intent}")
+
+    # 3) 콘텐츠 브리프
+    if req.content_brief:
+        seo_parts.append(f"[콘텐츠 방향] {req.content_brief}")
+
+    # 4) H2 소주제 구조
+    if req.subtopics:
+        seo_parts.append("[본문 H2 구조 — 이 순서대로 섹션을 구성하세요]\n" +
+                         "\n".join(f"  • {t}" for t in req.subtopics))
+
+    # 5) 소스 문서(섹션별 리서치 내용)
     if req.source_document and req.source_document.strip():
-        src_ctx = f"\n\n[SEO 리서치 소스 문서 — 이 내용을 반드시 블로그에 충분히 반영하세요]\n{req.source_document.strip()[:6000]}\n"
+        seo_parts.append(
+            "[SEO 리서치 소스 — 아래 내용을 본문에 충분히 반영하세요]\n"
+            + req.source_document.strip()[:5000]
+        )
+
+    seo_strategy = ("\n\n━━━ SEO 기획 전략 (반드시 반영) ━━━\n" + "\n\n".join(seo_parts) + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n") if seo_parts else ""
 
     async def gen_one(platform: BlogPlatform) -> BlogPost:
         prompt_tpl = BLOG_PLATFORM_PROMPTS[platform]
-        topic_with_src = req.topic + src_ctx
         prompt = prompt_tpl.format(
-            topic=topic_with_src,
+            topic=req.topic,
             agency=f"{profile.agency_name} / {profile.industry}",
             tone=profile.tone_and_manner or "전문적이고 신뢰감 있는",
             target=profile.target_audience or "기업 의사결정자",
@@ -2679,6 +2708,7 @@ async def generate_blog(req: BlogRequest):
             voice_dna=voice_dna,
             voice_samples=voice_samples,
             content_pillars=content_pillars,
+            seo_strategy=seo_strategy,
         )
         raw = await _llm_generate(prompt, keys)
         match = re.search(r'\{.*\}', raw, re.DOTALL)

@@ -189,6 +189,10 @@ class BlogRequest(BaseModel):
     tier: str = "tier1"
     language: str = "ko"
     source_document: Optional[str] = None  # SEO기획 소스 문서 (있으면 품질 대폭 향상)
+    keywords: List[str] = []              # SEO 핵심 키워드 목록
+    search_intent: Optional[str] = None  # 검색 의도 (정보성/거래성/탐색성 등)
+    subtopics: List[str] = []            # H2 소주제 목록 (본문 구조)
+    content_brief: Optional[str] = None  # 콘텐츠 브리프 요약
 
 class BlogPost(BaseModel):
     platform: BlogPlatform
