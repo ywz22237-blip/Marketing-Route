@@ -188,6 +188,7 @@ class BlogRequest(BaseModel):
     api_keys: Optional[dict] = None
     tier: str = "tier1"
     language: str = "ko"
+    source_document: Optional[str] = None  # SEO기획 소스 문서 (있으면 품질 대폭 향상)
 
 class BlogPost(BaseModel):
     platform: BlogPlatform

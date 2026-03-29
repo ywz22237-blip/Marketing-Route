@@ -2396,10 +2396,16 @@ async def generate_blog(req: BlogRequest):
 
     voice_dna, voice_samples, content_pillars = _build_voice_context(profile)
 
+    # SEO기획 소스 문서가 있으면 topic 앞에 리서치 컨텍스트로 삽입
+    src_ctx = ""
+    if req.source_document and req.source_document.strip():
+        src_ctx = f"\n\n[SEO 리서치 소스 문서 — 이 내용을 반드시 블로그에 충분히 반영하세요]\n{req.source_document.strip()[:6000]}\n"
+
     async def gen_one(platform: BlogPlatform) -> BlogPost:
         prompt_tpl = BLOG_PLATFORM_PROMPTS[platform]
+        topic_with_src = req.topic + src_ctx
         prompt = prompt_tpl.format(
-            topic=req.topic,
+            topic=topic_with_src,
             agency=f"{profile.agency_name} / {profile.industry}",
             tone=profile.tone_and_manner or "전문적이고 신뢰감 있는",
             target=profile.target_audience or "기업 의사결정자",
