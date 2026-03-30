@@ -7904,6 +7904,8 @@ async function generateBlogStream() {
   window._blogRequest = {
     topic, tier: selectedTier,
     language: document.getElementById('blog-lang').value,
+    api_keys: getKeys(),
+    agency_profile: agencyProfile,
     keywords:      seoLink.keywords || [],
     search_intent: seoLink.searchIntent || '',
     subtopics:     seoLink.subtopics || [],
@@ -7993,10 +7995,11 @@ async function generateBlog() {
   try {
     // SEO 기획 연동 데이터 수집 (_applySeoPlanToBlog() 이후 세팅됨)
     const seoLink = _blogLinkedSource || {};
-    // 재시도에도 쓸 수 있도록 요청 저장 (api_keys 제외 — 서버에 저장됨)
     window._blogRequest = {
       topic, tier: selectedTier,
       language: document.getElementById('blog-lang').value,
+      api_keys: getKeys(),
+      agency_profile: agencyProfile,
       keywords:        seoLink.keywords       || [],
       search_intent:   seoLink.searchIntent   || '',
       subtopics:       seoLink.subtopics      || [],
@@ -14866,6 +14869,20 @@ const _initTier = getActiveProject()?.tier || 'tier1';
 selectTier(_initTier, false);  // persist=false (이미 저장됨)
 checkAPIStatus();
 setInterval(checkAPIStatus, 10000);
+
+// Railway 재시작 후 서버 인메모리 복구 (페이지 로드 시 자동 동기화)
+(async () => {
+  try {
+    await saveKeysToServer();
+    // 에이전시 프로필도 서버에 동기화
+    if (agencyProfile && agencyProfile.agency_name) {
+      await fetch(`${API}/agency`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(agencyProfile)
+      });
+    }
+  } catch(e) { /* 서버 미응답 시 무시 — 요청에 직접 포함됨 */ }
+})();
 
 // SEO 결과 복원 (이전 세션)
 try {
