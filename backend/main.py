@@ -241,29 +241,38 @@ def _mark_key_429(key: str, seconds: int = 65):
     import time
     _key_429_until[key] = time.time() + seconds
 
-async def _groq_call(groq_key: str, prompt: str, max_tokens: int) -> str:
+# Groq 전용 시스템 메시지 — 한국어 전용 강제
+_KOREAN_SYSTEM_MSG = (
+    "당신은 한국어 전문 마케팅 카피라이터입니다. "
+    "반드시 한국어로만 응답하세요. "
+    "베트남어(nhu cầu 등), 태국어, 아랍어, 힌디어 등 다른 언어는 절대 사용하지 마세요. "
+    "영어는 브랜드명·고유명사에만 허용합니다."
+)
+
+async def _groq_call(groq_key: str, prompt: str, max_tokens: int,
+                     system_msg: str = _KOREAN_SYSTEM_MSG) -> str:
     """Groq 모델 순서대로 시도. 429 시 지수 백오프(2s) → 다음 모델."""
     import asyncio
     from groq import Groq
     gclient = Groq(api_key=groq_key)
+    messages = [{"role": "system", "content": system_msg},
+                {"role": "user",   "content": prompt}]
     last_err = ""
     for model in _GROQ_MODELS:
-        for attempt in range(2):   # 모델당 최대 2번 시도
+        for attempt in range(2):
             try:
                 gresp = gclient.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.6,
-                    max_tokens=max_tokens,
+                    model=model, messages=messages,
+                    temperature=0.6, max_tokens=max_tokens,
                 )
                 return gresp.choices[0].message.content or ""
             except Exception as e:
                 last_err = str(e)
                 is_rate_limit = "429" in last_err or "rate_limit" in last_err.lower()
                 if not is_rate_limit:
-                    raise   # 429 외 오류는 즉시 재발생
+                    raise
                 if attempt == 0:
-                    await asyncio.sleep(2)  # 2초 대기 후 같은 모델 재시도
+                    await asyncio.sleep(2)
     raise RuntimeError(f"Groq 모든 모델 한도 초과: {last_err[:120]}")
 
 
@@ -1462,7 +1471,7 @@ def _tier_checklist(tier: ApiTier) -> dict:
 # ── 블로그 플랫폼별 생성 ───────────────────────────────────────
 
 # 블로그 공통 컨텍스트 (3개 플랫폼 공유 — 중복 제거)
-_BLOG_CTX = """한국어로만 작성.
+_BLOG_CTX = """오직 한국어로만 작성. 베트남어·태국어 등 외국어 절대 금지. 영어는 브랜드명·고유명사만 허용.
 주제: {topic} | 에이전시: {agency} | 톤: {tone} | 타겟: {target} | 언어: {language}
 콘텐츠 기둥: {content_pillars}
 {voice_dna}
@@ -1596,11 +1605,45 @@ def _get_cached_voice_context() -> tuple[str, str, str]:
     return _voice_ctx_cache["dna"], _voice_ctx_cache["samples"], _voice_ctx_cache["pillars"]
 
 
+def _has_foreign_contamination(text: str) -> bool:
+    """한국어 문맥에서 잘못된 외국어 오염 감지 (베트남어·태국어·아랍어 등)."""
+    # 베트남어 전용 발음 기호 문자
+    viet_chars = set("àáâãèéêìíòóôõùúýăđơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỷỹ")
+    if any(c in viet_chars for c in text.lower()):
+        return True
+    # 태국어 유니코드 블록
+    if any('\u0E00' <= c <= '\u0E7F' for c in text):
+        return True
+    # 아랍어 유니코드 블록
+    if any('\u0600' <= c <= '\u06FF' for c in text):
+        return True
+    # 흔한 베트남어 단어 패턴
+    import re
+    viet_patterns = [r'\bnhu\s+c[aầ]u\b', r'\bkh[aá]ch\s+h[àa]ng\b',
+                     r'\bth[ịị]\s+tr[ươ]', r'\bs[aả]n\s+ph[aẩ]m\b']
+    for pat in viet_patterns:
+        if re.search(pat, text, re.IGNORECASE):
+            return True
+    return False
+
+
 async def _llm_generate(prompt: str, api_keys: dict, tier: str = "tier1") -> str:
-    """LLM 호출 공통 함수. Gemini 우선, 429 시 Groq 자동 폴백."""
+    """LLM 호출 공통 함수. 외국어 오염 감지 시 강화 프롬프트로 1회 재시도."""
     text, err = await _gemini_text(prompt, api_keys, tier)
     if err:
         return f'{{"error": "{err}"}}'
+
+    # 외국어 오염 감지 → 강화 프롬프트로 재시도
+    if _has_foreign_contamination(text):
+        retry_prefix = (
+            "⚠️ 이전 응답에 한국어가 아닌 텍스트(베트남어 등)가 포함되었습니다.\n"
+            "반드시 한국어로만 작성하세요. 베트남어·태국어·아랍어 절대 금지.\n\n"
+        )
+        text2, err2 = await _gemini_text(retry_prefix + prompt, api_keys, tier)
+        if not err2 and text2 and not _has_foreign_contamination(text2):
+            return text2
+        # 재시도도 오염됐으면 원본 반환 (최선)
+
     return text
 
 
@@ -1672,7 +1715,7 @@ JSON 형식으로만 반환:
 # ── SNS 플랫폼별 생성 ─────────────────────────────────────────
 
 # 공통 컨텍스트 (3개 플랫폼 공유 — 토큰 중복 방지)
-_SNS_CTX = """[CRITICAL] 반드시 한국어로만 작성. 다른 언어 절대 금지.
+_SNS_CTX = """[CRITICAL] 오직 한국어로만 작성. 베트남어·태국어·아랍어·힌디어 등 모든 외국어 절대 사용 금지. 영어는 브랜드명·고유명사에만 허용.
 주제: {topic} | 요약: {summary}
 에이전시: {agency} | 타겟: {target} | 톤: {tone}
 콘텐츠 기둥: {content_pillars}
