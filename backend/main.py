@@ -88,6 +88,23 @@ def root():
     return {"status": "ok", "service": "Marketing Route v0.1"}
 
 
+# ── Keep-alive (Railway 콜드스타트 방지) ───────────────────────
+@app.on_event("startup")
+async def startup():
+    import asyncio
+    async def _ping():
+        await asyncio.sleep(60)   # 부팅 후 60초 대기
+        while True:
+            try:
+                import httpx
+                async with httpx.AsyncClient(timeout=8) as c:
+                    await c.get("http://localhost:8000/")
+            except Exception:
+                pass
+            await asyncio.sleep(4 * 60)   # 4분마다 자기 자신에 ping
+    asyncio.create_task(_ping())
+
+
 # ── 에이전시 프로필 + 서버사이드 키 저장소 ───────────────────────
 _agency_profile: AgencyProfile = AgencyProfile()
 _server_keys: dict = {}           # POST /settings/keys 로 1회 저장
@@ -124,6 +141,8 @@ async def get_keys_status():
     import os
     sources = {
         "gemini_api_key":      _server_keys.get("gemini_api_key")      or os.getenv("GEMINI_API_KEY", ""),
+        "gemini_api_key_2":    _server_keys.get("gemini_api_key_2")    or os.getenv("GEMINI_API_KEY_2", ""),
+        "gemini_api_key_3":    _server_keys.get("gemini_api_key_3")    or os.getenv("GEMINI_API_KEY_3", ""),
         "groq_api_key":        _server_keys.get("groq_api_key")        or os.getenv("GROQ_API_KEY", ""),
         "unsplash_access_key": _server_keys.get("unsplash_access_key") or os.getenv("UNSPLASH_ACCESS_KEY", ""),
         "google_tts_api_key":  _server_keys.get("google_tts_api_key")  or os.getenv("GOOGLE_TTS_API_KEY", ""),
@@ -131,7 +150,11 @@ async def get_keys_status():
         "data_go_kr_key":      _server_keys.get("data_go_kr_key")      or os.getenv("DATA_GO_KR_KEY", ""),
         "pexels_api_key":      _server_keys.get("pexels_api_key")      or os.getenv("PEXELS_API_KEY", ""),
     }
-    return {k: bool(v) for k, v in sources.items()}
+    # 활성 Gemini 키 수 포함
+    gemini_count = sum(1 for k in ("gemini_api_key","gemini_api_key_2","gemini_api_key_3") if sources.get(k))
+    result = {k: bool(v) for k, v in sources.items()}
+    result["gemini_key_count"] = gemini_count
+    return result
 
 
 # ── SEO 기획 ──────────────────────────────────────────────────
@@ -197,6 +220,27 @@ _GROQ_MODELS = [
     "gemma2-9b-it",              # 3순위: 최후 수단
 ]
 
+# ── Gemini 멀티키 풀링 ────────────────────────────────────────
+_key_429_until: dict[str, float] = {}   # key → 429 쿨다운 만료 시각
+
+def _gemini_key_pool(request_keys: dict) -> list[str]:
+    """등록된 모든 Gemini 키 목록 (중복 제거, 최대 5개)"""
+    import os, time
+    seen, pool = set(), []
+    for k in ("gemini_api_key", "gemini_api_key_2", "gemini_api_key_3",
+              "gemini_api_key_4", "gemini_api_key_5"):
+        v = request_keys.get(k) or _server_keys.get(k) or os.getenv(k.upper(), "")
+        if v and v not in seen:
+            seen.add(v)
+            pool.append(v)
+    # 429 만료된 키 우선, 만료 안 된 키 뒤로
+    now = time.time()
+    return sorted(pool, key=lambda k: _key_429_until.get(k, 0) < now, reverse=True)
+
+def _mark_key_429(key: str, seconds: int = 65):
+    import time
+    _key_429_until[key] = time.time() + seconds
+
 async def _groq_call(groq_key: str, prompt: str, max_tokens: int) -> str:
     """Groq 모델 순서대로 시도. 429 시 지수 백오프(2s) → 다음 모델."""
     import asyncio
@@ -248,27 +292,38 @@ async def _gemini_text(prompt: str, api_keys: dict, tier: str = "tier1", max_tok
                 return "", f"Groq 오류: {str(ge)[:150]}"
             # Gemini로 계속 진행
 
-    key = gemini_key
     model_name = "gemini-2.5-flash" if tier in ("tier2", "tier3") else "gemini-2.0-flash"
+    gemini_pool = _gemini_key_pool(api_keys)
 
-    if key:
-        try:
-            from google import genai
-            client = genai.Client(api_key=key)
-            resp = client.models.generate_content(model=model_name, contents=prompt)
-            return resp.text or "", None
-        except Exception as e:
-            err_str = str(e)
-            if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
-                return "", "❌ Gemini API 키가 유효하지 않습니다."
-            if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
-                if groq_key:
-                    try:
-                        return await _groq_call(groq_key, prompt, max_tokens), None
-                    except Exception as ge:
-                        return "", f"❌ Gemini 할당량 초과 + Groq 폴백 실패: {str(ge)[:120]}"
-                return "", "❌ Gemini 일일 할당량 초과(429). Groq API 키를 설정하면 자동 전환됩니다."
-            return "", f"Gemini 오류: {err_str[:150]}"
+    # ── Gemini 키 풀 순차 시도 ──────────────────────────────────
+    if gemini_pool:
+        from google import genai
+        import time
+        last_gemini_err = ""
+        for key in gemini_pool:
+            if _key_429_until.get(key, 0) > time.time():
+                continue   # 429 쿨다운 중 스킵
+            try:
+                client = genai.Client(api_key=key)
+                resp = client.models.generate_content(model=model_name, contents=prompt)
+                return resp.text or "", None
+            except Exception as e:
+                err_str = str(e)
+                if "API_KEY_INVALID" in err_str or "API key not valid" in err_str:
+                    last_gemini_err = "❌ Gemini API 키가 유효하지 않습니다."
+                    continue   # 다음 키 시도
+                if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
+                    _mark_key_429(key)   # 65초 쿨다운
+                    last_gemini_err = f"키 {key[:8]}… 할당량 초과 → 다음 키"
+                    continue   # 다음 키 시도
+                return "", f"Gemini 오류: {err_str[:150]}"
+        # 모든 Gemini 키 소진 → Groq 폴백
+        if groq_key:
+            try:
+                return await _groq_call(groq_key, prompt, max_tokens), None
+            except Exception as ge:
+                return "", f"❌ Gemini 전체 할당량 초과 + Groq 폴백 실패: {str(ge)[:120]}"
+        return "", f"❌ 등록된 Gemini 키 {len(gemini_pool)}개 모두 할당량 초과. Groq 키를 추가하거나 잠시 후 재시도하세요."
 
     # Gemini 키 없으면 Groq 직접 시도
     if groq_key:

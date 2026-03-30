@@ -660,6 +660,12 @@
         </div>
         <div id="test-result-gemini" class="api-test-result" style="display:none;"></div>
         <p style="font-size:12px;color:#484f58;margin:4px 0 0;">무료 1일 250회 · Google AI Studio</p>
+        <!-- 멀티키 풀링: 추가 Gemini 키 (라운드로빈 → 한도 N배) -->
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;" id="gemini-extra-keys">
+          <input type="password" class="key-input" id="key-gemini-2" placeholder="추가 키 2 (AIza...)" oninput="onKeyChange(this,'gemini_api_key_2')" style="font-size:12px;" />
+          <input type="password" class="key-input" id="key-gemini-3" placeholder="추가 키 3 (AIza...)" oninput="onKeyChange(this,'gemini_api_key_3')" style="font-size:12px;" />
+        </div>
+        <p style="font-size:11px;color:#484f58;margin:4px 0 0;">키 여러 개 등록 시 라운드로빈 — 한도 N배 확장. 429 시 자동 전환.</p>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -6484,6 +6490,8 @@ function renderCurrentStatus() {
 // ── API 키 관리 (프로젝트 스코프) ────────────────────────────
 const KEY_FIELD_MAP = {
   'gemini_api_key':        'key-gemini',
+  'gemini_api_key_2':      'key-gemini-2',
+  'gemini_api_key_3':      'key-gemini-3',
   'groq_api_key':          'key-groq',
   'google_tts_api_key':    'key-tts',
   'unsplash_access_key':   'key-unsplash',
